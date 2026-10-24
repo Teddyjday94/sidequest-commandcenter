@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "agent": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["completed", "partial", "blocked", "failed"]
+    },
+    "summary": { "type": "string" },
+    "completed": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "blocked": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "next_action": { "type": "string" }
+  },
+  "required": ["agent", "status", "summary", "completed", "blocked", "next_action"],
+  "additionalProperties": false
+}

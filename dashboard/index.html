@@ -212,7 +212,7 @@ dash.calc('stages', {
       const top = document.createElement('div'); top.className = 'top';
       const step = document.createElement('span'); step.className = 'step'; step.textContent = 'Step ' + (i + 1);
       const pills = document.createElement('span'); pills.style.display = 'flex'; pills.style.gap = '6px';
-      if (r.uses_ai === false) { const fp = document.createElement('span'); fp.className = 'sq-pill free'; fp.textContent = 'Free, no Claude'; pills.append(fp); }
+      if (r.uses_ai === false) { const fp = document.createElement('span'); fp.className = 'sq-pill free'; fp.textContent = 'Free, no AI'; pills.append(fp); }
       pills.append(mk('span', 'sq-pill ' + pillClass(r.status), 'status', r.status));
       top.append(step, pills);
       const dl = document.createElement('dl');

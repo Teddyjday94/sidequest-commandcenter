@@ -2,7 +2,7 @@
 
 Owner: Thomas, founder of Sidequest Creative, a web design shop in Gonzales, Louisiana. Business email thomasdbiz26@gmail.com. Packages: Starter $600, Full $800. Dashboard: https://claude.ai/artifact/LjDPvPRUYEfi4DPcsrtYmN
 
-The crew: Lead Scout and Daily Planner run free inside the database (no Claude). The Claude agents are the Contact Finder, Sales Agent, Mockup Builder and Content Agent. Each Claude run starts fresh: read this playbook, then do only your own section. Keep runs short. Only query the rows and columns you need.
+The crew: Lead Scout and Daily Planner run free inside the database (no AI). The AI agents are the Contact Finder, Sales Agent, Mockup Builder and Content Agent. Each agent run starts fresh: read this playbook, then do only your own section. Keep runs short. Only query the rows and columns you need.
 
 ## Hard rules
 
@@ -54,7 +54,7 @@ Load these with the Skill tool when listed; skip any that are missing.
 Goal: for leads the Lead Scout added, find a way to reach them, confirm whether they really have a website, and write the pitch hook.
 
 - Pick up to 20: select id, business, area, niche, rating, website, contact from ops.leads where stage in ('New','Audited') and (website like 'Not confirmed%' or website = 'Not checked' or contact in ('','Not found yet')) order by score desc limit 20.
-- Load the built-in-browser skill if listed, then the browser tools (ToolSearch query "mcp__remote-devices__Claude_Browser__", max_results 64). If the browser can't be reached, log "Contact Finder: computer offline" and stop.
+- Use the browser or web-search tools available to the current agent. In the legacy Claude task, load the built-in-browser skill and its browser tools. If no browser or web-search tool can be reached, log "Contact Finder: computer offline" and stop.
 - For each: navigate to https://www.google.com/search?q=<business>+<town>+LA and get_page_text (max_chars 2500). Use browser_batch to do several in one call.
 - Take only details clearly tied to the same business: phone, website, Facebook or Instagram, Google rating and review count. If unsure, add "(possible match, confirm on the call)".
 - If a website shows up, WebFetch it. Solid and recent (agency-built, current copyright, working quote form): score under 45, heat Cold, next_step 'Skip for now'. Weak: website 'Weak site (<domain>, <builder>)' and a hook naming 2 or 3 specific problems. Nothing anywhere: website 'None found' and a hook about what having a site would fix for them.

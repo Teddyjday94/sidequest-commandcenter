@@ -20,8 +20,11 @@ The crew finds local businesses with weak or missing websites, finds their conta
 | Mockup Builder | Claude scheduled task, Tue/Thu 8:33 AM CT (Sonnet), deploys to Vercel | Claude |
 | Content Agent | Claude scheduled task, Sunday 5:43 PM CT (Sonnet) | Claude |
 | Dashboard | Claude Dashboard artifact https://claude.ai/artifact/LjDPvPRUYEfi4DPcsrtYmN, reads Supabase live | claude.ai |
+| Codex runner (migration path) | `runner/run-agent.ps1`, guarded to require Sign in with ChatGPT | Thomas's PC |
 
 Agent prompts are short: each one reads the playbook, then does only its own section. The **playbook is the real logic**.
+
+The no-purchase migration path is documented in `docs/CODEX_SETUP.md`. Do not enable a Codex schedule and its matching Claude schedule at the same time after testing; duplicate runs could create duplicate drafts or deployments.
 
 ## Repo layout
 
@@ -53,7 +56,7 @@ This repo is a mirror and a workbench. Nothing deploys from git automatically.
 5. Never bypass CAPTCHAs or bot checks (the scout stops on 403/429/503 by design).
 6. Never record a personal home street address. Opted-out leads are never contacted again.
 7. Never invent reviews, quotes or facts. Copy has no em dashes and no AI-sounding phrasing; tone is slightly laid back but professional.
-8. **No secrets in this repo.** No API keys, tokens, `.env` files or service-role keys. Connections are handled by the Claude connectors or your local Supabase CLI login.
+8. **No secrets in this repo.** No API keys, tokens, `.env` files or service-role keys. Connections are handled by the active agent's connected tools or your local Supabase CLI login.
 
 ## Key data
 
@@ -66,4 +69,4 @@ This repo is a mirror and a workbench. Nothing deploys from git automatically.
 
 - Test SQL against a Supabase branch or locally before running it on the live project.
 - The dashboard parses Supabase MCP answers that wrap JSON in `<untrusted-data-…>` tags; see `sbRows` in `dashboard/index.html` before changing the loader.
-- Keep Claude usage low: anything mechanical belongs in Postgres, not in a Claude run.
+- Keep AI usage low: anything mechanical belongs in Postgres, not in a model run.

@@ -1,0 +1,29 @@
+{
+  "timezone": "America/Chicago",
+  "agents": [
+    {
+      "id": "contact-finder",
+      "name": "Contact Finder",
+      "schedule": "7 8 * * 1,3,5",
+      "required_plugins": ["supabase", "browser"]
+    },
+    {
+      "id": "sales-agent",
+      "name": "Sales Agent",
+      "schedule": "17 9 * * 1-5",
+      "required_plugins": ["supabase", "gmail"]
+    },
+    {
+      "id": "mockup-builder",
+      "name": "Mockup Builder",
+      "schedule": "33 8 * * 2,4",
+      "required_plugins": ["supabase"]
+    },
+    {
+      "id": "content-agent",
+      "name": "Content Agent",
+      "schedule": "43 17 * * 0",
+      "required_plugins": ["supabase"]
+    }
+  ]
+}
