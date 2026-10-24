@@ -1,0 +1,32 @@
+name: Database Tests
+
+on:
+  push:
+    branches:
+      - feature/autonomous-agent-studio
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pgtap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out the feature branch
+        uses: actions/checkout@v4
+
+      - name: Start isolated Supabase services
+        run: npx --yes supabase@2.122.0 start
+
+      - name: Run orchestration database tests
+        run: npx --yes supabase@2.122.0 test db supabase/tests/ops_orchestration_test.sql
+
+      - name: Stop isolated Supabase services
+        if: always()
+        run: npx --yes supabase@2.122.0 stop --no-backup
