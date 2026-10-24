@@ -21,7 +21,7 @@ function approvalRow(status: ApprovalStatus = 'pending', risk = 'medium') {
     requested_at: '2026-10-24T20:00:00Z',
     decided_at: status === 'pending' ? null : '2026-10-24T20:01:00Z',
     decision_note: status === 'pending' ? null : 'Reviewed',
-    external_action_completed_at: null,
+    external_action_completed_at: null as string | null,
   }
 }
 
@@ -30,6 +30,7 @@ function fakeAdmin(options: {
   status?: ApprovalStatus
   risk?: string
   approvalExists?: boolean
+  rpcError?: { code: string; message: string }
 } = {}) {
   let row = approvalRow(options.status ?? 'pending', options.risk ?? 'medium')
   let mutations = 0
@@ -45,10 +46,11 @@ function fakeAdmin(options: {
   const select = vi.fn().mockReturnValue({ eq })
   const from = vi.fn().mockReturnValue({ select })
   const rpc = vi.fn(async (name: string, args: Record<string, unknown>) => {
+    if (options.rpcError) return { data: null, error: options.rpcError }
     if (name === 'resolve_approval') {
-      const next = { approve: 'approved', reject: 'rejected', revise: 'revised' }[
-        String(args.p_decision)
-      ] as ApprovalStatus | undefined
+      const next = ['approved', 'rejected', 'revised'].includes(String(args.p_decision))
+        ? (String(args.p_decision) as ApprovalStatus)
+        : undefined
       if (row.status === 'pending' && next) {
         row = { ...row, status: next, decided_at: '2026-10-24T20:01:00Z', decision_note: String(args.p_note ?? '') }
         mutations += 1
@@ -150,6 +152,22 @@ describe('POST /api/approval-resolve', () => {
     expect(admin.rpc).toHaveBeenCalledTimes(2)
     expect(admin.mutationCount()).toBe(1)
     expect(await second.json()).toMatchObject({ id: approvalId, status: 'approved', decisionNote: 'Reviewed' })
+  })
+
+  it('maps a database conflict to 409 without retrying the mutation', async () => {
+    const admin = fakeAdmin({
+      status: 'approved',
+      rpcError: { code: '55000', message: 'approval_already_resolved' },
+    })
+    const handler = createApprovalResolveHandler({ admin: admin.client, ownerUserId: ownerId, csrf: allowCsrf })
+
+    const response = await handler(
+      post('approval-resolve', { approvalId, decision: 'reject', note: 'Conflicting decision' }),
+    )
+
+    expect(response.status).toBe(409)
+    expect(await response.json()).toEqual({ error: 'approval_conflict' })
+    expect(admin.rpc).toHaveBeenCalledTimes(1)
   })
 
   it('calls only the approval procedure and never performs an external action', async () => {
