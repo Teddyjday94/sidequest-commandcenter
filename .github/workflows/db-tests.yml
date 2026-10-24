@@ -27,6 +27,12 @@ jobs:
       - name: Run orchestration database tests
         run: npx --yes supabase@2.122.0 test db supabase/tests/ops_orchestration_test.sql
 
+      - name: Lint the private ops schema
+        run: npx --yes supabase@2.122.0 db lint --local --schema ops --level warning --fail-on error
+
+      - name: Run local database advisors
+        run: npx --yes supabase@2.122.0 db advisors --local --type all --level warn --fail-on error
+
       - name: Stop isolated Supabase services
         if: always()
         run: npx --yes supabase@2.122.0 stop --no-backup
