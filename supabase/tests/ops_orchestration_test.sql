@@ -2,6 +2,8 @@ begin;
 
 select * from no_plan();
 
+create extension if not exists dblink with schema extensions;
+
 select has_table('ops', 'workflows', 'workflows table exists');
 select has_column('ops', 'workflows', 'id', 'workflows.id exists');
 select has_column('ops', 'workflows', 'kind', 'workflows.kind exists');
@@ -181,6 +183,423 @@ select throws_ok(
   '23505',
   'duplicate key value violates unique constraint "inbound_messages_provider_message_uq"',
   'provider message identifiers cannot be processed twice'
+);
+
+select has_function('ops', 'dispatch_work', array[]::text[], 'dispatch_work exists');
+select has_function('ops', 'offer_job', array['text'], 'offer_job(text) exists');
+select has_function('ops', 'claim_job', array['text', 'uuid'], 'claim_job(text, uuid) exists');
+select has_function('ops', 'heartbeat_job', array['text', 'uuid'], 'heartbeat_job(text, uuid) exists');
+select has_function('ops', 'complete_job', array['text', 'uuid', 'jsonb'], 'complete_job(text, uuid, jsonb) exists');
+select has_function('ops', 'fail_job', array['text', 'uuid', 'text', 'text', 'boolean'], 'fail_job contract exists');
+select has_function('ops', 'recover_expired_jobs', array[]::text[], 'recover_expired_jobs exists');
+select has_function('ops', 'resolve_approval', array['uuid', 'text', 'text', 'uuid'], 'resolve_approval contract exists');
+select has_function('ops', 'record_external_completion', array['uuid', 'uuid'], 'record_external_completion exists');
+select has_function('ops', 'get_studio_snapshot', array[]::text[], 'get_studio_snapshot exists');
+
+select lives_ok(
+  $$insert into ops.agents (id, name, role, status)
+    values ('finder', 'Contact Finder', 'Verifies contact routes', 'Live')$$,
+  'dispatcher agent fixture can be created'
+);
+select lives_ok(
+  $$insert into ops.worker_devices (id, display_name, token_hash, status, capabilities)
+    values
+      ('worker-one', 'Worker One', repeat('1', 64), 'active', '["database"]'::jsonb),
+      ('worker-two', 'Worker Two', repeat('2', 64), 'active', '["database"]'::jsonb)$$,
+  'active worker fixtures can be created'
+);
+select lives_ok(
+  $$insert into ops.leads (id, business, stage, automation_owner)
+    values ('L-DISPATCH', 'Dispatch Fixture Business', 'New', 'codex-pilot')$$,
+  'a canary lead fixture can be created'
+);
+
+select lives_ok($$select ops.dispatch_work()$$, 'dispatcher accepts an eligible canary lead');
+select lives_ok($$select ops.dispatch_work()$$, 'dispatcher can be repeated safely');
+select is(
+  (
+    select count(*)::bigint
+    from ops.workflows
+    where kind = 'lead_pipeline'
+      and subject_type = 'lead'
+      and subject_id = 'L-DISPATCH'
+      and status in ('active', 'waiting', 'blocked')
+  ),
+  1::bigint,
+  'dispatcher creates one active workflow per eligible lead'
+);
+select is(
+  (
+    select count(*)::bigint
+    from ops.jobs
+    where idempotency_key = 'dispatch:lead:L-DISPATCH:contact_verification:v1'
+  ),
+  1::bigint,
+  'dispatcher creates one idempotent contact-verification job'
+);
+
+select lives_ok(
+  $$insert into ops.workflows (id, kind, subject_type, subject_id, status, current_step)
+    values ('11000000-0000-0000-0000-000000000001', 'ci_queue', 'test', 'priority', 'active', 'queue')$$,
+  'queue workflow fixture can be created'
+);
+select lives_ok(
+  $$insert into ops.jobs
+      (id, workflow_id, agent_id, kind, status, priority, idempotency_key)
+    values
+      ('21000000-0000-0000-0000-000000000001', '11000000-0000-0000-0000-000000000001', 'ci-agent', 'priority_high', 'queued', 1, 'ci-priority-high'),
+      ('21000000-0000-0000-0000-000000000002', '11000000-0000-0000-0000-000000000001', 'ci-agent', 'priority_low', 'queued', 50, 'ci-priority-low')$$,
+  'priority queue fixtures can be created'
+);
+select is(
+  ops.offer_job('worker-one')->>'id',
+  '21000000-0000-0000-0000-000000000001',
+  'offer_job returns the highest-priority available job without claiming it'
+);
+select is(
+  (select status from ops.jobs where id = '21000000-0000-0000-0000-000000000001'),
+  'queued',
+  'offering a job does not create a lease'
+);
+select lives_ok(
+  $$select ops.claim_job('worker-one', '21000000-0000-0000-0000-000000000001')$$,
+  'an active worker can claim the offered job'
+);
+select throws_ok(
+  $$select ops.heartbeat_job('worker-two', '21000000-0000-0000-0000-000000000001')$$,
+  '42501',
+  'worker_mismatch',
+  'a different worker cannot renew the lease'
+);
+select lives_ok(
+  $$update ops.jobs
+    set locked_at = now() - interval '10 minutes'
+    where id = '21000000-0000-0000-0000-000000000001'$$,
+  'lease age can be arranged for renewal testing'
+);
+select lives_ok(
+  $$select ops.heartbeat_job('worker-one', '21000000-0000-0000-0000-000000000001')$$,
+  'the owning worker can renew its lease'
+);
+select ok(
+  (
+    select locked_at > now() - interval '1 minute'
+      and locked_at + interval '15 minutes' between now() + interval '14 minutes' and now() + interval '16 minutes'
+    from ops.jobs
+    where id = '21000000-0000-0000-0000-000000000001'
+  ),
+  'heartbeat renews the job to a fifteen-minute lease'
+);
+select throws_ok(
+  $$select ops.complete_job(
+      'worker-one',
+      '21000000-0000-0000-0000-000000000002',
+      '{"summary":"not claimed"}'::jsonb
+    )$$,
+  '55000',
+  'job_not_running',
+  'a queued job cannot jump directly to completed'
+);
+select lives_ok(
+  $$select ops.complete_job(
+      'worker-one',
+      '21000000-0000-0000-0000-000000000001',
+      '{"summary":"done","confidence":0.8}'::jsonb
+    )$$,
+  'the owning worker can complete a running job'
+);
+select lives_ok(
+  $$select ops.complete_job(
+      'worker-one',
+      '21000000-0000-0000-0000-000000000001',
+      '{"summary":"done","confidence":0.8}'::jsonb
+    )$$,
+  'repeating the same completion is idempotent'
+);
+select is(
+  (
+    select count(*)::bigint
+    from ops.job_events
+    where job_id = '21000000-0000-0000-0000-000000000001'
+      and event = 'completed'
+  ),
+  1::bigint,
+  'idempotent completion records one completed event'
+);
+
+select lives_ok(
+  $$insert into ops.jobs
+      (id, workflow_id, agent_id, kind, status, priority, max_attempts, idempotency_key)
+    values
+      ('22000000-0000-0000-0000-000000000001', '11000000-0000-0000-0000-000000000001', 'ci-agent', 'retry_test', 'queued', 20, 2, 'ci-retry-test')$$,
+  'retry fixture can be created'
+);
+select lives_ok(
+  $$select ops.claim_job('worker-one', '22000000-0000-0000-0000-000000000001')$$,
+  'retry fixture can be claimed once'
+);
+select lives_ok(
+  $$select ops.fail_job(
+      'worker-one',
+      '22000000-0000-0000-0000-000000000001',
+      'temporary',
+      'Try again',
+      true
+    )$$,
+  'a retryable first failure returns the job to the queue'
+);
+select is(
+  (select status from ops.jobs where id = '22000000-0000-0000-0000-000000000001'),
+  'queued',
+  'retryable work is queued while attempts remain'
+);
+select lives_ok(
+  $$select ops.claim_job('worker-one', '22000000-0000-0000-0000-000000000001')$$,
+  'retry fixture can be claimed for its final attempt'
+);
+select lives_ok(
+  $$select ops.fail_job(
+      'worker-one',
+      '22000000-0000-0000-0000-000000000001',
+      'temporary',
+      'Still failing',
+      true
+    )$$,
+  'the final retryable failure is handled without another retry'
+);
+select is(
+  (select status from ops.jobs where id = '22000000-0000-0000-0000-000000000001'),
+  'blocked',
+  'retry budget exhaustion blocks the job'
+);
+select is(
+  (select attempts from ops.jobs where id = '22000000-0000-0000-0000-000000000001'),
+  2,
+  'claim attempts never exceed max_attempts'
+);
+
+select lives_ok(
+  $$insert into ops.jobs
+      (id, workflow_id, agent_id, kind, status, priority, attempts, max_attempts,
+       locked_at, lock_owner, started_at, idempotency_key)
+    values
+      ('23000000-0000-0000-0000-000000000001', '11000000-0000-0000-0000-000000000001', 'ci-agent', 'expired_test', 'running', 30, 1, 3,
+       now() - interval '16 minutes', 'worker-one', now() - interval '20 minutes', 'ci-expired-test')$$,
+  'expired lease fixture can be created'
+);
+select lives_ok($$select ops.recover_expired_jobs()$$, 'expired leases can be recovered');
+select ok(
+  (
+    select status = 'queued' and lock_owner is null and locked_at is null
+    from ops.jobs
+    where id = '23000000-0000-0000-0000-000000000001'
+  ),
+  'an expired job with retries remaining returns to the queue'
+);
+
+select lives_ok(
+  $$insert into ops.approvals
+      (id, job_id, action_type, title, risk, status)
+    values
+      ('31000000-0000-0000-0000-000000000001', '21000000-0000-0000-0000-000000000001', 'send_draft', 'Review the draft', 'medium', 'pending')$$,
+  'pending approval fixture can be created'
+);
+select lives_ok(
+  $$select ops.resolve_approval(
+      '31000000-0000-0000-0000-000000000001',
+      'approved',
+      'Reviewed',
+      '41000000-0000-0000-0000-000000000001'
+    )$$,
+  'a pending approval can be resolved'
+);
+select lives_ok(
+  $$select ops.resolve_approval(
+      '31000000-0000-0000-0000-000000000001',
+      'approved',
+      'Reviewed',
+      '41000000-0000-0000-0000-000000000001'
+    )$$,
+  'repeating the same approval decision is idempotent'
+);
+select is(
+  (
+    select count(*)::bigint
+    from ops.job_events
+    where job_id = '21000000-0000-0000-0000-000000000001'
+      and event = 'approval_resolved'
+  ),
+  1::bigint,
+  'idempotent approval records one decision event'
+);
+select throws_ok(
+  $$select ops.resolve_approval(
+      '31000000-0000-0000-0000-000000000001',
+      'rejected',
+      'Changed decision',
+      '41000000-0000-0000-0000-000000000001'
+    )$$,
+  '55000',
+  'approval_already_resolved',
+  'a resolved approval cannot transition to a conflicting decision'
+);
+select lives_ok(
+  $$select ops.record_external_completion(
+      '31000000-0000-0000-0000-000000000001',
+      '41000000-0000-0000-0000-000000000001'
+    )$$,
+  'approved work can be marked externally complete'
+);
+select lives_ok(
+  $$select ops.record_external_completion(
+      '31000000-0000-0000-0000-000000000001',
+      '41000000-0000-0000-0000-000000000001'
+    )$$,
+  'external completion is idempotent'
+);
+select is(
+  (
+    select count(*)::bigint
+    from ops.job_events
+    where job_id = '21000000-0000-0000-0000-000000000001'
+      and event = 'external_action_completed'
+  ),
+  1::bigint,
+  'idempotent external completion records one event'
+);
+
+select ok(
+  jsonb_typeof(ops.get_studio_snapshot()->'agents') = 'array'
+    and jsonb_typeof(ops.get_studio_snapshot()->'jobs') = 'array'
+    and jsonb_typeof(ops.get_studio_snapshot()->'approvals') = 'array'
+    and jsonb_typeof(ops.get_studio_snapshot()->'activity') = 'array',
+  'studio snapshot returns bounded purpose-built collections'
+);
+
+select lives_ok(
+  $$select extensions.dblink_connect(
+      'race-setup',
+      'host=127.0.0.1 port=5432 dbname=postgres user=postgres password=postgres'
+    )$$,
+  'race setup session connects'
+);
+select lives_ok(
+  $test$select extensions.dblink_exec('race-setup', $remote$
+    do $body$
+    begin
+      insert into ops.worker_devices (id, display_name, token_hash, status, capabilities)
+      values
+        ('race-worker-one', 'Race Worker One', repeat('3', 64), 'active', '[]'::jsonb),
+        ('race-worker-two', 'Race Worker Two', repeat('4', 64), 'active', '[]'::jsonb);
+      insert into ops.agents (id, name, role, status)
+      values ('race-agent', 'Race Agent', 'Concurrency fixture', 'Live');
+      insert into ops.workflows (id, kind, subject_type, subject_id, status, current_step)
+      values ('51000000-0000-0000-0000-000000000001', 'ci_race', 'test', 'race', 'active', 'claim');
+      insert into ops.jobs (id, workflow_id, agent_id, kind, status, priority, idempotency_key)
+      values ('52000000-0000-0000-0000-000000000001', '51000000-0000-0000-0000-000000000001', 'race-agent', 'race_claim', 'queued', 1, 'ci-race-claim');
+    end
+    $body$;
+  $remote$)$test$,
+  'race fixtures are committed in an independent session'
+);
+select lives_ok(
+  $$select extensions.dblink_connect(
+      'race-one',
+      'host=127.0.0.1 port=5432 dbname=postgres user=postgres password=postgres'
+    )$$,
+  'first claim session connects'
+);
+select lives_ok(
+  $$select extensions.dblink_connect(
+      'race-two',
+      'host=127.0.0.1 port=5432 dbname=postgres user=postgres password=postgres'
+    )$$,
+  'second claim session connects'
+);
+select is(
+  extensions.dblink_send_query(
+    'race-one',
+    $$select ops.claim_job('race-worker-one', '52000000-0000-0000-0000-000000000001')::text$$
+  ),
+  1,
+  'first worker starts a claim in its own session'
+);
+select is(
+  extensions.dblink_send_query(
+    'race-two',
+    $$select ops.claim_job('race-worker-two', '52000000-0000-0000-0000-000000000001')::text$$
+  ),
+  1,
+  'second worker starts a competing claim in its own session'
+);
+select lives_ok(
+  $$create temporary table claim_race_results (
+      worker text not null,
+      payload jsonb
+    ) on commit drop$$,
+  'claim race result table can be created'
+);
+select lives_ok(
+  $$insert into pg_temp.claim_race_results (worker, payload)
+    select 'race-worker-one', payload::jsonb
+    from extensions.dblink_get_result('race-one') as result(payload text)$$,
+  'first claim result can be collected'
+);
+select lives_ok(
+  $$insert into pg_temp.claim_race_results (worker, payload)
+    select 'race-worker-two', payload::jsonb
+    from extensions.dblink_get_result('race-two') as result(payload text)$$,
+  'second claim result can be collected'
+);
+select is(
+  (select count(*)::bigint from pg_temp.claim_race_results where payload is not null),
+  1::bigint,
+  'exactly one worker wins a simultaneous claim'
+);
+select lives_ok(
+  $test$select extensions.dblink_exec('race-setup', $remote$
+    do $body$
+    begin
+      update ops.agents set current_job_id = null where id = 'race-agent';
+      delete from ops.job_events where job_id = '52000000-0000-0000-0000-000000000001';
+      delete from ops.jobs where id = '52000000-0000-0000-0000-000000000001';
+      delete from ops.workflows where id = '51000000-0000-0000-0000-000000000001';
+      delete from ops.worker_devices where id in ('race-worker-one', 'race-worker-two');
+      delete from ops.agents where id = 'race-agent';
+    end
+    $body$;
+  $remote$)$test$,
+  'race fixtures are cleaned up in the independent session'
+);
+select lives_ok($$select extensions.dblink_disconnect('race-one')$$, 'first claim session disconnects');
+select lives_ok($$select extensions.dblink_disconnect('race-two')$$, 'second claim session disconnects');
+select lives_ok($$select extensions.dblink_disconnect('race-setup')$$, 'race setup session disconnects');
+
+select is(
+  (
+    select count(*)::bigint
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'ops'
+      and p.proname in (
+        'dispatch_work', 'offer_job', 'claim_job', 'heartbeat_job', 'complete_job',
+        'fail_job', 'recover_expired_jobs', 'resolve_approval',
+        'record_external_completion', 'get_studio_snapshot'
+      )
+      and coalesce(array_to_string(p.proconfig, ','), '') like '%search_path=%'
+  ),
+  10::bigint,
+  'every orchestration function pins its search path'
+);
+select is(
+  has_function_privilege('anon', 'ops.dispatch_work()', 'execute'),
+  false,
+  'anon cannot execute orchestration functions'
+);
+select is(
+  has_function_privilege('authenticated', 'ops.dispatch_work()', 'execute'),
+  false,
+  'authenticated cannot execute orchestration functions'
 );
 
 select is(
