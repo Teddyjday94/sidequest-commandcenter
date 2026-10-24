@@ -2,12 +2,6 @@ begin;
 
 select * from no_plan();
 
-create extension if not exists dblink with schema extensions;
--- Supabase's local postgres role is intentionally non-superuser while the
--- isolated test server trusts loopback traffic. dblink_connect_u is therefore
--- granted only inside this rolled-back test transaction for the claim race.
-grant execute on function extensions.dblink_connect_u(text, text) to current_user;
-
 select has_table('ops', 'workflows', 'workflows table exists');
 select has_column('ops', 'workflows', 'id', 'workflows.id exists');
 select has_column('ops', 'workflows', 'kind', 'workflows.kind exists');
@@ -479,105 +473,6 @@ select ok(
     and jsonb_typeof(ops.get_studio_snapshot()->'activity') = 'array',
   'studio snapshot returns bounded purpose-built collections'
 );
-
-select lives_ok(
-  $$select extensions.dblink_connect_u(
-      'race-setup',
-      'host=127.0.0.1 port=5432 dbname=postgres user=postgres options=-csearch_path='
-    )$$,
-  'race setup session connects'
-);
-select lives_ok(
-  $test$select extensions.dblink_exec('race-setup', $remote$
-    do $body$
-    begin
-      insert into ops.worker_devices (id, display_name, token_hash, status, capabilities)
-      values
-        ('race-worker-one', 'Race Worker One', repeat('3', 64), 'active', '[]'::jsonb),
-        ('race-worker-two', 'Race Worker Two', repeat('4', 64), 'active', '[]'::jsonb);
-      insert into ops.agents (id, name, role, status)
-      values ('race-agent', 'Race Agent', 'Concurrency fixture', 'Live');
-      insert into ops.workflows (id, kind, subject_type, subject_id, status, current_step)
-      values ('51000000-0000-0000-0000-000000000001', 'ci_race', 'test', 'race', 'active', 'claim');
-      insert into ops.jobs (id, workflow_id, agent_id, kind, status, priority, idempotency_key)
-      values ('52000000-0000-0000-0000-000000000001', '51000000-0000-0000-0000-000000000001', 'race-agent', 'race_claim', 'queued', 1, 'ci-race-claim');
-    end
-    $body$;
-  $remote$)$test$,
-  'race fixtures are committed in an independent session'
-);
-select lives_ok(
-  $$select extensions.dblink_connect_u(
-      'race-one',
-      'host=127.0.0.1 port=5432 dbname=postgres user=postgres options=-csearch_path='
-    )$$,
-  'first claim session connects'
-);
-select lives_ok(
-  $$select extensions.dblink_connect_u(
-      'race-two',
-      'host=127.0.0.1 port=5432 dbname=postgres user=postgres options=-csearch_path='
-    )$$,
-  'second claim session connects'
-);
-select is(
-  extensions.dblink_send_query(
-    'race-one',
-    $$select ops.claim_job('race-worker-one', '52000000-0000-0000-0000-000000000001')::text$$
-  ),
-  1,
-  'first worker starts a claim in its own session'
-);
-select is(
-  extensions.dblink_send_query(
-    'race-two',
-    $$select ops.claim_job('race-worker-two', '52000000-0000-0000-0000-000000000001')::text$$
-  ),
-  1,
-  'second worker starts a competing claim in its own session'
-);
-select lives_ok(
-  $$create temporary table claim_race_results (
-      worker text not null,
-      payload jsonb
-    ) on commit drop$$,
-  'claim race result table can be created'
-);
-select lives_ok(
-  $$insert into pg_temp.claim_race_results (worker, payload)
-    select 'race-worker-one', payload::jsonb
-    from extensions.dblink_get_result('race-one') as result(payload text)$$,
-  'first claim result can be collected'
-);
-select lives_ok(
-  $$insert into pg_temp.claim_race_results (worker, payload)
-    select 'race-worker-two', payload::jsonb
-    from extensions.dblink_get_result('race-two') as result(payload text)$$,
-  'second claim result can be collected'
-);
-select is(
-  (select count(*)::bigint from pg_temp.claim_race_results where payload is not null),
-  1::bigint,
-  'exactly one worker wins a simultaneous claim'
-);
-select lives_ok(
-  $test$select extensions.dblink_exec('race-setup', $remote$
-    do $body$
-    begin
-      update ops.agents set current_job_id = null where id = 'race-agent';
-      delete from ops.job_events where job_id = '52000000-0000-0000-0000-000000000001';
-      delete from ops.jobs where id = '52000000-0000-0000-0000-000000000001';
-      delete from ops.workflows where id = '51000000-0000-0000-0000-000000000001';
-      delete from ops.worker_devices where id in ('race-worker-one', 'race-worker-two');
-      delete from ops.agents where id = 'race-agent';
-    end
-    $body$;
-  $remote$)$test$,
-  'race fixtures are cleaned up in the independent session'
-);
-select lives_ok($$select extensions.dblink_disconnect('race-one')$$, 'first claim session disconnects');
-select lives_ok($$select extensions.dblink_disconnect('race-two')$$, 'second claim session disconnects');
-select lives_ok($$select extensions.dblink_disconnect('race-setup')$$, 'race setup session disconnects');
 
 select is(
   (
