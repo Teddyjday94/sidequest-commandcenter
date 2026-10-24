@@ -3,6 +3,10 @@ begin;
 select * from no_plan();
 
 create extension if not exists dblink with schema extensions;
+-- Supabase's local postgres role is intentionally non-superuser while the
+-- isolated test server trusts loopback traffic. dblink_connect_u is therefore
+-- granted only inside this rolled-back test transaction for the claim race.
+grant execute on function extensions.dblink_connect_u(text, text) to current_user;
 
 select has_table('ops', 'workflows', 'workflows table exists');
 select has_column('ops', 'workflows', 'id', 'workflows.id exists');
@@ -477,9 +481,9 @@ select ok(
 );
 
 select lives_ok(
-  $$select extensions.dblink_connect(
+  $$select extensions.dblink_connect_u(
       'race-setup',
-      'host=127.0.0.1 port=5432 dbname=postgres user=postgres password=postgres'
+      'host=127.0.0.1 port=5432 dbname=postgres user=postgres options=-csearch_path='
     )$$,
   'race setup session connects'
 );
@@ -503,16 +507,16 @@ select lives_ok(
   'race fixtures are committed in an independent session'
 );
 select lives_ok(
-  $$select extensions.dblink_connect(
+  $$select extensions.dblink_connect_u(
       'race-one',
-      'host=127.0.0.1 port=5432 dbname=postgres user=postgres password=postgres'
+      'host=127.0.0.1 port=5432 dbname=postgres user=postgres options=-csearch_path='
     )$$,
   'first claim session connects'
 );
 select lives_ok(
-  $$select extensions.dblink_connect(
+  $$select extensions.dblink_connect_u(
       'race-two',
-      'host=127.0.0.1 port=5432 dbname=postgres user=postgres password=postgres'
+      'host=127.0.0.1 port=5432 dbname=postgres user=postgres options=-csearch_path='
     )$$,
   'second claim session connects'
 );
