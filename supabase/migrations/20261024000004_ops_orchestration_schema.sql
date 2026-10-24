@@ -1,6 +1,8 @@
 -- Durable, private orchestration state for the SideQuest agent studio.
 -- The ops schema remains outside the Data API and grants no browser role access.
 
+create extension if not exists http with schema extensions;
+
 create table ops.worker_devices (
   id text primary key,
   display_name text not null,
