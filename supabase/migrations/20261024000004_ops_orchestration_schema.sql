@@ -3,6 +3,140 @@
 
 create extension if not exists http with schema extensions;
 
+-- Repair the legacy scout definition now that its HTTP dependency is explicit.
+-- Qualifying the city lookup avoids a PL/pgSQL variable/column collision on PG17.
+create or replace function ops.run_scout(max_pages int default 3) returns text
+language plpgsql set search_path = '' as $$
+declare
+  t record;
+  resp record;
+  j jsonb;
+  it jsonb;
+  nm text;
+  lead_city text;
+  url text;
+  added int := 0;
+  pages int := 0;
+  blocked boolean := false;
+  names text[] := array[]::text[];
+  s int;
+begin
+  perform extensions.http_set_curlopt('CURLOPT_TIMEOUT', '25');
+  for t in
+    select * from ops.scout_targets where enabled
+    order by (niche in ('Pressure washing', 'Lawn care')) desc, last_run nulls first, near desc, id
+    limit max_pages
+  loop
+    pages := pages + 1;
+    select status, content into resp from extensions.http(('GET',
+      'https://www.homeadvisor.com/tloc/' || t.city || '-LA/' || t.category,
+      array[
+        extensions.http_header(
+          'User-Agent',
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36'
+        ),
+        extensions.http_header('Accept', 'text/html')
+      ],
+      null,
+      null
+    )::extensions.http_request);
+    update ops.scout_targets
+      set last_run = now(),
+          last_status = resp.status,
+          enabled = case when resp.status = 404 then false else enabled end
+      where id = t.id;
+    if resp.status in (403, 429, 503) then
+      blocked := true;
+      exit;
+    end if;
+    if resp.status <> 200 then
+      continue;
+    end if;
+
+    select m[1]::jsonb into j
+    from regexp_matches(resp.content, 'ld\+json">(.*?)</script>', 'g') m
+    where m[1] like '%SearchResultsPage%'
+      and pg_input_is_valid(m[1], 'jsonb')
+    limit 1;
+    if j is null then
+      continue;
+    end if;
+
+    for it in
+      select jsonb_array_elements(coalesce(j->'mainEntity'->'itemListElement', '[]'::jsonb))
+    loop
+      nm := ops.decode_html(it->'item'->>'name');
+      lead_city := coalesce(
+        nullif(it->'item'->'address'->>'addressLocality', ''),
+        replace(t.city, '-', ' ')
+      );
+      url := it->'item'->>'url';
+      if nm = '' or url is null then
+        continue;
+      end if;
+      if exists (
+        select 1 from ops.leads where ops.norm_name(business) = ops.norm_name(nm)
+      ) then
+        continue;
+      end if;
+      if exists (
+        select 1 from ops.clients where ops.norm_name(name) = ops.norm_name(nm)
+      ) then
+        continue;
+      end if;
+      s := 50
+        + case when t.niche in ('Pressure washing', 'Lawn care') then 8 else 0 end
+        + case when exists (
+            select 1
+            from ops.near_cities nc
+            where nc.city = lower(it->'item'->'address'->>'addressLocality')
+          ) then 8 else 0 end;
+      insert into ops.leads (
+        id, business, niche, area, found_on, profile_url, score, heat, stage, next_step
+      ) values (
+        ops.next_lead_id(),
+        nm,
+        t.niche,
+        lead_city,
+        'HomeAdvisor',
+        'https://www.homeadvisor.com' || url,
+        s,
+        ops.heat_for(s),
+        'New',
+        'Contact Finder: check Google for a website and phone'
+      ) on conflict do nothing;
+      if found then
+        added := added + 1;
+        names := names || nm;
+      end if;
+    end loop;
+  end loop;
+
+  insert into ops.activity (agent, action) values (
+    'Lead Scout',
+    case
+      when blocked then
+        'HomeAdvisor asked for a bot check, so the scout stopped for today. It will try again next run.'
+      else
+        'Checked ' || pages || ' HomeAdvisor pages and added ' || added || ' new leads'
+        || case
+          when added > 0 then ': ' || array_to_string(names[1:5], ', ')
+            || case when added > 5 then ' and more.' else '.' end
+          else '.'
+        end
+    end
+  );
+  update ops.agents
+    set last_run = (now() at time zone 'America/Chicago')::date,
+        status = 'Live',
+        last_result = case
+          when blocked then 'Blocked by a bot check today. Will retry next run.'
+          else 'Added ' || added || ' new leads from ' || pages || ' HomeAdvisor pages.'
+        end
+    where id = 'scout';
+  return 'pages=' || pages || ' added=' || added || ' blocked=' || blocked;
+end $$;
+
 create table ops.worker_devices (
   id text primary key,
   display_name text not null,
