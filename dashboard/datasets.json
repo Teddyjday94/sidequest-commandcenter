@@ -1,0 +1,57 @@
+{
+  "leads": {
+    "source": {
+      "kind": "query",
+      "connector": "Supabase",
+      "tool": "execute_sql",
+      "args": {
+        "project_id": "taskvfzqgpqxpdifmxru",
+        "query": "select id, business, niche, area, rating, website, email, phone, facebook, contact, score, heat, stage, hook, next_step, you_action, mockup_url, call_script, dm_text, deal_value from ops.leads where stage <> 'Opted out' order by score desc, id"
+      }
+    }
+  },
+  "agents": {
+    "source": {
+      "kind": "query",
+      "connector": "Supabase",
+      "tool": "execute_sql",
+      "args": {
+        "project_id": "taskvfzqgpqxpdifmxru",
+        "query": "select id, ord, name, role, status, schedule, next_run, last_run, last_result, hands_to, uses_ai from ops.agents order by ord"
+      }
+    }
+  },
+  "activity": {
+    "source": {
+      "kind": "query",
+      "connector": "Supabase",
+      "tool": "execute_sql",
+      "args": {
+        "project_id": "taskvfzqgpqxpdifmxru",
+        "query": "select id, at, agent, action from ops.activity order by at desc, id desc limit 60"
+      }
+    }
+  },
+  "posts": {
+    "source": {
+      "kind": "query",
+      "connector": "Supabase",
+      "tool": "execute_sql",
+      "args": {
+        "project_id": "taskvfzqgpqxpdifmxru",
+        "query": "select id, date, platforms, pillar, format, hook, idea, caption, cta, asset, status from ops.posts where date >= current_date - 7 order by date"
+      }
+    }
+  },
+  "today": {
+    "source": {
+      "kind": "query",
+      "connector": "Supabase",
+      "tool": "execute_sql",
+      "args": {
+        "project_id": "taskvfzqgpqxpdifmxru",
+        "query": "select id, type, item, who, agent, priority from ops.todos order by priority, type, id"
+      }
+    }
+  }
+}

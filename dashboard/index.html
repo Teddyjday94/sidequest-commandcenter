@@ -1,0 +1,364 @@
+<style>
+.sq { display: grid; gap: var(--cds-gap-xl); font-family: var(--font-anthropic-sans); }
+.sq-head h1 { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0 0 var(--cds-gap-xs); }
+.sq-head p { margin: 0; color: var(--color-fg-muted); font-size: var(--cds-font-size-body); }
+.sq-head b { color: var(--color-fg); font-weight: 600; }
+.sq-h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0 0 var(--cds-gap-xs); }
+.sq-note { margin: 0 0 var(--cds-gap-md); color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+.sq-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); }
+.sq-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr)); gap: var(--cds-gap-md); }
+.sq-kpi .lbl { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.sq-kpi .num { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); font-variant-numeric: tabular-nums; margin-top: var(--cds-gap-xs); min-height: 1.2em; }
+.sq-agents { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: var(--cds-gap-md); }
+.sq-agent { position: relative; display: flex; flex-direction: column; gap: var(--cds-gap-sm); border-top: 3px solid var(--ac); }
+.sq-agent .top { display: flex; align-items: center; justify-content: space-between; gap: var(--cds-gap-sm); }
+.sq-agent .step { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); font-variant-numeric: tabular-nums; }
+.sq-agent .nm { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; }
+.sq-agent .role { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: 0; }
+.sq-agent .res { font-size: var(--cds-font-size-body); margin: 0; flex: 1; }
+.sq-agent dl { display: grid; grid-template-columns: auto 1fr; gap: 2px var(--cds-gap-sm); margin: 0; font-size: var(--cds-font-size-caption); }
+.sq-agent dt { color: var(--color-fg-muted); }
+.sq-agent dd { margin: 0; }
+.sq-pill { font-size: var(--cds-font-size-caption); padding: 2px 8px; border-radius: 999px; border: 1px solid var(--color-border-line); white-space: nowrap; }
+.sq-pill.live { color: var(--color-ok); border-color: currentColor; }
+.sq-pill.next { color: var(--color-warn); border-color: currentColor; }
+.sq-pill.free { color: var(--color-fg-muted); }
+.sq-pill.dot::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-right: 6px; vertical-align: 1px; }
+.sq-funnel { display: grid; gap: var(--cds-gap-sm); min-height: 12rem; }
+.sq-frow { display: grid; grid-template-columns: 7.5rem 1fr 2.5rem; align-items: center; gap: var(--cds-gap-sm); font-size: var(--cds-font-size-caption); }
+.sq-frow .bar { height: 18px; border-radius: 4px; background: var(--cds-chart-grid); position: relative; overflow: hidden; }
+.sq-frow .fill { position: absolute; inset: 0 auto 0 0; border-radius: 4px; }
+.sq-frow .ct { text-align: right; font-variant-numeric: tabular-nums; }
+.sq-controls { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); margin-bottom: var(--cds-gap-md); }
+.sq-controls input, .sq-controls select { font: inherit; font-size: var(--cds-font-size-caption); padding: 6px 10px; border-radius: var(--cds-radius); border: 1px solid var(--color-border-line); background: var(--color-bg); color: var(--color-fg); }
+.sq-controls input { flex: 1; min-width: 10rem; }
+.sq-tbox { max-height: 32rem; overflow: auto; }
+.sq-table { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; }
+.sq-table th { position: sticky; top: 0; background: var(--color-panel); text-align: left; font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); padding: 0; border-bottom: 1px solid var(--color-border-line); }
+.sq-table th button { all: unset; cursor: pointer; display: block; padding: 8px 10px; }
+.sq-table td { padding: 8px 10px; border-bottom: 1px solid var(--color-border-line); vertical-align: top; }
+.sq-table td.num, .sq-table th.num { text-align: right; }
+.sq-heat { font-weight: 600; }
+.sq-heat.Hot { color: var(--color-bad); }
+.sq-heat.Warm { color: var(--color-warn); }
+.sq-heat.Cold { color: var(--color-fg-muted); }
+.sq-biz { font-weight: 600; }
+.sq-sub { color: var(--color-fg-muted); }
+@media (max-width: 640px) { .sq-hide-sm { display: none; } }
+[data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
+[data-dash-source-state=empty] { color: transparent; }
+.sq-fail { display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); min-height: 4rem; }
+.sq-fail::before { content: ""; width: .375rem; height: .375rem; border-radius: 50%; background: var(--color-bad); }
+</style>
+
+<div class="sq">
+  <header class="sq-head" id="top">
+    <h1>Sidequest Command Center</h1>
+    <p id="takeaway"><span class="dash-skeleton" data-source="pipeline" data-field="found" data-row="0">—</span> leads in the pipeline, <span class="dash-skeleton" data-source="pipeline" data-field="hot" data-row="0">—</span> of them hot. <span class="dash-skeleton" data-source="agents" data-field="name" data-where="id=sales">—</span> works the list every weekday morning.</p>
+  </header>
+
+  <section id="scoreboard" class="sq-kpis" aria-label="Pipeline totals">
+    <div class="sq-card sq-kpi"><div class="lbl">Leads found</div><div class="num dash-skeleton" data-source="pipeline" data-field="found" data-row="0">—</div></div>
+    <div class="sq-card sq-kpi"><div class="lbl">Hot leads</div><div class="num dash-skeleton" data-source="pipeline" data-field="hot" data-row="0">—</div></div>
+    <div class="sq-card sq-kpi"><div class="lbl">Contacted</div><div class="num dash-skeleton" data-source="pipeline" data-field="contacted" data-row="0">—</div></div>
+    <div class="sq-card sq-kpi"><div class="lbl">Replied</div><div class="num dash-skeleton" data-source="pipeline" data-field="replied" data-row="0">—</div></div>
+    <div class="sq-card sq-kpi"><div class="lbl">Deals won</div><div class="num dash-skeleton" data-source="pipeline" data-field="won" data-row="0">—</div></div>
+    <div class="sq-card sq-kpi"><div class="lbl">Proposals out ($)</div><div class="num dash-skeleton" data-source="pipeline" data-field="pipeline_value" data-row="0">—</div></div>
+    <div class="sq-card sq-kpi"><div class="lbl">Won ($)</div><div class="num dash-skeleton" data-source="pipeline" data-field="won_value" data-row="0">—</div></div>
+  </section>
+
+  <section id="waiting" class="sq-card">
+    <h2 class="sq-h2">Waiting on you</h2>
+    <p class="sq-note">Rebuilt by the Chief of Staff every weekday morning. The agents never send or post anything, so these are yours.</p>
+    <table class="sq-table" id="today-table" data-source="today" data-row-key="id">
+      <thead><tr><th data-field="type"><button tabindex="-1">Do</button></th><th data-field="who"><button tabindex="-1">For</button></th><th data-field="item"><button tabindex="-1">What</button></th><th data-field="agent" class="sq-hide-sm"><button tabindex="-1">From</button></th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section id="crew">
+    <h2 class="sq-h2">The crew</h2>
+    <p class="sq-note">Each agent does one job and hands its work to the next. Nothing goes out under your name until you send it.</p>
+    <div class="sq-agents" id="agents-grid" data-source="agents"></div>
+  </section>
+
+  <section id="pipeline" class="sq-card">
+    <h2 class="sq-h2">Pipeline by stage</h2>
+    <p class="sq-note">Where every lead sits right now, from found to won.</p>
+    <div class="sq-funnel" id="funnel" data-source="stages"></div>
+  </section>
+
+  <section id="leads" class="sq-card">
+    <h2 class="sq-h2">Leads</h2>
+    <p class="sq-note">Found by the Lead Scout and checked by the Site Auditor. Score is out of 100: no website plus strong reviews ranks highest. The pitch hook is the opening line for outreach. Click a header to sort.</p>
+    <div class="sq-controls">
+      <input id="q" type="search" placeholder="Search leads" aria-label="Search leads">
+      <select id="niche" aria-label="Niche"><option value="">All niches</option></select>
+      <select id="heat" aria-label="Heat"><option value="">Hot, warm and cold</option><option>Hot</option><option>Warm</option><option>Cold</option></select>
+    </div>
+    <div class="sq-tbox">
+      <table class="sq-table" id="lead-table" data-source="leads" data-row-key="id">
+        <thead><tr>
+          <th data-field="business"><button data-sort="business">Business</button></th>
+          <th data-field="niche" class="sq-hide-sm"><button data-sort="niche">Niche</button></th>
+          <th data-field="heat"><button data-sort="heat">Heat</button></th>
+          <th data-field="score" class="num"><button data-sort="score">Score</button></th>
+          <th data-field="website" class="sq-hide-sm"><button data-sort="website">Website</button></th>
+          <th data-field="rating" class="sq-hide-sm"><button data-sort="rating">Rating</button></th>
+          <th data-field="contact" class="sq-hide-sm"><button data-sort="contact">Contact</button></th>
+          <th data-field="mockup_url" class="sq-hide-sm"><button data-sort="mockup_url">Mockup</button></th>
+          <th data-field="hook" class="sq-hide-sm"><button data-sort="hook">Pitch hook</button></th>
+          <th data-field="stage"><button data-sort="stage">Stage</button></th>
+          <th data-field="next_step" class="sq-hide-sm"><button data-sort="next_step">Next step</button></th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="posts" class="sq-card">
+    <h2 class="sq-h2">This week's posts</h2>
+    <p class="sq-note">Planned by the Content Agent every Sunday. Captions are drafts: tweak and post them yourself.</p>
+    <div class="sq-tbox">
+      <table class="sq-table" id="posts-table" data-source="posts" data-row-key="id">
+        <thead><tr><th data-field="date"><button tabindex="-1">Day</button></th><th data-field="platforms" class="sq-hide-sm"><button tabindex="-1">Where</button></th><th data-field="hook"><button tabindex="-1">Hook</button></th><th data-field="caption" class="sq-hide-sm"><button tabindex="-1">Caption</button></th><th data-field="status"><button tabindex="-1">Status</button></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="activity" class="sq-card">
+    <h2 class="sq-h2">Activity log</h2>
+    <p class="sq-note">What the agents did, newest first.</p>
+    <table class="sq-table" id="activity-table" data-source="activity" data-row-key="id">
+      <thead><tr><th data-field="at"><button tabindex="-1">When</button></th><th data-field="agent"><button tabindex="-1">Agent</button></th><th data-field="action"><button tabindex="-1">What happened</button></th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+</div>
+
+<script>
+const sbRows = ({ answer }) => {
+  if (answer && answer.error) throw new Error(typeof answer.error === 'string' ? answer.error : (answer.error.message || 'Supabase query failed'));
+  let txt = typeof answer === 'string' ? answer : (answer && answer.result) || '';
+  if (typeof txt === 'string' && txt.trim().startsWith('{')) { try { const o = JSON.parse(txt); if (o && typeof o.result === 'string') txt = o.result; else if (o && o.error) throw new Error(o.error.message || 'Supabase query failed'); } catch (e) { if (e.message && !/JSON/.test(e.message)) throw e; } }
+  const m = txt.match(/<(untrusted-data-[\w-]+)>\s*(\[[\s\S]*\])\s*<\/\1>/);
+  if (!m) throw new Error(txt.slice(0, 300) || 'Empty answer from Supabase');
+  return JSON.parse(m[2]);
+};
+['leads', 'agents', 'activity', 'posts', 'today'].forEach((id) => dash.loader(id, { description: 'Reads the rows out of Supabase\'s answer (it wraps them in a short note).', fn: sbRows }));
+</script>
+<script>
+
+dash.calc('pipeline', {
+  title: 'Pipeline totals',
+  description: 'Counts leads overall, hot leads, and leads at or past each outreach stage.',
+  inputs: ['leads'],
+  fn: (leads) => {
+    return [{
+      found: leads.length,
+      hot: leads.filter((l) => l.heat === 'Hot').length,
+      contacted: leads.filter((l) => ['Contacted', 'Replied', 'Proposal sent', 'Won'].includes(l.stage)).length,
+      replied: leads.filter((l) => ['Replied', 'Proposal sent', 'Won'].includes(l.stage)).length,
+      won: leads.filter((l) => l.stage === 'Won').length,
+      pipeline_value: leads.filter((l) => l.stage === 'Proposal sent').reduce((s, l) => s + (+l.deal_value || 0), 0),
+      won_value: leads.filter((l) => l.stage === 'Won').reduce((s, l) => s + (+l.deal_value || 0), 0),
+    }];
+  },
+});
+dash.calc('stages', {
+  title: 'Leads per stage',
+  description: 'Number of leads currently sitting at each pipeline stage.',
+  inputs: ['leads'],
+  fn: (leads) => ['New', 'Audited', 'Mockup ready', 'Contacted', 'Replied', 'Proposal sent', 'Won'].map((stage) => ({ stage, count: leads.filter((l) => l.stage === stage).length })),
+});
+</script>
+
+<script>
+(() => {
+  const fmt = d3.format(',');
+  const dayFmt = d3.timeFormat('%b %-d');
+  const set = (el, txt) => { el.textContent = txt; el.classList.remove('dash-skeleton'); };
+
+  const fillMarks = () => {
+    document.querySelectorAll('#dash-root [data-source="pipeline"][data-field]').forEach((el) => {
+      const p = dash.data('pipeline');
+      if (p.status === 'ok' && p.data[0]) { const f = el.dataset.field; set(el, (f.endsWith('_value') ? '$' : '') + fmt(p.data[0][f])); }
+      else if (p.status === 'error') set(el, '—');
+    });
+  };
+
+  const pillClass = (s) => s === 'Ran once' || s === 'Live' ? 'live dot' : s === 'Next up' ? 'next dot' : '';
+
+  const drawAgents = () => {
+    const a = dash.data('agents');
+    const grid = document.getElementById('agents-grid');
+    const take = document.querySelector('#takeaway [data-source="agents"]');
+    if (a.status !== 'ok') {
+      grid.replaceChildren();
+      if (a.status === 'error') { const f = document.createElement('div'); f.className = 'sq-fail'; f.textContent = 'Failed to load'; grid.append(f); }
+      else grid.classList.add('dash-skeleton');
+      if (take && a.status === 'error') set(take, '—');
+      return;
+    }
+    grid.classList.remove('dash-skeleton');
+    const rows = [...a.data].sort((x, y) => (+x.ord || 0) - (+y.ord || 0));
+    grid.replaceChildren(...rows.map((r, i) => {
+      const card = document.createElement('article');
+      card.className = 'sq-card sq-agent'; card.id = 'agent-' + r.id;
+      card.style.setProperty('--ac', dash.colors[i % dash.colors.length]);
+      const w = 'id=' + r.id;
+      const mk = (tag, cls, field, txt) => { const el = document.createElement(tag); if (cls) el.className = cls; el.dataset.source = 'agents'; el.dataset.field = field; el.dataset.where = w; el.textContent = txt ?? ''; return el; };
+      const top = document.createElement('div'); top.className = 'top';
+      const step = document.createElement('span'); step.className = 'step'; step.textContent = 'Step ' + (i + 1);
+      const pills = document.createElement('span'); pills.style.display = 'flex'; pills.style.gap = '6px';
+      if (r.uses_ai === false) { const fp = document.createElement('span'); fp.className = 'sq-pill free'; fp.textContent = 'Free, no Claude'; pills.append(fp); }
+      pills.append(mk('span', 'sq-pill ' + pillClass(r.status), 'status', r.status));
+      top.append(step, pills);
+      const dl = document.createElement('dl');
+      const row = (label, field, val) => { const dt = document.createElement('dt'); dt.textContent = label; const dd = field ? mk('dd', '', field, val) : document.createElement('dd'); dd.textContent = val; dl.append(dt, dd); };
+      row('Runs', 'schedule', r.schedule);
+      if (r.next_run) row('Next run', 'next_run', r.next_run);
+      if (r.last_run) row('Last run', null, dayFmt(new Date(String(r.last_run).slice(0, 10) + 'T12:00:00')));
+      row('Hands to', 'hands_to', r.hands_to);
+      card.append(top, mk('h3', 'nm', 'name', r.name), mk('p', 'role', 'role', r.role), mk('p', 'res', 'last_result', r.last_result), dl);
+      return card;
+    }));
+    if (take) { const r = a.data.find((x) => x.id === 'sales'); set(take, r ? r.name : '—'); }
+  };
+
+  const drawFunnel = () => {
+    const box = document.getElementById('funnel');
+    const s = dash.data('stages');
+    if (s.status !== 'ok') {
+      box.replaceChildren();
+      if (s.status === 'error') { const f = document.createElement('div'); f.className = 'sq-fail'; f.textContent = 'Failed to load'; box.append(f); }
+      else box.classList.add('dash-skeleton');
+      return;
+    }
+    box.classList.remove('dash-skeleton');
+    const max = d3.max(s.data, (d) => d.count) || 1;
+    box.replaceChildren(...s.data.map((d, i) => {
+      const row = document.createElement('div'); row.className = 'sq-frow';
+      const lbl = document.createElement('span'); lbl.textContent = d.stage;
+      const bar = document.createElement('div'); bar.className = 'bar';
+      const fill = document.createElement('div'); fill.className = 'fill';
+      fill.style.width = `${(d.count / max) * 100}%`;
+      fill.style.background = d.count ? dash.colors[i % dash.colors.length] : 'transparent';
+      bar.append(fill);
+      const ct = document.createElement('span'); ct.className = 'ct';
+      ct.dataset.source = 'stages'; ct.dataset.field = 'count'; ct.dataset.where = 'stage=' + encodeURIComponent(d.stage);
+      ct.textContent = fmt(d.count);
+      row.append(lbl, bar, ct);
+      return row;
+    }));
+  };
+
+  // Leads table
+  const q = document.getElementById('q');
+  const nicheSel = document.getElementById('niche');
+  const heatSel = document.getElementById('heat');
+  let sortKey = 'score', sortDir = -1;
+  const heatRank = { Hot: 3, Warm: 2, Cold: 1 };
+  document.querySelectorAll('#lead-table th button').forEach((b) => b.addEventListener('click', () => {
+    const k = b.dataset.sort;
+    if (sortKey === k) sortDir = -sortDir; else { sortKey = k; sortDir = (k === 'score' || k === 'heat') ? -1 : 1; }
+    drawLeads();
+  }));
+  [q, nicheSel, heatSel].forEach((el) => el.addEventListener('input', () => drawLeads()));
+
+  const drawLeads = () => {
+    const tb = document.querySelector('#lead-table tbody');
+    const L = dash.data('leads');
+    document.querySelectorAll('#lead-table th').forEach((th) => {
+      const k = th.querySelector('button').dataset.sort;
+      if (k === sortKey) th.setAttribute('aria-sort', sortDir > 0 ? 'ascending' : 'descending'); else th.removeAttribute('aria-sort');
+    });
+    if (L.status !== 'ok') {
+      tb.replaceChildren();
+      if (L.status === 'error') { const tr = tb.insertRow(); const td = tr.insertCell(); td.colSpan = 11; td.className = 'sq-fail'; td.textContent = 'Failed to load'; }
+      return;
+    }
+    const niches = [...new Set(L.data.map((r) => r.niche))].sort();
+    const cur = nicheSel.value;
+    nicheSel.replaceChildren(new Option('All niches', ''), ...niches.map((n) => new Option(n)));
+    nicheSel.value = niches.includes(cur) ? cur : '';
+    const term = q.value.trim().toLowerCase();
+    const rows = L.data.filter((r) =>
+      (!nicheSel.value || r.niche === nicheSel.value) &&
+      (!heatSel.value || r.heat === heatSel.value) &&
+      (!term || Object.values(r).join(' ').toLowerCase().includes(term))
+    ).sort((a, b) => {
+      const va = sortKey === 'heat' ? heatRank[a.heat] : sortKey === 'score' ? +a.score : String(a[sortKey] || '');
+      const vb = sortKey === 'heat' ? heatRank[b.heat] : sortKey === 'score' ? +b.score : String(b[sortKey] || '');
+      return (va > vb ? 1 : va < vb ? -1 : 0) * sortDir;
+    });
+    tb.replaceChildren(...rows.map((r) => {
+      const tr = document.createElement('tr');
+      tr.dataset.key = r.id;
+      const td = (txt, cls) => { const c = document.createElement('td'); if (cls) c.className = cls; c.textContent = txt; tr.append(c); return c; };
+      const biz = td('', '');
+      const nm = document.createElement('div'); nm.className = 'sq-biz'; nm.textContent = r.business;
+      const ar = document.createElement('div'); ar.className = 'sq-sub'; ar.textContent = r.area;
+      biz.append(nm, ar);
+      td(r.niche, 'sq-hide-sm');
+      const h = td('', ''); const hs = document.createElement('span'); hs.className = 'sq-heat ' + r.heat; hs.textContent = r.heat; h.append(hs);
+      td(fmt(+r.score), 'num');
+      td(r.website, 'sq-hide-sm');
+      td(r.rating || '—', 'sq-hide-sm');
+      td(r.contact, 'sq-hide-sm');
+      const mk = td('', 'sq-hide-sm');
+      if (r.mockup_url && /^https:\/\//.test(r.mockup_url)) { const a = document.createElement('a'); a.href = r.mockup_url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Open'; mk.append(a); } else mk.textContent = '—';
+      const hk = td(r.hook || '—', 'sq-hide-sm'); hk.style.minWidth = '16rem';
+      [['Call script', r.call_script], ['Facebook message', r.dm_text]].forEach(([lbl, txt]) => {
+        if (!txt) return;
+        const d = document.createElement('details'); const s = document.createElement('summary'); s.textContent = lbl;
+        const p = document.createElement('div'); p.style.whiteSpace = 'pre-wrap'; p.style.marginTop = '4px'; p.textContent = txt;
+        d.append(s, p); hk.append(d);
+      });
+      td(r.stage, '');
+      td(r.next_step, 'sq-hide-sm');
+      return tr;
+    }));
+  };
+
+  const drawActivity = () => {
+    const tb = document.querySelector('#activity-table tbody');
+    const A = dash.data('activity');
+    if (A.status !== 'ok') {
+      tb.replaceChildren();
+      if (A.status === 'error') { const tr = tb.insertRow(); const td = tr.insertCell(); td.colSpan = 3; td.className = 'sq-fail'; td.textContent = 'Failed to load'; }
+      return;
+    }
+    const tf = d3.timeFormat('%b %-d, %-I:%M %p');
+    const rows = [...A.data].sort((a, b) => new Date(b.at) - new Date(a.at));
+    tb.replaceChildren(...rows.map((r) => {
+      const tr = document.createElement('tr'); tr.dataset.key = r.id;
+      [tf(new Date(r.at)), r.agent, r.action].forEach((t, i) => { const c = document.createElement('td'); c.textContent = t; if (i === 0) c.style.whiteSpace = 'nowrap'; tr.append(c); });
+      return tr;
+    }));
+  };
+
+  const simpleTable = (id, sel, cols, sorter) => {
+    const tb = document.querySelector(sel + ' tbody');
+    const D = dash.data(id);
+    if (D.status !== 'ok') {
+      tb.replaceChildren();
+      if (D.status === 'error') { const tr = tb.insertRow(); const td = tr.insertCell(); td.colSpan = cols.length; td.className = 'sq-fail'; td.textContent = 'Failed to load'; }
+      return;
+    }
+    const rows = sorter ? [...D.data].sort(sorter) : D.data;
+    if (!rows.length) { const tr = document.createElement('tr'); const td = document.createElement('td'); td.colSpan = cols.length; td.className = 'sq-sub'; td.textContent = 'Nothing here right now.'; tr.append(td); tb.replaceChildren(tr); return; }
+    tb.replaceChildren(...rows.map((r) => {
+      const tr = document.createElement('tr'); tr.dataset.key = r.id;
+      cols.forEach(([f, cls, fmtFn]) => { const c = document.createElement('td'); if (cls) c.className = cls; c.textContent = fmtFn ? fmtFn(r[f], r) : (r[f] ?? ''); tr.append(c); });
+      return tr;
+    }));
+  };
+  const postDay = d3.timeFormat('%a %b %-d');
+  const drawToday = () => simpleTable('today', '#today-table', [['type', 'sq-biz'], ['who', ''], ['item', ''], ['agent', 'sq-hide-sm sq-sub']], (a, b) => a.priority - b.priority);
+  const drawPosts = () => simpleTable('posts', '#posts-table', [['date', '', (v) => postDay(new Date(v + 'T12:00:00'))], ['platforms', 'sq-hide-sm sq-sub'], ['hook', 'sq-biz'], ['caption', 'sq-hide-sm'], ['status', '']], (a, b) => a.date < b.date ? -1 : 1);
+
+  dash.onData(() => { fillMarks(); drawAgents(); drawFunnel(); drawLeads(); drawActivity(); drawToday(); drawPosts(); });
+})();
+</script>
