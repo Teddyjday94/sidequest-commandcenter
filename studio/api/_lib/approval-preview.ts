@@ -88,9 +88,11 @@ export function approvalPreview(actionType: string, value: unknown): ApprovalPre
   const rules = rulesByAction[actionType] ?? sharedDestination
   const fields: ApprovalPreviewFieldDTO[] = []
   for (const rule of rules) {
-    const key = rule.keys.find((candidate) => candidate in source)
-    if (!key) continue
-    const safeValue = boundedScalar(source[key], rule.maximumLength ?? 500)
+    let safeValue: string | null = null
+    for (const key of rule.keys) {
+      safeValue = boundedScalar(source[key], rule.maximumLength ?? 500)
+      if (safeValue !== null) break
+    }
     if (safeValue !== null) fields.push({ label: rule.label, value: safeValue })
   }
   return { fields: fields.slice(0, 8), complete: completeFor(actionType, source) }
