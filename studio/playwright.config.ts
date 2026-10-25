@@ -7,7 +7,7 @@ export default defineConfig({
   use: {
     baseURL: 'http://127.0.0.1:4199',
     browserName: 'chromium',
-    channel: 'chrome',
+    ...(process.env.CI ? {} : { channel: 'chrome' as const }),
     colorScheme: 'dark',
     reducedMotion: 'reduce',
     trace: 'retain-on-failure',

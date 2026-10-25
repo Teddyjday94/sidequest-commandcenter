@@ -13,6 +13,66 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  studio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: studio
+
+    steps:
+      - name: Check out the feature branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: studio/package-lock.json
+
+      - name: Install Studio dependencies
+        run: npm ci
+
+      - name: Install the isolated Chromium test browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Studio unit tests
+        run: npm test
+
+      - name: Run strict TypeScript checks
+        run: npm run typecheck
+
+      - name: Build the Studio
+        run: npm run build
+
+      - name: Run Studio browser tests
+        run: npm run test:browser
+
+  windows-runner:
+    runs-on: windows-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out the feature branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Test runner with PowerShell 7
+        shell: pwsh
+        run: ./tests/Runner.Tests.ps1
+
+      - name: Test broker with PowerShell 7
+        shell: pwsh
+        run: ./tests/Broker.Tests.ps1
+
+      - name: Test runner with Windows PowerShell 5.1
+        shell: cmd
+        run: powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File .\tests\Runner.Tests.ps1
+
+      - name: Test broker with Windows PowerShell 5.1
+        shell: cmd
+        run: powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File .\tests\Broker.Tests.ps1
+
   pgtap:
     runs-on: ubuntu-latest
     timeout-minutes: 20
