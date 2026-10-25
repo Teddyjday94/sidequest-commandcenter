@@ -472,6 +472,60 @@ begin
 end
 $$;
 
+create or replace function ops.recover_expired_jobs() returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  expired_job ops.jobs%rowtype;
+  next_status text;
+  recovered integer := 0;
+begin
+  for expired_job in
+    select j.*
+    from ops.jobs j
+    where j.status = 'running'
+      and j.locked_at < now() - interval '15 minutes'
+    order by j.locked_at, j.id
+    for update skip locked
+  loop
+    next_status := case
+      when expired_job.attempts < expired_job.max_attempts then 'queued'
+      else 'blocked'
+    end;
+
+    insert into ops.job_events (job_id, event, actor, summary, details)
+    values (
+      expired_job.id,
+      'lease_expired',
+      'lease-recovery',
+      'Recovered expired worker lease',
+      jsonb_build_object('previous_worker', expired_job.lock_owner, 'next_status', next_status)
+    );
+
+    update ops.jobs j
+    set status = next_status,
+        locked_at = null,
+        lock_owner = null,
+        error_code = 'lease_expired',
+        error_summary = 'Worker lease expired before completion',
+        scheduled_for = case when next_status = 'queued' then now() else j.scheduled_for end
+    where j.id = expired_job.id;
+
+    update ops.agents a
+    set current_job_id = null,
+        state = case when next_status = 'queued' then 'queued' else 'blocked' end,
+        health = 'degraded'
+    where a.id = expired_job.agent_id and a.current_job_id = expired_job.id;
+
+    recovered := recovered + 1;
+  end loop;
+
+  return jsonb_build_object('recovered', recovered);
+end
+$$;
+
 create or replace function ops.guard_expired_job_lease() returns trigger
 language plpgsql
 set search_path = ''
@@ -485,6 +539,14 @@ begin
       and new.locked_at is null
       and new.lock_owner is null
       and new.error_code = 'lease_expired'
+      and exists (
+        select 1
+        from ops.job_events e
+        where e.job_id = old.id
+          and e.event = 'lease_expired'
+          and e.actor = 'lease-recovery'
+          and e.at = now()
+      )
     ) then
     raise exception using errcode = '55000', message = 'job_lease_expired';
   end if;

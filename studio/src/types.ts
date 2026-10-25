@@ -60,6 +60,7 @@ export interface ApprovalDTO {
   decisionNote: string | null
   externalActionCompletedAt: string | null
   preview: ApprovalPreviewFieldDTO[]
+  previewComplete: boolean
 }
 
 export interface ApprovalPreviewFieldDTO {

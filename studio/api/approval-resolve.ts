@@ -38,7 +38,7 @@ export function createApprovalResolveHandler(dependencies: ApprovalResolveDepend
       if (approval.risk === 'high' && note === '') {
         throw new HttpError(400, 'high_risk_note_required')
       }
-      if (databaseDecision === 'approved' && normalized.preview.length === 0) {
+      if (databaseDecision === 'approved' && !normalized.previewComplete) {
         throw new HttpError(409, 'approval_preview_required')
       }
 

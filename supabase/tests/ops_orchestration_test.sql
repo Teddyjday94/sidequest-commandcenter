@@ -429,6 +429,18 @@ select throws_ok(
   'job_lease_expired',
   'an expired worker cannot mutate failure state'
 );
+select throws_ok(
+  $$select ops.fail_job(
+      'worker-one',
+      '23000000-0000-0000-0000-000000000001',
+      'lease_expired',
+      'Worker lease expired before completion',
+      true
+    )$$,
+  '55000',
+  'job_lease_expired',
+  'an expired worker cannot imitate the internal lease-recovery transition'
+);
 select lives_ok($$select ops.recover_expired_jobs()$$, 'expired leases can be recovered');
 select ok(
   (

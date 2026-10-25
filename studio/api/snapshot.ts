@@ -110,6 +110,7 @@ function jobDto(row: JsonRecord): JobDTO {
 }
 
 function approvalDto(row: JsonRecord): ApprovalDTO {
+  const preview = approvalPreview(text(row.action_type), row.preview)
   return {
     id: text(row.id),
     jobId: text(row.job_id),
@@ -122,7 +123,8 @@ function approvalDto(row: JsonRecord): ApprovalDTO {
     decidedAt: nullableText(row.decided_at),
     decisionNote: nullableText(row.decision_note),
     externalActionCompletedAt: nullableText(row.external_action_completed_at),
-    preview: approvalPreview(text(row.action_type), row.preview),
+    preview: preview.fields,
+    previewComplete: preview.complete,
   }
 }
 

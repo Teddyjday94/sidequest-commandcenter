@@ -165,6 +165,7 @@ describe('GET /api/snapshot', () => {
             { label: 'Subject', value: 'Website introduction' },
             { label: 'Draft', value: 'A bounded draft for review.' },
           ],
+          previewComplete: true,
         },
       ],
       events: [{ id: 7, event: 'claimed' }],

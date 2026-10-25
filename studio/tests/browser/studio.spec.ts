@@ -33,6 +33,7 @@ function studioSnapshot() {
           { label: 'Subject', value: 'Website introduction' },
           { label: 'Draft', value: 'A bounded draft for review.' },
         ],
+        previewComplete: true,
       },
     ],
     events: [

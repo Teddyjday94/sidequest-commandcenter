@@ -144,6 +144,7 @@ export async function getApproval(admin: ApprovalAdminClient, approvalId: string
 }
 
 export function normalizeApproval(row: ApprovalRecord): ApprovalDTO {
+  const preview = approvalPreview(row.action_type, row.preview)
   return {
     id: row.id,
     jobId: row.job_id,
@@ -156,7 +157,8 @@ export function normalizeApproval(row: ApprovalRecord): ApprovalDTO {
     decidedAt: row.decided_at,
     decisionNote: row.decision_note,
     externalActionCompletedAt: row.external_action_completed_at,
-    preview: approvalPreview(row.action_type, row.preview),
+    preview: preview.fields,
+    previewComplete: preview.complete,
   }
 }
 

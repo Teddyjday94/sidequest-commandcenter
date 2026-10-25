@@ -32,7 +32,7 @@ export function approvalDock(
       ['Reject', 'reject'],
     ] as const) {
       const control = button(label, decision === 'approve' ? 'button-primary' : 'button-quiet')
-      if (decision === 'approve' && approval.preview.length === 0) {
+      if (decision === 'approve' && !approval.previewComplete) {
         control.disabled = true
         control.title = 'A safe action preview is required before approval.'
       }
@@ -64,9 +64,10 @@ export function approvalDock(
         ]),
         element('h3', '', [approval.title]),
         element('p', '', [approval.actionType.replaceAll('_', ' ')]),
-        approval.preview.length > 0
-          ? preview
-          : element('p', 'preview-missing', ['No safe preview supplied. Approval is disabled.']),
+        approval.preview.length > 0 ? preview : null,
+        !approval.previewComplete
+          ? element('p', 'preview-missing', ['Destination and exact proposed payload are required. Approval is disabled.'])
+          : null,
       ]),
       controls,
     )

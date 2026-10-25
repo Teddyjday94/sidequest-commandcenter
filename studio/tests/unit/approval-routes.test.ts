@@ -163,6 +163,24 @@ describe('POST /api/approval-resolve', () => {
     expect(admin.rpc).not.toHaveBeenCalled()
   })
 
+  it('refuses a send approval whose preview has no recipient or draft payload', async () => {
+    const admin = fakeAdmin()
+    const approval = approvalRow()
+    approval.preview = { subject: 'A subject alone is not enough' }
+    const maybeSingle = vi.fn().mockResolvedValue({ data: approval, error: null })
+    const eq = vi.fn().mockReturnValue({ maybeSingle })
+    const select = vi.fn().mockReturnValue({ eq })
+    const from = vi.fn().mockReturnValue({ select })
+    admin.client.schema = vi.fn().mockReturnValue({ from, rpc: admin.rpc })
+    const handler = createApprovalResolveHandler({ admin: admin.client, ownerUserId: ownerId, csrf: allowCsrf })
+
+    const response = await handler(post('approval-resolve', { approvalId, decision: 'approve', note: 'Reviewed' }))
+
+    expect(response.status).toBe(409)
+    expect(await response.json()).toEqual({ error: 'approval_preview_required' })
+    expect(admin.rpc).not.toHaveBeenCalled()
+  })
+
   it('keeps a repeated identical decision idempotent with one database mutation', async () => {
     const admin = fakeAdmin()
     const handler = createApprovalResolveHandler({ admin: admin.client, ownerUserId: ownerId, csrf: allowCsrf })
