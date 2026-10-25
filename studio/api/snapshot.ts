@@ -7,8 +7,10 @@ import type {
   AgentHealth,
   AgentState,
   ApprovalDTO,
+  AutonomyDTO,
   JobDTO,
   JobEventDTO,
+  MissionDTO,
   PipelineStageDTO,
   StudioSnapshot,
 } from '../src/types.js'
@@ -137,6 +139,34 @@ function pipelineDto(row: JsonRecord): PipelineStageDTO {
   return { stage: text(row.stage), count: Math.max(0, integer(row.count)) }
 }
 
+function missionDto(row: JsonRecord): MissionDTO {
+  return {
+    id: text(row.id),
+    name: text(row.name),
+    agentId: text(row.agent_id),
+    jobKind: text(row.job_kind),
+    cadenceMinutes: Math.max(15, integer(row.cadence_minutes, 15)),
+    nextRunAt: nullableText(row.next_run_at),
+    enabled: row.enabled === true,
+    priority: Math.max(0, integer(row.priority)),
+    maxAttempts: Math.min(10, Math.max(1, integer(row.max_attempts, 1))),
+    lastDispatchedAt: nullableText(row.last_dispatched_at),
+  }
+}
+
+function autonomyDto(value: unknown): AutonomyDTO {
+  const row = record(value)
+  return {
+    emergencyStop: row.emergencyStop === true,
+    dailyJobLimit: Math.min(100, Math.max(1, integer(row.dailyJobLimit, 12))),
+    maximumAttempts: Math.min(10, Math.max(1, integer(row.maximumAttempts, 3))),
+    runtimeMinutes: Math.min(60, Math.max(1, integer(row.runtimeMinutes, 15))),
+    windowStart: text(row.windowStart, '07:00'),
+    windowEnd: text(row.windowEnd, '20:00'),
+    timezone: text(row.timezone, 'America/Chicago'),
+  }
+}
+
 function normalizeSnapshot(value: unknown, now: Date): StudioSnapshot {
   const raw = record(value)
   const agents = records(raw.agents, 50).map(agentDto).filter((agent) => agent.id !== '')
@@ -148,6 +178,8 @@ function normalizeSnapshot(value: unknown, now: Date): StudioSnapshot {
     approvals: records(raw.approvals, 50).map(approvalDto).filter((approval) => approval.id !== ''),
     events: records(raw.activity, 100).map(eventDto),
     pipeline: records(raw.pipeline, 30).map(pipelineDto).filter((stage) => stage.stage !== ''),
+    missions: records(raw.missions, 50).map(missionDto).filter((mission) => mission.id !== ''),
+    autonomy: autonomyDto(raw.autonomy),
     heartbeats: agents.map((agent) => ({
       agentId: agent.id,
       health: agent.health,

@@ -81,6 +81,29 @@ export interface HeartbeatDTO {
   lastHeartbeat: string | null
 }
 
+export interface MissionDTO {
+  id: string
+  name: string
+  agentId: string
+  jobKind: string
+  cadenceMinutes: number
+  nextRunAt: string | null
+  enabled: boolean
+  priority: number
+  maxAttempts: number
+  lastDispatchedAt: string | null
+}
+
+export interface AutonomyDTO {
+  emergencyStop: boolean
+  dailyJobLimit: number
+  maximumAttempts: number
+  runtimeMinutes: number
+  windowStart: string
+  windowEnd: string
+  timezone: string
+}
+
 export interface StudioSnapshot {
   serverTime: string
   agents: AgentDTO[]
@@ -89,4 +112,6 @@ export interface StudioSnapshot {
   events: JobEventDTO[]
   pipeline: PipelineStageDTO[]
   heartbeats: HeartbeatDTO[]
+  missions: MissionDTO[]
+  autonomy: AutonomyDTO
 }

@@ -106,6 +106,31 @@ describe('GET /api/snapshot', () => {
           },
         ],
         pipeline: [{ stage: 'New', count: 3, arbitrary: 'drop-me' }],
+        missions: [
+          {
+            id: 'weekday-research',
+            name: 'Weekday research',
+            agent_id: 'finder',
+            job_kind: 'research',
+            cadence_minutes: 1440,
+            next_run_at: '2026-10-25T14:00:00Z',
+            enabled: true,
+            priority: 20,
+            max_attempts: 3,
+            last_dispatched_at: null,
+            input: { privateInstructions: 'must-not-leak' },
+          },
+        ],
+        autonomy: {
+          emergencyStop: false,
+          dailyJobLimit: 12,
+          maximumAttempts: 3,
+          runtimeMinutes: 15,
+          windowStart: '07:00',
+          windowEnd: '20:00',
+          timezone: 'America/Chicago',
+          arbitrarySetting: 'must-not-leak',
+        },
         service_role_key: 'must-not-leak',
       },
     })
@@ -129,9 +154,34 @@ describe('GET /api/snapshot', () => {
       approvals: [{ id: '31000000-0000-0000-0000-000000000001', status: 'pending' }],
       events: [{ id: 7, event: 'claimed' }],
       pipeline: [{ stage: 'New', count: 3 }],
+      missions: [
+        {
+          id: 'weekday-research',
+          name: 'Weekday research',
+          agentId: 'finder',
+          jobKind: 'research',
+          cadenceMinutes: 1440,
+          nextRunAt: '2026-10-25T14:00:00Z',
+          enabled: true,
+          priority: 20,
+          maxAttempts: 3,
+          lastDispatchedAt: null,
+        },
+      ],
+      autonomy: {
+        emergencyStop: false,
+        dailyJobLimit: 12,
+        maximumAttempts: 3,
+        runtimeMinutes: 15,
+        windowStart: '07:00',
+        windowEnd: '20:00',
+        timezone: 'America/Chicago',
+      },
       heartbeats: [{ agentId: 'finder', health: 'healthy', lastHeartbeat: '2026-10-24T20:00:00Z' }],
     })
-    expect(JSON.stringify(body)).not.toMatch(/must-not-leak|rawEmailBody|chainOfThought|token_hash|preview|details/i)
+    expect(JSON.stringify(body)).not.toMatch(
+      /must-not-leak|rawEmailBody|chainOfThought|token_hash|preview|details|privateInstructions|arbitrarySetting/i,
+    )
   })
 
   it('returns a bounded generic error without leaking service details', async () => {
