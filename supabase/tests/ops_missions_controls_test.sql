@@ -35,7 +35,7 @@ select lives_ok(
 );
 select lives_ok(
   $$insert into ops.worker_devices (id, display_name, token_hash, status, capabilities)
-    values ('mission-worker', 'Mission Worker', repeat('9', 64), 'active', '["codex"]'::jsonb)$$,
+    values ('mission-worker', 'Mission Worker', repeat('9', 64), 'active', '["kind:research"]'::jsonb)$$,
   'an active mission worker can be created'
 );
 
@@ -195,6 +195,18 @@ select is(
   ),
   4::bigint,
   'every mission control procedure pins its search path'
+);
+select is(
+  (
+    select count(*)::bigint
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'ops'
+      and p.proname in ('dispatch_due_missions', 'set_emergency_stop', 'offer_job', 'claim_job')
+      and pg_get_functiondef(p.oid) like '%ops.automation_gate%'
+  ),
+  4::bigint,
+  'dispatch, stop, offer, and claim share one transaction-level automation gate'
 );
 select is(
   has_function_privilege('anon', 'ops.dispatch_due_missions(timestamp with time zone)', 'execute'),

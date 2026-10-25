@@ -3,6 +3,7 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $modulePath = Join-Path $repoRoot 'runner\SidequestBroker.psm1'
 Import-Module $modulePath -Force -DisableNameChecking
+$moduleSource = Get-Content -Raw -LiteralPath $modulePath
 
 function Assert-Equal {
     param(
@@ -63,6 +64,28 @@ $secureToken = ConvertTo-SecureString $rawToken -AsPlainText -Force
 $credential = [pscredential]::new('worker-one', $secureToken)
 $baseUri = 'https://studio.example.test'
 $jobId = '21000000-0000-4000-8000-000000000001'
+Assert-Contains -Actual $moduleSource -Expected 'MaximumRedirection = 0' -Because 'The default broker transport must not forward the worker authorization header through redirects.'
+
+$script:insecureTransportCalled = $false
+$insecureTransport = {
+    param($Method, $Uri, $Headers, $Body)
+    $script:insecureTransportCalled = $true
+    [pscustomobject]@{ StatusCode = 200; Content = '{}' }
+}
+try {
+    Get-SidequestOffer -BaseUri 'http://attacker.example.test' -Credential $credential -Transport $insecureTransport
+    throw 'An insecure remote broker URI must be rejected.'
+} catch {
+    Assert-Contains -Actual $_.Exception.Message -Expected 'broker_uri_not_secure' -Because 'The broker must reject remote HTTP before reading or sending a credential.'
+}
+Assert-Equal -Actual $script:insecureTransportCalled -Expected $false -Because 'An insecure broker URI must fail before transport receives the worker token.'
+
+$loopbackTransport = {
+    param($Method, $Uri, $Headers, $Body)
+    [pscustomobject]@{ StatusCode = 204; Content = '' }
+}
+$loopbackOffer = Get-SidequestOffer -BaseUri 'http://127.0.0.1:4173' -Credential $credential -Transport $loopbackTransport
+Assert-Equal -Actual ($null -eq $loopbackOffer) -Expected $true -Because 'HTTP remains available only for explicit loopback development.'
 
 $emptyTransport = {
     param($Method, $Uri, $Headers, $Body)

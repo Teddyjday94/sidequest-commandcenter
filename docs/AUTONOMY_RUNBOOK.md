@@ -37,13 +37,15 @@ If the Studio is unavailable, an authorized operator can call `ops.set_emergency
 
 ## Worker enrollment and revocation
 
-Enrollment is a future, separate checkpoint. Generate one opaque token outside this repository, store only its SHA-256 hash in the intended `ops.worker_devices` row, and pass the raw token once through the interactive script:
+Enrollment is a future, separate checkpoint. Generate one opaque token outside this repository, store only its SHA-256 hash in the intended `ops.worker_devices` row, and assign only explicit `kind:<job-kind>` or `agent:<agent-id>` capabilities. State-changing jobs are never worker-eligible. Pass the raw token once through the interactive script:
 
 ```powershell
 .\runner\enroll-worker.ps1 -WorkerId <registered-worker-id>
 ```
 
 The script reads the token as a secure string and stores it in Windows Credential Manager under `SidequestCommandCenterWorker`. Do not pass the raw token on a command line, place it in an environment file, paste it into an agent prompt, or record it in an issue.
+
+The broker base URL must use HTTPS. Plain HTTP is accepted only for an explicit loopback address during local development; the broker rejects any other HTTP destination before reading or sending the credential.
 
 To revoke a device, set that exact worker row’s status to `revoked` through an authenticated administrative database session. Confirm the worker endpoints return `401` before removing the matching Windows credential. Re-enrollment requires a new token and a new stored hash; do not reactivate or reuse the old token.
 

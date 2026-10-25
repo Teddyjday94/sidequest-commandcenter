@@ -32,6 +32,10 @@ export function approvalDock(
       ['Reject', 'reject'],
     ] as const) {
       const control = button(label, decision === 'approve' ? 'button-primary' : 'button-quiet')
+      if (decision === 'approve' && approval.preview.length === 0) {
+        control.disabled = true
+        control.title = 'A safe action preview is required before approval.'
+      }
       control.addEventListener('click', async () => {
         const note = approval.risk === 'high' || decision !== 'approve'
           ? window.prompt(`Add a note for “${approval.title}”`, '')
@@ -48,6 +52,10 @@ export function approvalDock(
       })
       controls.append(control)
     }
+    const preview = element('dl', 'approval-preview')
+    for (const field of approval.preview) {
+      preview.append(element('dt', '', [field.label]), element('dd', '', [field.value]))
+    }
     article.append(
       element('div', 'approval-copy', [
         element('div', 'approval-meta', [
@@ -56,6 +64,9 @@ export function approvalDock(
         ]),
         element('h3', '', [approval.title]),
         element('p', '', [approval.actionType.replaceAll('_', ' ')]),
+        approval.preview.length > 0
+          ? preview
+          : element('p', 'preview-missing', ['No safe preview supplied. Approval is disabled.']),
       ]),
       controls,
     )

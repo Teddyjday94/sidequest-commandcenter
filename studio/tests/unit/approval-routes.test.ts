@@ -22,6 +22,12 @@ function approvalRow(status: ApprovalStatus = 'pending', risk = 'medium') {
     decided_at: status === 'pending' ? null : '2026-10-24T20:01:00Z',
     decision_note: status === 'pending' ? null : 'Reviewed',
     external_action_completed_at: null as string | null,
+    preview: {
+      recipient: 'owner@example.test',
+      subject: 'Website introduction',
+      body: 'A bounded draft for review.',
+      privatePrompt: 'must-not-leak',
+    } as Record<string, unknown>,
   }
 }
 
@@ -136,6 +142,24 @@ describe('POST /api/approval-resolve', () => {
 
     expect(response.status).toBe(400)
     expect(await response.json()).toEqual({ error: 'high_risk_note_required' })
+    expect(admin.rpc).not.toHaveBeenCalled()
+  })
+
+  it('refuses approval when no safe action preview is available', async () => {
+    const admin = fakeAdmin()
+    const approval = approvalRow()
+    approval.preview = { privatePrompt: 'not owner-visible' }
+    const maybeSingle = vi.fn().mockResolvedValue({ data: approval, error: null })
+    const eq = vi.fn().mockReturnValue({ maybeSingle })
+    const select = vi.fn().mockReturnValue({ eq })
+    const from = vi.fn().mockReturnValue({ select })
+    admin.client.schema = vi.fn().mockReturnValue({ from, rpc: admin.rpc })
+    const handler = createApprovalResolveHandler({ admin: admin.client, ownerUserId: ownerId, csrf: allowCsrf })
+
+    const response = await handler(post('approval-resolve', { approvalId, decision: 'approve', note: 'Reviewed' }))
+
+    expect(response.status).toBe(409)
+    expect(await response.json()).toEqual({ error: 'approval_preview_required' })
     expect(admin.rpc).not.toHaveBeenCalled()
   })
 

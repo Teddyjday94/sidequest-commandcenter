@@ -83,6 +83,7 @@ begin
   end if;
 
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext('ops.dispatch_due_missions'));
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext('ops.automation_gate'));
 
   if coalesce((
     select pg_catalog.lower(s.value) = 'true'
@@ -248,6 +249,8 @@ begin
     raise exception using errcode = '22023', message = 'emergency_stop_fields_required';
   end if;
 
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext('ops.automation_gate'));
+
   select pg_catalog.lower(s.value) = 'true' into current_enabled
   from ops.settings s
   where s.key = 'automation_emergency_stop'
@@ -313,16 +316,18 @@ set search_path = ''
 as $$
 declare
   offered ops.jobs%rowtype;
+  worker_capabilities jsonb;
 begin
   if p_worker_id is null or btrim(p_worker_id) = '' then
     raise exception using errcode = '22023', message = 'worker_id_required';
   end if;
-  if not exists (
-    select 1 from ops.worker_devices w
-    where w.id = p_worker_id and w.status = 'active'
-  ) then
+  select w.capabilities into worker_capabilities
+  from ops.worker_devices w
+  where w.id = p_worker_id and w.status = 'active';
+  if not found then
     raise exception using errcode = '42501', message = 'worker_not_active';
   end if;
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext('ops.automation_gate'));
   if coalesce((
     select pg_catalog.lower(s.value) = 'true'
     from ops.settings s where s.key = 'automation_emergency_stop'
@@ -335,6 +340,11 @@ begin
   where j.status = 'queued'
     and j.scheduled_for <= now()
     and j.attempts < j.max_attempts
+    and not j.is_state_changing
+    and (
+      worker_capabilities ? ('kind:' || j.kind)
+      or worker_capabilities ? ('agent:' || j.agent_id)
+    )
   order by j.priority, j.scheduled_for, j.created_at, j.id
   limit 1
   for update skip locked;
@@ -361,20 +371,29 @@ set search_path = ''
 as $$
 declare
   claimed ops.jobs%rowtype;
+  worker_capabilities jsonb;
 begin
   if p_worker_id is null or btrim(p_worker_id) = '' or p_job_id is null then
     raise exception using errcode = '22023', message = 'worker_and_job_required';
   end if;
-  if not exists (
-    select 1 from ops.worker_devices w
-    where w.id = p_worker_id and w.status = 'active'
-  ) then
+  select w.capabilities into worker_capabilities
+  from ops.worker_devices w
+  where w.id = p_worker_id and w.status = 'active';
+  if not found then
     raise exception using errcode = '42501', message = 'worker_not_active';
   end if;
 
   select j.* into claimed
   from ops.jobs j
-  where j.id = p_job_id and j.status = 'running' and j.lock_owner = p_worker_id;
+  where j.id = p_job_id
+    and j.status = 'running'
+    and j.lock_owner = p_worker_id
+    and j.locked_at >= now() - interval '15 minutes'
+    and not j.is_state_changing
+    and (
+      worker_capabilities ? ('kind:' || j.kind)
+      or worker_capabilities ? ('agent:' || j.agent_id)
+    );
 
   if found then
     return jsonb_build_object(
@@ -389,6 +408,7 @@ begin
     );
   end if;
 
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext('ops.automation_gate'));
   if coalesce((
     select pg_catalog.lower(s.value) = 'true'
     from ops.settings s where s.key = 'automation_emergency_stop'
@@ -402,6 +422,11 @@ begin
     and j.status = 'queued'
     and j.scheduled_for <= now()
     and j.attempts < j.max_attempts
+    and not j.is_state_changing
+    and (
+      worker_capabilities ? ('kind:' || j.kind)
+      or worker_capabilities ? ('agent:' || j.agent_id)
+    )
   for update skip locked;
 
   if not found then return null; end if;
@@ -446,6 +471,31 @@ begin
   );
 end
 $$;
+
+create or replace function ops.guard_expired_job_lease() returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if old.status = 'running'
+    and old.locked_at is not null
+    and old.locked_at < now() - interval '15 minutes'
+    and not (
+      new.status in ('queued', 'blocked')
+      and new.locked_at is null
+      and new.lock_owner is null
+      and new.error_code = 'lease_expired'
+    ) then
+    raise exception using errcode = '55000', message = 'job_lease_expired';
+  end if;
+  return new;
+end
+$$;
+
+drop trigger if exists jobs_guard_expired_lease on ops.jobs;
+create trigger jobs_guard_expired_lease
+  before update on ops.jobs
+  for each row execute function ops.guard_expired_job_lease();
 
 create or replace function ops.get_studio_snapshot() returns jsonb
 language sql
@@ -513,6 +563,7 @@ revoke execute on function ops.get_autonomy_status() from public, anon, authenti
 revoke execute on function ops.offer_job(text) from public, anon, authenticated;
 revoke execute on function ops.claim_job(text, uuid) from public, anon, authenticated;
 revoke execute on function ops.get_studio_snapshot() from public, anon, authenticated;
+revoke execute on function ops.guard_expired_job_lease() from public, anon, authenticated;
 
 grant usage on schema ops to service_role;
 grant select, insert, update on table ops.missions to service_role;

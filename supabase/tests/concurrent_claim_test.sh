@@ -26,8 +26,8 @@ trap cleanup EXIT
 docker exec -i "$db_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres <<'SQL'
 insert into ops.worker_devices (id, display_name, token_hash, status, capabilities)
 values
-  ('race-worker-one', 'Race Worker One', repeat('3', 64), 'active', '[]'::jsonb),
-  ('race-worker-two', 'Race Worker Two', repeat('4', 64), 'active', '[]'::jsonb);
+  ('race-worker-one', 'Race Worker One', repeat('3', 64), 'active', '["kind:race_claim"]'::jsonb),
+  ('race-worker-two', 'Race Worker Two', repeat('4', 64), 'active', '["kind:race_claim"]'::jsonb);
 insert into ops.agents (id, name, role, status)
 values ('race-agent', 'Race Agent', 'Concurrency fixture', 'Live');
 insert into ops.workflows (id, kind, subject_type, subject_id, status, current_step)

@@ -59,6 +59,12 @@ export interface ApprovalDTO {
   decidedAt: string | null
   decisionNote: string | null
   externalActionCompletedAt: string | null
+  preview: ApprovalPreviewFieldDTO[]
+}
+
+export interface ApprovalPreviewFieldDTO {
+  label: string
+  value: string
 }
 
 export interface JobEventDTO {

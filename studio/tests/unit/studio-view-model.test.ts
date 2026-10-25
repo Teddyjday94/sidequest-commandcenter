@@ -63,7 +63,7 @@ describe('studio view model', () => {
           {
             id: 'a1', jobId: 'j1', leadId: null, actionType: 'send', title: 'Approve send', risk: 'high',
             status: 'pending', requestedAt: null, decidedAt: null, decisionNote: null,
-            externalActionCompletedAt: null,
+            externalActionCompletedAt: null, preview: [],
           },
         ],
         jobs: [
@@ -94,6 +94,7 @@ describe('studio view model', () => {
     const approval = (id: string, risk: string, requestedAt: string): ApprovalDTO => ({
       id, jobId: `job-${id}`, leadId: null, actionType: 'review', title: id, risk, status: 'pending',
       requestedAt, decidedAt: null, decisionNote: null, externalActionCompletedAt: null,
+      preview: [],
     })
     const approvals = [
       approval('low', 'low', '2026-10-24T20:04:00Z'),

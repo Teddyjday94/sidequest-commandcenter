@@ -202,8 +202,9 @@ select lives_ok(
 select lives_ok(
   $$insert into ops.worker_devices (id, display_name, token_hash, status, capabilities)
     values
-      ('worker-one', 'Worker One', repeat('1', 64), 'active', '["database"]'::jsonb),
-      ('worker-two', 'Worker Two', repeat('2', 64), 'active', '["database"]'::jsonb)$$,
+      ('worker-one', 'Worker One', repeat('1', 64), 'active',
+       '["kind:priority_high","kind:priority_low","kind:retry_test","kind:expired_test"]'::jsonb),
+      ('worker-two', 'Worker Two', repeat('2', 64), 'active', '["kind:priority_low"]'::jsonb)$$,
   'active worker fixtures can be created'
 );
 select lives_ok(
@@ -248,6 +249,16 @@ select lives_ok(
       ('21000000-0000-0000-0000-000000000001', '11000000-0000-0000-0000-000000000001', 'ci-agent', 'priority_high', 'queued', 1, 'ci-priority-high'),
       ('21000000-0000-0000-0000-000000000002', '11000000-0000-0000-0000-000000000001', 'ci-agent', 'priority_low', 'queued', 50, 'ci-priority-low')$$,
   'priority queue fixtures can be created'
+);
+select is(
+  ops.offer_job('worker-two')->>'id',
+  '21000000-0000-0000-0000-000000000002',
+  'a worker is offered only a job allowed by its explicit kind capability'
+);
+select is(
+  ops.claim_job('worker-two', '21000000-0000-0000-0000-000000000001'),
+  null::jsonb,
+  'a worker cannot claim a job outside its explicit capabilities'
 );
 select is(
   ops.offer_job('worker-one')->>'id',
@@ -384,6 +395,39 @@ select lives_ok(
       ('23000000-0000-0000-0000-000000000001', '11000000-0000-0000-0000-000000000001', 'ci-agent', 'expired_test', 'running', 30, 1, 3,
        now() - interval '16 minutes', 'worker-one', now() - interval '20 minutes', 'ci-expired-test')$$,
   'expired lease fixture can be created'
+);
+select is(
+  ops.claim_job('worker-one', '23000000-0000-0000-0000-000000000001'),
+  null::jsonb,
+  'an expired existing claim is not returned to its former worker'
+);
+select throws_ok(
+  $$select ops.heartbeat_job('worker-one', '23000000-0000-0000-0000-000000000001')$$,
+  '55000',
+  'job_lease_expired',
+  'an expired worker cannot renew its lease'
+);
+select throws_ok(
+  $$select ops.complete_job(
+      'worker-one',
+      '23000000-0000-0000-0000-000000000001',
+      '{"summary":"late result"}'::jsonb
+    )$$,
+  '55000',
+  'job_lease_expired',
+  'an expired worker cannot complete a recovered candidate'
+);
+select throws_ok(
+  $$select ops.fail_job(
+      'worker-one',
+      '23000000-0000-0000-0000-000000000001',
+      'late_failure',
+      'Lease already expired',
+      true
+    )$$,
+  '55000',
+  'job_lease_expired',
+  'an expired worker cannot mutate failure state'
 );
 select lives_ok($$select ops.recover_expired_jobs()$$, 'expired leases can be recovered');
 select ok(

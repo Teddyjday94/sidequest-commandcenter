@@ -28,6 +28,11 @@ function studioSnapshot() {
         id: 'approval-1', jobId: 'job-1', leadId: null, actionType: 'send_draft', title: 'Review welcome draft',
         risk: 'medium', status: 'pending', requestedAt: '2026-10-24T20:02:00.000Z', decidedAt: null,
         decisionNote: null, externalActionCompletedAt: null,
+        preview: [
+          { label: 'Recipient', value: 'owner@example.test' },
+          { label: 'Subject', value: 'Website introduction' },
+          { label: 'Draft', value: 'A bounded draft for review.' },
+        ],
       },
     ],
     events: [
@@ -105,6 +110,8 @@ test('keyboard navigation, workbench, ledger, approvals, and stop confirmation u
   await expect(events.nth(0)).toHaveText('Worker claimed job')
   await expect(events.nth(1)).toHaveText('Research queued')
 
+  await expect(page.locator('.approval-item')).toContainText('owner@example.test')
+  await expect(page.locator('.approval-item')).toContainText('A bounded draft for review.')
   await page.locator('.approval-item').getByRole('button', { name: 'Approve' }).click()
   await expect(page.getByText('No decisions are waiting.')).toBeVisible()
   expect(calls.some((call) => call.path === '/api/approval-resolve')).toBe(true)

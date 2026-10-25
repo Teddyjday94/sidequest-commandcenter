@@ -1,4 +1,5 @@
 import { readServerEnv } from './_lib/env.js'
+import { approvalPreview } from './_lib/approval-preview.js'
 import { errorResponse, HttpError, jsonResponse } from './_lib/http.js'
 import { requireOwner, type OwnerAuthClient } from './_lib/owner-auth.js'
 import { getAdminClient } from './_lib/supabase.js'
@@ -121,6 +122,7 @@ function approvalDto(row: JsonRecord): ApprovalDTO {
     decidedAt: nullableText(row.decided_at),
     decisionNote: nullableText(row.decision_note),
     externalActionCompletedAt: nullableText(row.external_action_completed_at),
+    preview: approvalPreview(text(row.action_type), row.preview),
   }
 }
 

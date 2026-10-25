@@ -137,6 +137,7 @@ function Invoke-DefaultSidequestTransport {
         Uri = $Uri
         Headers = $Headers
         ErrorAction = 'Stop'
+        MaximumRedirection = 0
     }
     if ($null -ne $Body) {
         $parameters.ContentType = 'application/json'
@@ -168,6 +169,12 @@ function Invoke-SidequestBrokerRequest {
         [AllowNull()] $Body,
         [scriptblock] $Transport = ${function:Invoke-DefaultSidequestTransport}
     )
+
+    $isSecureRemote = $Uri.IsAbsoluteUri -and $Uri.Scheme -eq 'https'
+    $isLoopbackDevelopment = $Uri.IsAbsoluteUri -and $Uri.Scheme -eq 'http' -and $Uri.IsLoopback
+    if ((-not $isSecureRemote -and -not $isLoopbackDevelopment) -or -not [string]::IsNullOrEmpty($Uri.UserInfo)) {
+        throw [InvalidOperationException]::new('broker_uri_not_secure')
+    }
 
     $token = ConvertFrom-SidequestSecureString $Credential.Password
     try {

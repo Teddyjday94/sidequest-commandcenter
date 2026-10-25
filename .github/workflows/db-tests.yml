@@ -93,6 +93,9 @@ jobs:
       - name: Run concurrent claim test
         run: bash supabase/tests/concurrent_claim_test.sh
 
+      - name: Run concurrent emergency-stop test
+        run: bash supabase/tests/concurrent_stop_test.sh
+
       - name: Lint the private ops schema
         run: npx --yes supabase@2.122.0 db lint --local --schema ops --level warning --fail-on warning
 

@@ -1,4 +1,5 @@
 import type { ApprovalDTO } from '../../src/types.js'
+import { approvalPreview } from './approval-preview.js'
 import { HttpError } from './http.js'
 import type { OwnerAuthClient } from './owner-auth.js'
 
@@ -19,6 +20,7 @@ export interface ApprovalRecord {
   decided_at: string | null
   decision_note: string | null
   external_action_completed_at: string | null
+  preview: unknown
 }
 
 interface ApprovalQuery {
@@ -55,6 +57,7 @@ const approvalColumns = [
   'decided_at',
   'decision_note',
   'external_action_completed_at',
+  'preview',
 ].join(',')
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -153,6 +156,7 @@ export function normalizeApproval(row: ApprovalRecord): ApprovalDTO {
     decidedAt: row.decided_at,
     decisionNote: row.decision_note,
     externalActionCompletedAt: row.external_action_completed_at,
+    preview: approvalPreview(row.action_type, row.preview),
   }
 }
 

@@ -124,6 +124,10 @@ button:disabled, input:disabled { cursor: not-allowed; opacity: .48; }
 .approval-meta { display: flex; gap: .65rem; color: var(--paper-dim); font-size: .65rem; }
 .approval-copy h3 { margin: .5rem 0 .25rem; font-size: .95rem; }
 .approval-copy > p { margin: 0; color: var(--paper-dim); font-size: .72rem; text-transform: capitalize; }
+.approval-preview { display: grid; grid-template-columns: minmax(5rem, .3fr) 1fr; gap: .45rem .8rem; margin: 1rem 0 0; padding-top: .8rem; border-top: 1px solid #343a34; }
+.approval-preview dt { color: var(--paper-dim); font-size: .62rem; font-weight: 720; letter-spacing: .08em; text-transform: uppercase; }
+.approval-preview dd { margin: 0; color: var(--paper); font-size: .74rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.approval-copy .preview-missing { margin-top: .8rem; color: #ffc4aa; text-transform: none; }
 .approval-actions { display: flex; flex-direction: column; gap: .4rem; min-width: 6rem; }
 
 button.button-primary,

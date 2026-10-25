@@ -91,7 +91,12 @@ describe('GET /api/snapshot', () => {
             risk: 'medium',
             status: 'pending',
             requested_at: '2026-10-24T20:00:00Z',
-            preview: { privatePrompt: 'must-not-leak' },
+            preview: {
+              recipient: 'owner@example.test',
+              subject: 'Website introduction',
+              body: 'A bounded draft for review.',
+              privatePrompt: 'must-not-leak',
+            },
           },
         ],
         activity: [
@@ -151,7 +156,17 @@ describe('GET /api/snapshot', () => {
       serverTime: '2026-10-24T20:01:00.000Z',
       agents: [{ id: 'finder', state: 'working', queueDepth: 2 }],
       jobs: [{ id: '21000000-0000-0000-0000-000000000001', attempts: 1 }],
-      approvals: [{ id: '31000000-0000-0000-0000-000000000001', status: 'pending' }],
+      approvals: [
+        {
+          id: '31000000-0000-0000-0000-000000000001',
+          status: 'pending',
+          preview: [
+            { label: 'Recipient', value: 'owner@example.test' },
+            { label: 'Subject', value: 'Website introduction' },
+            { label: 'Draft', value: 'A bounded draft for review.' },
+          ],
+        },
+      ],
       events: [{ id: 7, event: 'claimed' }],
       pipeline: [{ stage: 'New', count: 3 }],
       missions: [
@@ -180,7 +195,7 @@ describe('GET /api/snapshot', () => {
       heartbeats: [{ agentId: 'finder', health: 'healthy', lastHeartbeat: '2026-10-24T20:00:00Z' }],
     })
     expect(JSON.stringify(body)).not.toMatch(
-      /must-not-leak|rawEmailBody|chainOfThought|token_hash|preview|details|privateInstructions|arbitrarySetting/i,
+      /must-not-leak|rawEmailBody|chainOfThought|token_hash|details|privateInstructions|arbitrarySetting/i,
     )
   })
 

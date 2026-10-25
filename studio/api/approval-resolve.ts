@@ -33,9 +33,13 @@ export function createApprovalResolveHandler(dependencies: ApprovalResolveDepend
       const { databaseDecision } = approvalDecisionFrom(body)
       const note = approvalNoteFrom(body)
       const approval = await getApproval(admin, approvalId)
+      const normalized = normalizeApproval(approval)
 
       if (approval.risk === 'high' && note === '') {
         throw new HttpError(400, 'high_risk_note_required')
+      }
+      if (databaseDecision === 'approved' && normalized.preview.length === 0) {
+        throw new HttpError(409, 'approval_preview_required')
       }
 
       const { error } = await admin.schema('ops').rpc('resolve_approval', {
