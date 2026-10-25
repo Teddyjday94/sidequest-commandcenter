@@ -126,6 +126,55 @@ test('keyboard navigation, workbench, ledger, approvals, and stop confirmation u
   expect(calls.some((call) => call.path === '/api/emergency-stop' && (call.body as { enabled: boolean }).enabled)).toBe(true)
 })
 
+test('owner signs in with the existing Sidequest account without copying a token', async ({ page }) => {
+  const requests: string[] = []
+  await page.route('**/fake-supabase/auth/v1/token**', async (route) => {
+    requests.push('supabase-password-sign-in')
+    await route.fulfill({
+      json: {
+        access_token: 'browser-owner-token',
+        token_type: 'bearer',
+        expires_in: 3600,
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
+        refresh_token: 'browser-refresh-token',
+        user: {
+          id: '41000000-0000-0000-0000-000000000001',
+          aud: 'authenticated',
+          role: 'authenticated',
+          email: 'thomasdbiz26@gmail.com',
+          email_confirmed_at: '2026-10-25T00:00:00.000Z',
+          app_metadata: { provider: 'email', providers: ['email'] },
+          user_metadata: {},
+          identities: [],
+          created_at: '2026-10-25T00:00:00.000Z',
+          updated_at: '2026-10-25T00:00:00.000Z',
+        },
+      },
+    })
+  })
+  await page.route('**/api/session', async (route) => {
+    requests.push('csrf-bootstrap')
+    expect(route.request().headers().authorization).toBe('Bearer browser-owner-token')
+    await route.fulfill({
+      json: { connected: true },
+      headers: { 'set-cookie': 'sq_csrf=browser-csrf; Path=/; SameSite=Strict' },
+    })
+  })
+  await page.route('**/api/snapshot', async (route) => {
+    requests.push('snapshot')
+    expect(route.request().headers().authorization).toBe('Bearer browser-owner-token')
+    await route.fulfill({ json: studioSnapshot() })
+  })
+
+  await page.goto('/')
+  await page.getByLabel('Sidequest email').fill('thomasdbiz26@gmail.com')
+  await page.getByLabel('Password').fill('private-password')
+  await page.getByRole('button', { name: 'Open command center' }).click()
+
+  await expect(page.getByRole('heading', { name: 'What needs your attention' })).toBeVisible()
+  expect(requests).toEqual(['supabase-password-sign-in', 'csrf-bootstrap', 'snapshot'])
+})
+
 test('desktop rooms and workbench sit side-by-side', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1360, height: 900 })
   await mockStudio(page)

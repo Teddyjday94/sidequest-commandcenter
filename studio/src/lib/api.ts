@@ -8,6 +8,7 @@ export class StudioApiError extends Error {
 }
 
 export interface StudioApi {
+  connectSession(): Promise<{ connected: boolean }>
   snapshot(): Promise<StudioSnapshot>
   toggleMission(missionId: string, enabled: boolean): Promise<{ id: string; enabled: boolean }>
   setEmergencyStop(enabled: boolean): Promise<{ enabled: boolean }>
@@ -32,9 +33,15 @@ async function parseResponse<T>(response: Response): Promise<T> {
   return data
 }
 
-export function createStudioApi(readAccessToken = () => sessionStorage.getItem('sidequest_owner_token') ?? ''): StudioApi {
+type ReadAccessToken = () => string | Promise<string>
+type Fetcher = typeof fetch
+
+export function createStudioApi(
+  readAccessToken: ReadAccessToken = () => sessionStorage.getItem('sidequest_owner_token') ?? '',
+  fetcher: Fetcher = fetch,
+): StudioApi {
   async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-    const accessToken = readAccessToken()
+    const accessToken = await readAccessToken()
     if (!accessToken) throw new StudioApiError(401, 'missing_session')
     const headers = new Headers(init.headers)
     headers.set('authorization', `Bearer ${accessToken}`)
@@ -42,10 +49,22 @@ export function createStudioApi(readAccessToken = () => sessionStorage.getItem('
       headers.set('content-type', 'application/json')
       headers.set('x-csrf-token', cookie('sq_csrf'))
     }
-    return parseResponse<T>(await fetch(path, { ...init, headers }))
+    return parseResponse<T>(await fetcher(path, { ...init, headers }))
+  }
+
+  async function connectSession(): Promise<{ connected: boolean }> {
+    const accessToken = await readAccessToken()
+    if (!accessToken) throw new StudioApiError(401, 'missing_session')
+    return parseResponse(
+      await fetcher('/api/session', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${accessToken}` },
+      }),
+    )
   }
 
   return {
+    connectSession,
     snapshot: () => request<StudioSnapshot>('/api/snapshot'),
     toggleMission: (missionId, enabled) =>
       request('/api/mission-toggle', { method: 'POST', body: JSON.stringify({ missionId, enabled }) }),

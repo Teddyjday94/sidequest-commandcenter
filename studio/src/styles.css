@@ -177,8 +177,9 @@ button.button-quiet:hover { border-color: var(--paper-dim); }
 .state-page h1 { max-width: 12ch; margin: .5rem auto; font-family: Georgia, "Times New Roman", serif; font-size: clamp(2.5rem, 7vw, 6rem); font-weight: 400; line-height: .95; letter-spacing: -.05em; }
 .state-page > p:not(.eyebrow) { max-width: 45ch; margin: 1rem auto; color: var(--paper-dim); line-height: 1.6; }
 .state-page > button { justify-self: center; }
-.session-form { display: flex; gap: .6rem; width: min(34rem, 100%); margin: 1rem auto; }
-.session-form input { flex: 1; min-width: 0; padding: .65rem .8rem; border: 1px solid var(--line); border-radius: 0; color: var(--paper); background: var(--ink-soft); }
+.session-form { display: grid; grid-template-columns: 1fr 1fr auto; gap: .6rem; width: min(46rem, 100%); margin: 1rem auto; }
+.session-form input { min-width: 0; padding: .65rem .8rem; border: 1px solid var(--line); border-radius: 0; color: var(--paper); background: var(--ink-soft); }
+.session-error { grid-column: 1 / -1; min-height: 1.4em; margin: 0; color: #f3a487; font-size: .85rem; text-align: left; }
 
 @media (max-width: 900px) {
   .floor-workbench,
@@ -206,7 +207,8 @@ button.button-quiet:hover { border-color: var(--paper-dim); }
   .mission-area { grid-template-columns: 1fr; }
   .stop-zone { align-items: flex-start; flex-direction: column; }
   .site-footer { align-items: flex-start; flex-direction: column; gap: .4rem; }
-  .session-form { flex-direction: column; }
+  .session-form { grid-template-columns: 1fr; }
+  .session-error { grid-column: auto; }
 }
 
 @media (prefers-reduced-motion: reduce) {

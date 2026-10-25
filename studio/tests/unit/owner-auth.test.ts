@@ -11,9 +11,9 @@ function request(headers: HeadersInit = {}) {
   return new Request('https://studio.example.test/api/snapshot', { headers })
 }
 
-function authClient(userId: string | null, error: { message: string } | null = null) {
+function authClient(userId: string | null, error: { message: string } | null = null, email = 'owner@example.test') {
   const getUser = vi.fn().mockResolvedValue({
-    data: { user: userId ? { id: userId } : null },
+    data: { user: userId ? { id: userId, email } : null },
     error,
   })
 
@@ -64,6 +64,28 @@ describe('requireOwner', () => {
     expect(session).toEqual({ userId: ownerId, accessToken: 'valid-token' })
     expect(getUser).toHaveBeenCalledWith('valid-token')
   })
+
+  it('accepts the verified owner email when an owner id is not configured', async () => {
+    const { client } = authClient(ownerId, null, 'ThomasDBiz26@gmail.com')
+
+    await expect(
+      requireOwner(request({ authorization: 'Bearer valid-token' }), {
+        admin: client,
+        ownerEmail: 'thomasdbiz26@gmail.com',
+      } as never),
+    ).resolves.toEqual({ userId: ownerId, accessToken: 'valid-token' })
+  })
+
+  it('rejects a different verified email when using the email allowlist', async () => {
+    const { client } = authClient(ownerId, null, 'someone-else@example.test')
+
+    await expect(
+      requireOwner(request({ authorization: 'Bearer valid-token' }), {
+        admin: client,
+        ownerEmail: 'thomasdbiz26@gmail.com',
+      } as never),
+    ).rejects.toMatchObject({ status: 403, code: 'owner_required' })
+  })
 })
 
 describe('server environment', () => {
@@ -82,6 +104,18 @@ describe('server environment', () => {
         SESSION_CSRF_SECRET: 'a-secret-longer-than-thirty-two-characters',
       }),
     ).toMatchObject({ ownerUserId: ownerId })
+  })
+
+  it('accepts a verified owner email when the owner id is not known yet', () => {
+    expect(
+      readServerEnv({
+        SUPABASE_URL: 'https://project.supabase.co',
+        SUPABASE_ANON_KEY: 'anon-test-value',
+        SUPABASE_SERVICE_ROLE_KEY: 'service-role-test-value',
+        COMMAND_CENTER_OWNER_EMAIL: 'ThomasDBiz26@gmail.com',
+        SESSION_CSRF_SECRET: 'a-secret-longer-than-thirty-two-characters',
+      }),
+    ).toMatchObject({ ownerEmail: 'thomasdbiz26@gmail.com' })
   })
 })
 

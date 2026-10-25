@@ -10,7 +10,7 @@ export interface OwnerSession {
 export interface OwnerAuthClient {
   auth: {
     getUser(accessToken: string): Promise<{
-      data: { user: { id: string } | null }
+      data: { user: { id: string; email?: string | null } | null }
       error: { message: string } | null
     }>
   }
@@ -18,7 +18,8 @@ export interface OwnerAuthClient {
 
 export interface OwnerAuthDependencies {
   admin?: OwnerAuthClient
-  ownerUserId?: string
+  ownerUserId?: string | undefined
+  ownerEmail?: string | undefined
 }
 
 function bearerToken(request: Request): string {
@@ -39,13 +40,17 @@ export async function requireOwner(
 ): Promise<OwnerSession> {
   const accessToken = bearerToken(request)
   const admin = dependencies.admin ?? getAdminClient()
-  const ownerUserId = dependencies.ownerUserId ?? readServerEnv().ownerUserId
+  const environment = dependencies.ownerUserId || dependencies.ownerEmail ? null : readServerEnv()
+  const ownerUserId = dependencies.ownerUserId ?? environment?.ownerUserId
+  const ownerEmail = (dependencies.ownerEmail ?? environment?.ownerEmail)?.toLowerCase()
   const { data, error } = await admin.auth.getUser(accessToken)
 
   if (error || !data.user) {
     throw new HttpError(401, 'invalid_session')
   }
-  if (data.user.id !== ownerUserId) {
+  const matchesId = ownerUserId !== undefined && data.user.id === ownerUserId
+  const matchesEmail = ownerEmail !== undefined && data.user.email?.toLowerCase() === ownerEmail
+  if (!matchesId && !matchesEmail) {
     throw new HttpError(403, 'owner_required')
   }
 

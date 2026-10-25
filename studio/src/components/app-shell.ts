@@ -1,6 +1,7 @@
 import type { StudioApi } from '../lib/api.js'
 import { StudioApiError } from '../lib/api.js'
 import { button, element } from '../lib/dom.js'
+import type { OwnerSessionManager } from '../lib/owner-session.js'
 import type { AgentDTO, ApprovalDTO, MissionDTO, StudioSnapshot } from '../types.js'
 import { agentWorkbench } from './agent-workbench.js'
 import { approvalDock, type ApprovalDecision } from './approval-dock.js'
@@ -17,25 +18,43 @@ function loadingState(): HTMLElement {
   return main
 }
 
-function permissionState(onConnect: (token: string) => void): HTMLElement {
+function permissionState(onConnect: (email: string, password: string) => Promise<void>): HTMLElement {
   const main = element('main', 'state-page')
   main.id = 'studio-main'
-  const input = element('input')
-  input.type = 'password'
-  input.name = 'owner-token'
-  input.autocomplete = 'off'
-  input.required = true
-  input.setAttribute('aria-label', 'Owner session token')
-  const submit = button('Connect this session', 'button-primary', 'submit')
-  const form = element('form', 'session-form', [input, submit])
-  form.addEventListener('submit', (event) => {
+  const email = element('input')
+  email.type = 'email'
+  email.name = 'email'
+  email.autocomplete = 'email'
+  email.required = true
+  email.setAttribute('aria-label', 'Sidequest email')
+  const password = element('input')
+  password.type = 'password'
+  password.name = 'password'
+  password.autocomplete = 'current-password'
+  password.required = true
+  password.setAttribute('aria-label', 'Password')
+  const submit = button('Open command center', 'button-primary', 'submit')
+  const error = element('p', 'session-error')
+  error.setAttribute('role', 'alert')
+  const form = element('form', 'session-form', [email, password, submit, error])
+  form.addEventListener('submit', async (event) => {
     event.preventDefault()
-    if (input.value.trim()) onConnect(input.value.trim())
+    if (!email.value.trim() || !password.value) return
+    submit.disabled = true
+    submit.textContent = 'Opening…'
+    error.textContent = ''
+    try {
+      await onConnect(email.value, password.value)
+    } catch {
+      error.textContent = 'Sign-in failed. Check your Sidequest email and password.'
+      submit.disabled = false
+      submit.textContent = 'Open command center'
+    }
   })
   main.append(
     element('p', 'eyebrow', ['Private workspace']),
-    element('h1', '', ['Owner session required']),
-    element('p', '', ['Use an active owner session to open the command center. The token remains in this browser tab only.']),
+    element('h1', '', ['Sign in to your studio']),
+    element('p', '', ['Use the same private Sidequest account you use for the client portal. No token copying required.']),
     form,
   )
   return main
@@ -50,7 +69,7 @@ function errorState(message: string, onRetry: () => void): HTMLElement {
   return main
 }
 
-export function mountStudio(root: HTMLElement, api: StudioApi): void {
+export function mountStudio(root: HTMLElement, api: StudioApi, ownerSession: OwnerSessionManager): void {
   let snapshot: StudioSnapshot | null = null
   let selectedAgentId: string | null = null
   let notice = ''
@@ -70,9 +89,15 @@ export function mountStudio(root: HTMLElement, api: StudioApi): void {
       render()
     } catch (error) {
       if (error instanceof StudioApiError && (error.status === 401 || error.status === 403)) {
-        show(permissionState((token) => {
-          sessionStorage.setItem('sidequest_owner_token', token)
-          void load()
+        show(permissionState(async (email, password) => {
+          await ownerSession.signIn(email, password)
+          try {
+            await api.connectSession()
+          } catch (connectError) {
+            await ownerSession.signOut()
+            throw connectError
+          }
+          await load()
         }))
         return
       }

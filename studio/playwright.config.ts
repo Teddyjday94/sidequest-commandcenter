@@ -16,5 +16,10 @@ export default defineConfig({
     command: 'npm run dev -- --port 4199 --strictPort',
     url: 'http://127.0.0.1:4199',
     reuseExistingServer: true,
+    env: {
+      ...process.env,
+      VITE_SUPABASE_URL: 'http://127.0.0.1:4199/fake-supabase',
+      VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_browser_test',
+    },
   },
 })
