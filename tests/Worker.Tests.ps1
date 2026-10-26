@@ -157,6 +157,10 @@ $valid = New-TestResult -Envelope $envelope -Output @{ facts = @('Verified need'
 $valid.evidence[0].source_url = 'not a public URL'
 Assert-ThrowsLike { Test-SidequestJobResult -JobEnvelope $envelope -Json ($valid | ConvertTo-Json -Depth 12 -Compress) -RepoRoot $repoRoot } '*invalid_evidence_url*' 'Evidence must use an absolute public HTTP(S) source URL.'
 
+$valid = New-TestResult -Envelope $envelope -Output @{ facts = @('Verified need'); contact_routes = @() }
+$valid.evidence[0].observed_at = '2026-10-25'
+Assert-ThrowsLike { Test-SidequestJobResult -JobEnvelope $envelope -Json ($valid | ConvertTo-Json -Depth 12 -Compress) -RepoRoot $repoRoot } '*invalid_evidence_time*' 'Evidence timestamps must match the broker contract and include a time and timezone.'
+
 foreach ($field in @('job_id', 'workflow_id', 'agent_id', 'kind', 'lead_id')) {
     $valid = New-TestResult -Envelope $envelope -Output @{ facts = @('Verified need'); contact_routes = @() }
     $valid[$field] = 'wrong-value'
