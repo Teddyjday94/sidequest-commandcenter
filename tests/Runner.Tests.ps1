@@ -140,15 +140,18 @@ $isolatedArgs = New-CodexExecArguments -Prompt 'Run queued research.' -RepoRoot 
 $isolatedArgsJson = ConvertTo-Json -Compress -InputObject @($isolatedArgs)
 Assert-Contains -Actual $isolatedArgsJson -Expected '["--search","exec","--ignore-user-config"' -Because 'Queued research jobs must use native search and ignore user project configuration.'
 Assert-NotContains -Actual $isolatedArgsJson -Unexpected '"--ask-for-approval"' -Because 'The noninteractive queued process must rely on its no-tool read-only boundary and broker approvals rather than advertise an ineffective interactive prompt.'
-foreach ($feature in @('plugins', 'apps', 'computer_use', 'browser_use', 'shell_tool', 'unified_exec')) {
+foreach ($feature in @('plugins', 'apps', 'computer_use', 'browser_use', 'shell_tool')) {
     Assert-Contains -Actual $isolatedArgsJson -Expected ('"--disable","{0}"' -f $feature) -Because "Queued jobs must disable the $feature feature at the Codex process boundary."
 }
+Assert-NotContains -Actual $isolatedArgsJson -Unexpected '"--disable","unified_exec"' -Because 'Native search requires the unified execution host while shell_tool remains disabled.'
 Assert-Contains -Actual $isolatedArgsJson -Expected '"mcp_servers={}"' -Because 'Queued jobs must clear directly configured MCP servers at the process boundary.'
 Assert-Contains -Actual $isolatedArgsJson -Expected '"shell_environment_policy.inherit=\"none\""' -Because 'Queued jobs must not inherit host environment credentials.'
 Assert-Contains -Actual $isolatedArgsJson -Expected '"--sandbox","read-only"' -Because 'Queued model turns produce only a broker result envelope and must not write the workspace.'
 
 $isolatedNoSearchArgs = New-CodexExecArguments -Prompt 'Run queued review.' -RepoRoot 'C:\sidequest' -SchemaPath 'C:\schema.json' -OutputPath 'C:\result.json' -Model 'gpt-6.1-sol' -WorkerIsolation
-Assert-NotContains -Actual (ConvertTo-Json -Compress -InputObject @($isolatedNoSearchArgs)) -Unexpected '"--search"' -Because 'Non-research queued roles must not receive native web search.'
+$isolatedNoSearchArgsJson = ConvertTo-Json -Compress -InputObject @($isolatedNoSearchArgs)
+Assert-NotContains -Actual $isolatedNoSearchArgsJson -Unexpected '"--search"' -Because 'Non-research queued roles must not receive native web search.'
+Assert-Contains -Actual $isolatedNoSearchArgsJson -Expected '"--disable","unified_exec"' -Because 'Non-search jobs must disable the unified execution host with every other unnecessary tool route.'
 
 $pluginList = @'
 browser@openai-bundled      installed, enabled  1.0

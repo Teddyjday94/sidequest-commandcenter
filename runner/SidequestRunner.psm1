@@ -145,7 +145,12 @@ function New-CodexExecArguments {
     $arguments.Add('exec')
     if ($WorkerIsolation) {
         $arguments.Add('--ignore-user-config')
-        foreach ($feature in @('plugins', 'apps', 'computer_use', 'browser_use', 'shell_tool', 'unified_exec')) {
+        $disabledFeatures = @('plugins', 'apps', 'computer_use', 'browser_use', 'shell_tool')
+        # Code-mode models require the unified execution host to surface native
+        # Responses web search. The shell tool stays disabled and the sandbox is
+        # read-only, so search jobs receive web search without command execution.
+        if (-not $NativeWebSearch) { $disabledFeatures += 'unified_exec' }
+        foreach ($feature in $disabledFeatures) {
             $arguments.Add('--disable')
             $arguments.Add($feature)
         }
