@@ -4,11 +4,10 @@ These are the prompts each Claude scheduled task sends when it fires. The live c
 
 | Agent | Schedule (Central) | Model | Needs PC |
 |---|---|---|---|
-| Sales Agent | Weekdays 9:17 AM | Sonnet | No |
-| Contact Finder | Mon, Wed, Fri 8:07 AM | Opus | Yes (built-in browser) |
+| Sales Agent (does Contact Finder first on Mon, Wed, Fri) | Weekdays 9:17 AM | Sonnet | No |
 | Mockup Builder | Tue, Thu 8:33 AM | Sonnet | No |
 | Content Agent | Sundays 5:43 PM | Sonnet | No |
 
-Paused (kept for reference, replaced by the database jobs and the Sales Agent): Lead Scout, Site Auditor, Outreach Agent, Closer, Chief of Staff.
+Paused (kept for reference, replaced by the database jobs and the Sales Agent): Contact Finder (old PC-bound task), Lead Scout, Site Auditor, Outreach Agent, Closer, Chief of Staff.
 
-All four read `playbook/PLAYBOOK.md`, whose live copy is stored in the dashboard artifact (collection `ops`, doc `playbook`).
+All three read `playbook/PLAYBOOK.md`, whose live copy is stored in the dashboard artifact (collection `ops`, doc `playbook`).

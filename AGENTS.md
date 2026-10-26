@@ -15,8 +15,7 @@ The crew finds local businesses with weak or missing websites, finds their conta
 | Database (source of truth) | Supabase project `taskvfzqgpqxpdifmxru` (Side Quest Client Portal), schema **`ops`** only | Supabase |
 | Lead Scout (no AI) | `ops.run_scout(3)` via pg_cron `ops-lead-scout` (`30 11 * * 1-5` UTC) | Postgres |
 | Daily Planner (no AI) | `ops.build_todos()` via pg_cron `ops-daily-planner` (`50 11 * * 1-5`) and `ops-afternoon-planner` (`15 21 * * 1-5`) | Postgres |
-| Contact Finder | Claude scheduled task, Mon/Wed/Fri 8:07 AM CT, runs on Thomas's PC (built-in browser; falls back to WebSearch) | Claude |
-| Sales Agent | Claude scheduled task, weekdays 9:17 AM CT (Sonnet) | Claude |
+| Sales Agent (+ Contact Finder on Mon/Wed/Fri) | Claude scheduled task, weekdays 9:17 AM CT (Sonnet), cloud. On Mon/Wed/Fri it runs the playbook's Contact Finder section first with WebSearch/WebFetch | Claude |
 | Mockup Builder | Claude scheduled task, Tue/Thu 8:33 AM CT (Sonnet), deploys to Vercel | Claude |
 | Content Agent | Claude scheduled task, Sunday 5:43 PM CT (Sonnet) | Claude |
 | Dashboard | Claude Dashboard artifact https://claude.ai/artifact/LjDPvPRUYEfi4DPcsrtYmN, reads Supabase live | claude.ai |
