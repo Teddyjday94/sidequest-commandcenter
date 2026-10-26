@@ -66,17 +66,18 @@ Goal: for leads the Lead Scout added, find a way to reach them, confirm whether 
 - Re-score, set heat and stage 'Audited', and next_step: 'Ready for Sales Agent' if email, 'Call them (script on board)' if phone only, 'Send a Facebook message (text on board)' if Facebook only, else 'Find a way to reach them'.
 - Never sign in, never click anything that contacts a business, never solve a CAPTCHA. If Google shows a CAPTCHA, stop and log it.
 
-## 2c. Facebook Scout (Mon, Wed, Fri, right after the Contact Finder)
+## 2c. Directory Scout (Mon, Wed, Fri, right after the Contact Finder)
 
-Goal: find local service businesses whose only web presence is a Facebook page. They are the best leads: real customers, no website.
+Goal: find local service businesses that live on free directories and social pages instead of their own website. They are the best leads: real customers, no site.
 
-- Pick 3 searches: select id, city, niche, query from ops.maps_targets where enabled order by fb_last_run nulls first, near desc, id limit 3. After each one: update ops.maps_targets set fb_last_run = now() where id = <id>.
-- For each, WebSearch with mode "standard", allowed_domains ["facebook.com"] and query "<niche in lowercase> <city> Louisiana" (the site: operator does not work in this search tool). Read the result titles and snippets only; do not WebFetch facebook.com (it needs a login). Record only the town, even when a snippet shows a street address.
-- Keep only business pages (facebook.com/<page name> or /pages/...), never a personal profile, group, post, Marketplace listing or event. The page must clearly be a service business in or near that town.
+- Pick 3 town and niche pairs: select id, city, niche from ops.maps_targets where enabled order by fb_last_run nulls first, near desc, id limit 3. After each search: update ops.maps_targets set fb_last_run = now() where id = <id>.
+- Run one WebSearch per pair, mode "standard", query "<niche in lowercase> <city> Louisiana", rotating the sources: the first with allowed_domains ["facebook.com"], the second with ["yelp.com", "nextdoor.com"], the third with ["bbb.org", "thumbtack.com", "angi.com", "yellowpages.com"]. The site: operator does not work in this search tool. Read titles and snippets only; do not WebFetch facebook.com or nextdoor.com (they need a login).
+- Keep only business listings (a Facebook business page, a Yelp /biz/ page, a Nextdoor /pages/ page, a BBB profile and so on), never a personal profile, group, post, Marketplace listing or "best 10" roundup page. The business must clearly serve that town.
+- Record only the town. Many of these listings show the owner's home street address: never store it.
 - Skip it if the name is already a lead or a client: select id from ops.leads where ops.norm_name(business) = ops.norm_name($q$<name>$q$) union all select name from ops.clients where ops.norm_name(name) = ops.norm_name($q$<name>$q$).
-- One more WebSearch for "<name>" <city> LA to check for a website. A real site found: skip the lead unless it is clearly weak. Nothing found: website 'None found (Facebook page only)'.
-- Add up to 5 new leads per run: id from select ops.next_lead_id(), found_on 'Facebook', profile_url and facebook = the page URL, area = the town, niche, rating and phone only if a snippet shows them, contact = the phone if any else 'Facebook page'. Score with the rules under The lead record (count the missing website), heat from ops.heat_for(score), stage 'Audited', a hook about what a website would fix for them, next_step 'Send a Facebook message (text on board)' (or 'Call them (script on board)' with a phone). The Sales Agent's step E then writes the message or call script.
-- Add one ops.activity row with agent 'Lead Scout' naming how many Facebook leads were added.
+- One more WebSearch for "<name>" <city> LA to check for a website. A real site found: skip it unless it is clearly weak. Nothing found: website 'None found (<source> listing only)'.
+- Add up to 8 new leads per run: id from select ops.next_lead_id(), found_on the source ('Facebook', 'Yelp', 'Nextdoor', 'BBB', 'Thumbtack', 'Angi' or 'Yellow Pages'), profile_url the listing URL, facebook the page URL when the source is Facebook, area the town, niche, rating and phone only if the snippet shows them, contact the phone if any else '<source> page'. Score with the rules under The lead record (count the missing website and the reviews), heat from ops.heat_for(score), stage 'Audited', a hook about what a website would fix for them, and next_step 'Call them (script on board)' with a phone, 'Send a Facebook message (text on board)' for a Facebook page with no phone, else 'Find a way to reach them'. The Sales Agent's step E then writes the call script or message.
+- Add one ops.activity row with agent 'Lead Scout' naming how many directory leads were added and from where.
 
 ## 4. Sales Agent (weekdays, mid-morning)
 
