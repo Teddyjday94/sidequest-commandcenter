@@ -28,6 +28,11 @@ function Assert-Contains {
     }
 }
 
+function Assert-NotContains {
+    param([string] $Actual, [string] $Unexpected, [string] $Because)
+    if ($Actual.Contains($Unexpected)) { throw "$Because`nUnexpected: $Unexpected" }
+}
+
 function Assert-Throws {
     param(
         [Parameter(Mandatory)] [scriptblock] $Action,
@@ -64,11 +69,13 @@ $goodDoctorReport = @{
             details = @{ 'model provider' = 'openai' }
         }
         'network.provider_reachability' = @{
+            status = 'ok'
             details = @{
-                'ChatGPT inference URL' = 'https://chatgpt.com/backend-api/codex connect failed (required)'
+                'ChatGPT inference URL' = 'https://chatgpt.com/backend-api/codex reachable'
             }
         }
         'network.websocket_reachability' = @{
+            status = 'ok'
             details = @{
                 endpoint = 'wss://chatgpt.com/backend-api/codex'
                 'auth mode' = 'chatgpt'
@@ -77,12 +84,18 @@ $goodDoctorReport = @{
             }
         }
         'sandbox.helpers' = @{
+            status = 'ok'
             details = @{ 'approval policy' = 'OnRequest' }
         }
     }
 } | ConvertTo-Json -Depth 8
 
 Assert-Equal -Actual (Test-CodexDoctorReport $goodDoctorReport) -Expected $true -Because 'A pinned OpenAI provider using ChatGPT tokens and the ChatGPT endpoint must pass preflight.'
+
+$failedProviderFixture = $goodDoctorReport | ConvertFrom-Json
+$failedProviderFixture.checks.'network.provider_reachability'.status = 'fail'
+$failedProviderReport = $failedProviderFixture | ConvertTo-Json -Depth 8
+Assert-Equal -Actual (Test-CodexDoctorReport $failedProviderReport) -Expected $false -Because 'A required provider connectivity failure must fail closed even when endpoint metadata looks correct.'
 
 $customProviderFixture = $goodDoctorReport | ConvertFrom-Json
 $customProviderFixture.checks.'config.load'.details.'model provider' = 'custom-provider'
@@ -117,11 +130,25 @@ Assert-Throws -Action { Get-SidequestAgentSpec -Agent 'made-up-agent' -RepoRoot 
 
 $execArgs = New-CodexExecArguments -Prompt 'Run sales.' -RepoRoot 'C:\sidequest' -SchemaPath 'C:\sidequest\runner\agent-result.schema.json' -OutputPath 'C:\sidequest\.codex-runs\sales.json'
 $actualArgs = ConvertTo-Json -Compress -InputObject @($execArgs)
-$expectedArgs = '["exec","--strict-config","-c","model_provider=\"openai\"","-c","approval_policy=\"on-request\"","--ephemeral","--sandbox","workspace-write","-C","C:\\sidequest","--output-schema","C:\\sidequest\\runner\\agent-result.schema.json","-o","C:\\sidequest\\.codex-runs\\sales.json","Run sales."]'
+$expectedArgs = '["--ask-for-approval","on-request","exec","--strict-config","-c","model_provider=\"openai\"","--ephemeral","--sandbox","workspace-write","-C","C:\\sidequest","--output-schema","C:\\sidequest\\runner\\agent-result.schema.json","-o","C:\\sidequest\\.codex-runs\\sales.json","Run sales."]'
 Assert-Equal -Actual $actualArgs -Expected $expectedArgs -Because 'The runner must pin the built-in OpenAI provider and use a bounded writable sandbox without automatic approval.'
 
 $modelArgs = New-CodexExecArguments -Prompt 'Run content.' -RepoRoot 'C:\sidequest' -SchemaPath 'C:\schema.json' -OutputPath 'C:\result.json' -Model 'gpt-example'
 Assert-Contains -Actual (ConvertTo-Json -Compress -InputObject @($modelArgs)) -Expected '"--model","gpt-example"' -Because 'A user-selected Codex model must be forwarded without changing the default when no model is requested.'
+
+$isolatedArgs = New-CodexExecArguments -Prompt 'Run queued research.' -RepoRoot 'C:\sidequest' -SchemaPath 'C:\schema.json' -OutputPath 'C:\result.json' -Model 'gpt-6-luna' -WorkerIsolation -NativeWebSearch
+$isolatedArgsJson = ConvertTo-Json -Compress -InputObject @($isolatedArgs)
+Assert-Contains -Actual $isolatedArgsJson -Expected '["--search","exec","--ignore-user-config"' -Because 'Queued research jobs must use native search and ignore user project configuration.'
+Assert-NotContains -Actual $isolatedArgsJson -Unexpected '"--ask-for-approval"' -Because 'The noninteractive queued process must rely on its no-tool read-only boundary and broker approvals rather than advertise an ineffective interactive prompt.'
+foreach ($feature in @('plugins', 'apps', 'computer_use', 'browser_use', 'shell_tool', 'unified_exec')) {
+    Assert-Contains -Actual $isolatedArgsJson -Expected ('"--disable","{0}"' -f $feature) -Because "Queued jobs must disable the $feature feature at the Codex process boundary."
+}
+Assert-Contains -Actual $isolatedArgsJson -Expected '"mcp_servers={}"' -Because 'Queued jobs must clear directly configured MCP servers at the process boundary.'
+Assert-Contains -Actual $isolatedArgsJson -Expected '"shell_environment_policy.inherit=\"none\""' -Because 'Queued jobs must not inherit host environment credentials.'
+Assert-Contains -Actual $isolatedArgsJson -Expected '"--sandbox","read-only"' -Because 'Queued model turns produce only a broker result envelope and must not write the workspace.'
+
+$isolatedNoSearchArgs = New-CodexExecArguments -Prompt 'Run queued review.' -RepoRoot 'C:\sidequest' -SchemaPath 'C:\schema.json' -OutputPath 'C:\result.json' -Model 'gpt-6.1-sol' -WorkerIsolation
+Assert-NotContains -Actual (ConvertTo-Json -Compress -InputObject @($isolatedNoSearchArgs)) -Unexpected '"--search"' -Because 'Non-research queued roles must not receive native web search.'
 
 $pluginList = @'
 browser@openai-bundled      installed, enabled  1.0

@@ -23,7 +23,7 @@ Complete the browser flow with the ChatGPT account that owns the intended plan.
 
 ## Preview the command without consuming a run
 
-Dry-run prints the exact bounded Codex command but does not invoke a model. It is a command preview; real runs additionally check authentication, the effective provider, and required plugins.
+Dry-run prints the exact bounded Codex command but does not invoke a model. It is a command preview; real manual runs additionally check authentication, the effective provider, and required plugins.
 
 ```powershell
 .\runner\run-agent.ps1 -Agent sales-agent -DryRun
@@ -70,3 +70,5 @@ The agents use existing connected tools rather than secrets committed to this re
 - Vercel is required only when Mockup Builder deploys a `mockup-*` project.
 
 The current machine must complete the Supabase and Gmail plugin setup before the live agents can run. When an optional connection is missing, the agent must report the blocked portion and continue only with safe independent work. It must never buy an API plan or fall back to a paid key.
+
+These connection rules apply to the older supervised `run-agent.ps1` path. The guarded queue worker uses no connected plugins: the broker supplies and stores database data, Sales produces a reviewable draft artifact without Gmail access, and Contact Finder alone may use native read-only web search.

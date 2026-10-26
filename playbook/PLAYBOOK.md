@@ -13,8 +13,8 @@ The crew: Lead Scout and Daily Planner run free inside the database (no AI). The
 5. Never invent reviews, quotes, numbers or facts. Unknown stays blank.
 6. Anyone with stage "Opted out" is never contacted again.
 7. Legacy Claude agents must exclude every lead whose automation_owner is `codex-pilot`. Those rows belong only to the guarded Codex canary until Thomas changes their owner.
-7. Copy: no em dashes, no AI-sounding phrasing. Slightly laid back but professional.
-8. If something blocks you, log it in ops.activity in plain words and finish the rest.
+8. Copy: no em dashes, no AI-sounding phrasing. Slightly laid back but professional.
+9. If something blocks you, log it in ops.activity in plain words and finish the rest.
 
 ## Data (also called Where the data lives)
 

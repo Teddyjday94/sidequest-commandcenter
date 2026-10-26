@@ -4,9 +4,7 @@ param(
     [uri] $BaseUri,
 
     [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$')]
-    [string] $CredentialTarget = 'SidequestCommandCenterWorker',
-
-    [string] $Model
+    [string] $CredentialTarget = 'SidequestCommandCenterWorker'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -29,10 +27,6 @@ $parameters = @{
     BaseUri = $BaseUri
     CredentialTarget = $CredentialTarget
 }
-if (-not [string]::IsNullOrWhiteSpace($Model)) {
-    $parameters.Model = $Model
-}
-
 $result = Invoke-SidequestWorkerTurn @parameters
 if ($null -ne $result) {
     $result | ConvertTo-Json -Depth 8

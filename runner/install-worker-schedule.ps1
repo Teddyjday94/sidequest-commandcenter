@@ -81,7 +81,7 @@ $taskXml = @"
   </Principals>
   <Settings>
     <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
-    <StartWhenAvailable>true</StartWhenAvailable>
+    <StartWhenAvailable>false</StartWhenAvailable>
     <Enabled>true</Enabled>
   </Settings>
   <Actions Context="Author">

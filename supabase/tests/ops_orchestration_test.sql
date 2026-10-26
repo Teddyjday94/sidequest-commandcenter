@@ -203,8 +203,8 @@ select lives_ok(
   $$insert into ops.worker_devices (id, display_name, token_hash, status, capabilities)
     values
       ('worker-one', 'Worker One', repeat('1', 64), 'active',
-       '["kind:priority_high","kind:priority_low","kind:retry_test","kind:expired_test"]'::jsonb),
-      ('worker-two', 'Worker Two', repeat('2', 64), 'active', '["kind:priority_low"]'::jsonb)$$,
+       '["kind:research","kind:contact_verification","kind:retry_test","kind:expired_test"]'::jsonb),
+      ('worker-two', 'Worker Two', repeat('2', 64), 'active', '["kind:contact_verification"]'::jsonb)$$,
   'active worker fixtures can be created'
 );
 select lives_ok(
@@ -251,8 +251,8 @@ select lives_ok(
   $$insert into ops.jobs
       (id, workflow_id, agent_id, kind, status, priority, idempotency_key)
     values
-      ('21000000-0000-0000-0000-000000000001', '11000000-0000-0000-0000-000000000001', 'ci-agent', 'priority_high', 'queued', 1, 'ci-priority-high'),
-      ('21000000-0000-0000-0000-000000000002', '11000000-0000-0000-0000-000000000001', 'ci-agent', 'priority_low', 'queued', 50, 'ci-priority-low')$$,
+      ('21000000-0000-0000-0000-000000000001', '11000000-0000-0000-0000-000000000001', 'ci-agent', 'research', 'queued', 1, 'ci-priority-high'),
+      ('21000000-0000-0000-0000-000000000002', '11000000-0000-0000-0000-000000000001', 'ci-agent', 'contact_verification', 'queued', 50, 'ci-priority-low')$$,
   'priority queue fixtures can be created'
 );
 select is(
@@ -314,11 +314,21 @@ select throws_ok(
   'job_not_running',
   'a queued job cannot jump directly to completed'
 );
+select throws_ok(
+  $$select ops.complete_job(
+      'worker-one',
+      '21000000-0000-0000-0000-000000000001',
+      '{"job_id":"wrong-job","workflow_id":"11000000-0000-0000-0000-000000000001","agent_id":"ci-agent","kind":"research","lead_id":null,"status":"completed","summary":"wrong binding","evidence":[{"fact":"public fact","source_url":"https://example.com","source_label":"Public page","observed_at":"2026-10-25T12:00:00Z","confidence":0.8}],"confidence":0.8,"completed_operations":["researched"],"blockers":[],"next_handoff":"done","output":{"facts":["public fact"],"contact_routes":[]}}'::jsonb
+    )$$,
+  '22023',
+  'invalid_result_envelope',
+  'a non-reviewed running job still rejects mismatched envelope identifiers'
+);
 select lives_ok(
   $$select ops.complete_job(
       'worker-one',
       '21000000-0000-0000-0000-000000000001',
-      '{"summary":"done","confidence":0.8}'::jsonb
+      '{"job_id":"21000000-0000-0000-0000-000000000001","workflow_id":"11000000-0000-0000-0000-000000000001","agent_id":"ci-agent","kind":"research","lead_id":null,"status":"completed","summary":"done","evidence":[{"fact":"public fact","source_url":"https://example.com","source_label":"Public page","observed_at":"2026-10-25T12:00:00Z","confidence":0.8}],"confidence":0.8,"completed_operations":["researched"],"blockers":[],"next_handoff":"done","output":{"facts":["public fact"],"contact_routes":[]}}'::jsonb
     )$$,
   'the owning worker can complete a running job'
 );
@@ -326,7 +336,7 @@ select lives_ok(
   $$select ops.complete_job(
       'worker-one',
       '21000000-0000-0000-0000-000000000001',
-      '{"summary":"done","confidence":0.8}'::jsonb
+      '{"job_id":"21000000-0000-0000-0000-000000000001","workflow_id":"11000000-0000-0000-0000-000000000001","agent_id":"ci-agent","kind":"research","lead_id":null,"status":"completed","summary":"done","evidence":[{"fact":"public fact","source_url":"https://example.com","source_label":"Public page","observed_at":"2026-10-25T12:00:00Z","confidence":0.8}],"confidence":0.8,"completed_operations":["researched"],"blockers":[],"next_handoff":"done","output":{"facts":["public fact"],"contact_routes":[]}}'::jsonb
     )$$,
   'repeating the same completion is idempotent'
 );

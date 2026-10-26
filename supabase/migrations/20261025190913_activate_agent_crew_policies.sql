@@ -164,6 +164,186 @@ begin
 end
 $$;
 
+create or replace function ops.assert_exact_jsonb_keys(
+  p_value jsonb,
+  p_keys text[]
+) returns void
+language plpgsql
+immutable
+set search_path = ''
+as $$
+declare
+  key_count integer;
+begin
+  if p_value is null or pg_catalog.jsonb_typeof(p_value) <> 'object' then
+    raise exception using errcode = '22023', message = 'invalid_result_envelope';
+  end if;
+  select count(*)::integer into key_count from pg_catalog.jsonb_object_keys(p_value);
+  if key_count <> pg_catalog.array_length(p_keys, 1) or not (p_value ?& p_keys) then
+    raise exception using errcode = '22023', message = 'invalid_result_envelope';
+  end if;
+end
+$$;
+
+create or replace function ops.assert_bounded_string_array(
+  p_value jsonb,
+  p_max_items integer,
+  p_max_length integer default 2000
+) returns void
+language plpgsql
+immutable
+set search_path = ''
+as $$
+declare
+  item jsonb;
+  item_text text;
+begin
+  if p_value is null or pg_catalog.jsonb_typeof(p_value) <> 'array'
+    or pg_catalog.jsonb_array_length(p_value) > p_max_items then
+    raise exception using errcode = '22023', message = 'invalid_result_envelope';
+  end if;
+  for item in select value from pg_catalog.jsonb_array_elements(p_value)
+  loop
+    if pg_catalog.jsonb_typeof(item) <> 'string' then
+      raise exception using errcode = '22023', message = 'invalid_result_envelope';
+    end if;
+    item_text := item #>> '{}';
+    if nullif(pg_catalog.btrim(item_text), '') is null or pg_catalog.char_length(item_text) > p_max_length then
+      raise exception using errcode = '22023', message = 'invalid_result_envelope';
+    end if;
+  end loop;
+end
+$$;
+
+create or replace function ops.assert_valid_job_result(
+  p_job ops.jobs,
+  p_result jsonb
+) returns void
+language plpgsql
+set search_path = ''
+as $$
+declare
+  evidence_item jsonb;
+  output_value jsonb;
+  parsed_observed_at timestamptz;
+begin
+  perform ops.assert_exact_jsonb_keys(
+    p_result,
+    array['job_id','workflow_id','agent_id','kind','lead_id','status','summary',
+          'evidence','confidence','completed_operations','blockers','next_handoff','output']
+  );
+
+  if pg_catalog.jsonb_typeof(p_result -> 'job_id') <> 'string'
+    or pg_catalog.jsonb_typeof(p_result -> 'workflow_id') <> 'string'
+    or pg_catalog.jsonb_typeof(p_result -> 'agent_id') <> 'string'
+    or pg_catalog.jsonb_typeof(p_result -> 'kind') <> 'string'
+    or p_result ->> 'job_id' is distinct from p_job.id::text
+    or p_result ->> 'workflow_id' is distinct from p_job.workflow_id::text
+    or p_result ->> 'agent_id' is distinct from p_job.agent_id
+    or p_result ->> 'kind' is distinct from p_job.kind
+    or p_result ->> 'status' not in ('completed', 'blocked')
+    or pg_catalog.jsonb_typeof(p_result -> 'summary') <> 'string'
+    or nullif(pg_catalog.btrim(p_result ->> 'summary'), '') is null
+    or pg_catalog.char_length(p_result ->> 'summary') > 1000
+    or pg_catalog.jsonb_typeof(p_result -> 'next_handoff') <> 'string'
+    or nullif(pg_catalog.btrim(p_result ->> 'next_handoff'), '') is null
+    or pg_catalog.char_length(p_result ->> 'next_handoff') > 1000
+    or pg_catalog.jsonb_typeof(p_result -> 'confidence') <> 'number'
+    or (p_result ->> 'confidence')::numeric not between 0 and 1 then
+    raise exception using errcode = '22023', message = 'invalid_result_envelope';
+  end if;
+
+  if (p_job.lead_id is null and pg_catalog.jsonb_typeof(p_result -> 'lead_id') <> 'null')
+    or (p_job.lead_id is not null and (
+      pg_catalog.jsonb_typeof(p_result -> 'lead_id') <> 'string'
+      or p_result ->> 'lead_id' is distinct from p_job.lead_id
+    )) then
+    raise exception using errcode = '22023', message = 'invalid_result_envelope';
+  end if;
+
+  perform ops.assert_bounded_string_array(p_result -> 'completed_operations', 50);
+  perform ops.assert_bounded_string_array(p_result -> 'blockers', 50);
+
+  if pg_catalog.jsonb_typeof(p_result -> 'evidence') <> 'array'
+    or pg_catalog.jsonb_array_length(p_result -> 'evidence') > 50
+    or (p_result ->> 'status' = 'completed' and pg_catalog.jsonb_array_length(p_result -> 'evidence') = 0) then
+    raise exception using errcode = '22023', message = 'invalid_result_envelope';
+  end if;
+  for evidence_item in select value from pg_catalog.jsonb_array_elements(p_result -> 'evidence')
+  loop
+    perform ops.assert_exact_jsonb_keys(
+      evidence_item,
+      array['fact','source_url','source_label','observed_at','confidence']
+    );
+    if pg_catalog.jsonb_typeof(evidence_item -> 'fact') <> 'string'
+      or nullif(pg_catalog.btrim(evidence_item ->> 'fact'), '') is null
+      or pg_catalog.char_length(evidence_item ->> 'fact') > 1000
+      or pg_catalog.jsonb_typeof(evidence_item -> 'source_url') <> 'string'
+      or nullif(pg_catalog.btrim(evidence_item ->> 'source_url'), '') is null
+      or pg_catalog.char_length(evidence_item ->> 'source_url') > 2048
+      or evidence_item ->> 'source_url' !~ '^https?://[^[:space:]]+$'
+      or pg_catalog.jsonb_typeof(evidence_item -> 'source_label') <> 'string'
+      or nullif(pg_catalog.btrim(evidence_item ->> 'source_label'), '') is null
+      or pg_catalog.char_length(evidence_item ->> 'source_label') > 200
+      or pg_catalog.jsonb_typeof(evidence_item -> 'observed_at') <> 'string'
+      or nullif(pg_catalog.btrim(evidence_item ->> 'observed_at'), '') is null
+      or pg_catalog.char_length(evidence_item ->> 'observed_at') > 64
+      or evidence_item ->> 'observed_at' !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T'
+      or pg_catalog.jsonb_typeof(evidence_item -> 'confidence') <> 'number'
+      or (evidence_item ->> 'confidence')::numeric not between 0 and 1 then
+      raise exception using errcode = '22023', message = 'invalid_result_envelope';
+    end if;
+    begin
+      parsed_observed_at := (evidence_item ->> 'observed_at')::timestamptz;
+    exception when others then
+      raise exception using errcode = '22023', message = 'invalid_result_envelope';
+    end;
+  end loop;
+
+  output_value := p_result -> 'output';
+  if p_job.kind in ('research', 'contact_verification') then
+    perform ops.assert_exact_jsonb_keys(output_value, array['facts','contact_routes']);
+    perform ops.assert_bounded_string_array(output_value -> 'facts', 100);
+    perform ops.assert_bounded_string_array(output_value -> 'contact_routes', 25);
+  elsif p_job.kind = 'qualification' then
+    perform ops.assert_exact_jsonb_keys(output_value, array['score_factors','verified_hook','conflicts']);
+    perform ops.assert_bounded_string_array(output_value -> 'score_factors', 25);
+    perform ops.assert_bounded_string_array(output_value -> 'conflicts', 25);
+    if pg_catalog.jsonb_typeof(output_value -> 'verified_hook') <> 'string'
+      or nullif(pg_catalog.btrim(output_value ->> 'verified_hook'), '') is null
+      or pg_catalog.char_length(output_value ->> 'verified_hook') > 1000 then
+      raise exception using errcode = '22023', message = 'invalid_result_envelope';
+    end if;
+  elsif p_job.kind = 'draft' then
+    perform ops.assert_exact_jsonb_keys(output_value, array['artifact_summary','artifact_refs']);
+    perform ops.assert_bounded_string_array(output_value -> 'artifact_refs', 50);
+    if pg_catalog.jsonb_typeof(output_value -> 'artifact_summary') <> 'string'
+      or nullif(pg_catalog.btrim(output_value ->> 'artifact_summary'), '') is null
+      or pg_catalog.char_length(output_value ->> 'artifact_summary') > 2000 then
+      raise exception using errcode = '22023', message = 'invalid_result_envelope';
+    end if;
+  elsif p_job.kind = 'review' then
+    perform ops.assert_exact_jsonb_keys(
+      output_value,
+      array['decision','failing_checks','evidence_gaps','revision_instructions']
+    );
+    if pg_catalog.jsonb_typeof(output_value -> 'decision') <> 'string'
+      or output_value ->> 'decision' not in ('pass', 'revise', 'escalate') then
+      raise exception using errcode = '22023', message = 'invalid_result_envelope';
+    end if;
+    perform ops.assert_bounded_string_array(output_value -> 'failing_checks', 50);
+    perform ops.assert_bounded_string_array(output_value -> 'evidence_gaps', 50);
+    perform ops.assert_bounded_string_array(output_value -> 'revision_instructions', 50);
+  else
+    raise exception using errcode = '22023', message = 'invalid_result_envelope';
+  end if;
+end
+$$;
+
+revoke all on function ops.assert_exact_jsonb_keys(jsonb, text[]) from public, anon, authenticated, service_role;
+revoke all on function ops.assert_bounded_string_array(jsonb, integer, integer) from public, anon, authenticated, service_role;
+revoke all on function ops.assert_valid_job_result(ops.jobs, jsonb) from public, anon, authenticated, service_role;
+
 create or replace function ops.complete_job(
   p_worker_id text,
   p_job_id uuid,
@@ -230,16 +410,9 @@ begin
     raise exception using errcode = '42501', message = 'worker_mismatch';
   end if;
 
-  if p_result ? 'confidence' then
-    begin
-      result_confidence := (p_result ->> 'confidence')::numeric;
-    exception when invalid_text_representation then
-      raise exception using errcode = '22023', message = 'invalid_confidence';
-    end;
-    if result_confidence not between 0 and 1 then
-      raise exception using errcode = '22023', message = 'invalid_confidence';
-    end if;
-  end if;
+  perform ops.assert_valid_job_result(current_job, p_result);
+
+  result_confidence := (p_result ->> 'confidence')::numeric;
 
   if current_job.input ->> 'handoff_policy' is distinct from 'reviewed-v1' then
     update ops.jobs j
@@ -259,22 +432,6 @@ begin
       jsonb_build_object('confidence', result_confidence)
     );
     return jsonb_build_object('id', current_job.id, 'status', current_job.status);
-  end if;
-
-  if p_result ->> 'job_id' is distinct from current_job.id::text
-    or p_result ->> 'workflow_id' is distinct from current_job.workflow_id::text
-    or p_result ->> 'agent_id' is distinct from current_job.agent_id
-    or p_result ->> 'kind' is distinct from current_job.kind
-    or p_result ->> 'lead_id' is distinct from current_job.lead_id
-    or p_result ->> 'status' not in ('completed', 'blocked')
-    or nullif(pg_catalog.btrim(p_result ->> 'summary'), '') is null
-    or pg_catalog.jsonb_typeof(p_result -> 'evidence') is distinct from 'array'
-    or result_confidence is null
-    or pg_catalog.jsonb_typeof(p_result -> 'completed_operations') is distinct from 'array'
-    or pg_catalog.jsonb_typeof(p_result -> 'blockers') is distinct from 'array'
-    or nullif(pg_catalog.btrim(p_result ->> 'next_handoff'), '') is null
-    or pg_catalog.jsonb_typeof(p_result -> 'output') is distinct from 'object' then
-    raise exception using errcode = '22023', message = 'invalid_result_envelope';
   end if;
 
   minimum_confidence := greatest(0, least(1, coalesce((

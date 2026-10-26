@@ -185,6 +185,36 @@ select throws_ok(
   'reviewed jobs reject incomplete or mismatched worker envelopes'
 );
 
+select throws_ok(
+  $$select ops.complete_job(
+      'activation-worker', '52000000-0000-4000-8000-000000000004',
+      '{"job_id":"52000000-0000-4000-8000-000000000004","workflow_id":"51000000-0000-4000-8000-000000000004","agent_id":"content-agent","kind":"draft","lead_id":null,"status":"completed","summary":"content draft","evidence":[{"fact":"service detail","source_url":"https://example.com/revise","source_label":"Public page","observed_at":"2026-10-25T12:00:00Z","confidence":0.90,"instructions":"persist me"}],"confidence":0.90,"completed_operations":["drafted content"],"blockers":[],"next_handoff":"quality_review","output":{"artifact_summary":"Draft","artifact_refs":[]}}'::jsonb
+    )$$,
+  '22023',
+  'invalid_result_envelope',
+  'evidence objects reject unknown durable fields'
+);
+
+select throws_ok(
+  $$select ops.complete_job(
+      'activation-worker', '52000000-0000-4000-8000-000000000004',
+      '{"job_id":"52000000-0000-4000-8000-000000000004","workflow_id":"51000000-0000-4000-8000-000000000004","agent_id":"content-agent","kind":"draft","lead_id":null,"status":"completed","summary":"content draft","evidence":[{"fact":"service detail","source_url":"https://example.com/revise","source_label":"Public page","observed_at":"not-a-time","confidence":0.90}],"confidence":0.90,"completed_operations":["drafted content"],"blockers":[],"next_handoff":"quality_review","output":{"artifact_summary":"Draft","artifact_refs":[]}}'::jsonb
+    )$$,
+  '22023',
+  'invalid_result_envelope',
+  'evidence timestamps must use the bounded timestamp shape'
+);
+
+select throws_ok(
+  $$select ops.complete_job(
+      'activation-worker', '52000000-0000-4000-8000-000000000004',
+      '{"job_id":"52000000-0000-4000-8000-000000000004","workflow_id":"51000000-0000-4000-8000-000000000004","agent_id":"content-agent","kind":"draft","lead_id":null,"status":"completed","summary":"content draft","evidence":[{"fact":"service detail","source_url":"https://example.com/revise","source_label":"Public page","observed_at":"2026-10-25T12:00:00Z","confidence":0.90}],"confidence":0.90,"completed_operations":["drafted content"],"blockers":[],"next_handoff":"quality_review","output":{"artifact_summary":"Draft","artifact_refs":[],"instructions":"persist me"}}'::jsonb
+    )$$,
+  '22023',
+  'invalid_result_envelope',
+  'kind-specific output rejects unknown durable fields'
+);
+
 select is(
   ops.complete_job(
     'activation-worker', '52000000-0000-4000-8000-000000000001',

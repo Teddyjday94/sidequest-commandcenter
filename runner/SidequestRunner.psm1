@@ -32,11 +32,14 @@ function Test-CodexDoctorReport {
             $auth.details.'stored ChatGPT tokens' -eq 'true' -and
             $config.status -eq 'ok' -and
             $config.details.'model provider' -eq 'openai' -and
+            $providerReachability.status -eq 'ok' -and
             $providerReachability.details.'ChatGPT inference URL' -match '^https://chatgpt\.com/backend-api/' -and
+            $socket.status -eq 'ok' -and
             $socket.details.'auth mode' -eq 'chatgpt' -and
             $socket.details.'model provider' -eq 'openai' -and
             $socket.details.'provider name' -eq 'OpenAI' -and
             $socket.details.endpoint -match '^wss://chatgpt\.com/' -and
+            $sandbox.status -eq 'ok' -and
             $sandbox.details.'approval policy' -eq 'OnRequest'
         )
     } catch {
@@ -121,16 +124,39 @@ function New-CodexExecArguments {
         [Parameter(Mandatory)]
         [string] $OutputPath,
 
-        [string] $Model
+        [string] $Model,
+
+        [switch] $WorkerIsolation,
+
+        [switch] $NativeWebSearch
     )
 
     $arguments = [System.Collections.Generic.List[string]]::new()
+    if (-not $WorkerIsolation) {
+        $arguments.Add('--ask-for-approval')
+        $arguments.Add('on-request')
+    }
+    if ($NativeWebSearch) {
+        if (-not $WorkerIsolation) { throw 'native_search_requires_worker_isolation' }
+        # Native Responses web search is the only network capability exposed to
+        # queued research jobs. Connected plugins/apps stay outside the child.
+        $arguments.Add('--search')
+    }
     $arguments.Add('exec')
+    if ($WorkerIsolation) {
+        $arguments.Add('--ignore-user-config')
+        foreach ($feature in @('plugins', 'apps', 'computer_use', 'browser_use', 'shell_tool', 'unified_exec')) {
+            $arguments.Add('--disable')
+            $arguments.Add($feature)
+        }
+        $arguments.Add('-c')
+        $arguments.Add('mcp_servers={}')
+        $arguments.Add('-c')
+        $arguments.Add('shell_environment_policy.inherit="none"')
+    }
     $arguments.Add('--strict-config')
     $arguments.Add('-c')
     $arguments.Add('model_provider="openai"')
-    $arguments.Add('-c')
-    $arguments.Add('approval_policy="on-request"')
 
     if ($Model) {
         $arguments.Add('--model')
@@ -139,7 +165,7 @@ function New-CodexExecArguments {
 
     $arguments.Add('--ephemeral')
     $arguments.Add('--sandbox')
-    $arguments.Add('workspace-write')
+    $arguments.Add($(if ($WorkerIsolation) { 'read-only' } else { 'workspace-write' }))
     $arguments.Add('-C')
     $arguments.Add($RepoRoot)
     $arguments.Add('--output-schema')

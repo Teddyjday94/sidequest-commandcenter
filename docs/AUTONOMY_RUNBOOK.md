@@ -45,13 +45,19 @@ Enrollment is a future, separate checkpoint. Generate one opaque token outside t
 
 The script reads the token as a secure string and stores it in Windows Credential Manager under `SidequestCommandCenterWorker`. Do not pass the raw token on a command line, place it in an environment file, paste it into an agent prompt, or record it in an issue.
 
-The broker base URL must use HTTPS. Plain HTTP is accepted only for an explicit loopback address during local development; the broker rejects any other HTTP destination before reading or sending the credential.
+The scheduled worker base URL must use HTTPS and must not contain user info, a query string, or a fragment. The lower-level broker module accepts explicit loopback HTTP only for isolated broker tests; `runner/run-next-job.ps1` rejects it before reading a credential.
 
 To revoke a device, set that exact worker row’s status to `revoked` through an authenticated administrative database session. Confirm the worker endpoints return `401` before removing the matching Windows credential. Re-enrollment requires a new token and a new stored hash; do not reactivate or reuse the old token.
 
 ## Scheduling and PC-off behavior
 
-No cron or Windows task is installed by this branch.
+No cron or Windows task is installed by this branch. Preview the exact secret-free native task definition with:
+
+```powershell
+.\runner\install-worker-schedule.ps1 -BaseUri https://<reviewed-preview-host>
+```
+
+Only after the separate Windows-worker checkpoint is approved, register that fixed task with the same command plus `-Apply`. It runs every 15 minutes from 07:00 through 20:00 Central, ignores overlaps, does not catch up missed runs, and the worker enforces the same operating window before reading its credential.
 
 For a preview, invoke `ops.dispatch_due_missions(now())` manually from the isolated database test environment and run one worker turn under supervision. If future scheduling is approved, use the supported Supabase Cron functions rather than editing `cron.job` directly, and keep a single dispatcher cadence at or above 15 minutes.
 
@@ -67,7 +73,7 @@ Do not disable any existing Claude task until its replacement has three consecut
 
 ## No-purchase model boundary
 
-`runner/run-agent.ps1` permits only Codex using existing ChatGPT authentication, the built-in `openai` provider, official ChatGPT endpoints, and `on-request` approval. It refuses `CODEX_API_KEY`, `OPENAI_API_KEY`, and `OPENAI_BASE_URL`. Do not add paid API keys, model gateways, hosted GPU services, premium plugins, or usage-based providers without a new explicit approval.
+Both runners permit only Codex using existing ChatGPT authentication, the built-in `openai` provider, and reachable official ChatGPT endpoints. They refuse `CODEX_API_KEY`, `OPENAI_API_KEY`, and `OPENAI_BASE_URL`. The legacy supervised runner also requires the account's `on-request` policy. Codex executes queued turns noninteractively, so their safety boundary does not depend on an interactive approval prompt: the worker resolves its tier from the live Codex model catalog, clears configured MCP servers, drops inherited environment variables, uses a read-only sandbox, and disables plugins, apps, shell access, browser automation, and computer use at the child-process boundary. Only Contact Finder receives native read-only web search; all database I/O and owner approvals cross the authenticated broker. Do not add paid API keys, model gateways, hosted GPU services, premium plugins, or usage-based providers without a new explicit approval.
 
 An empty queue must exit before invoking a model. Mission dispatch itself is database work and consumes no Codex or Claude allowance.
 

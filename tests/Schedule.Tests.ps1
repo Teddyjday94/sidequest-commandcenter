@@ -109,6 +109,7 @@ $taskNamespace.AddNamespace('task', 'http://schemas.microsoft.com/windows/2004/0
 Assert-Equal -Actual $previewTaskXml.DocumentElement.LocalName -Expected 'Task' -Because 'Preview must include a well-formed native Task Scheduler definition.'
 Assert-Equal -Actual $previewTaskXml.SelectSingleNode('//task:Actions/task:Exec/task:Command', $taskNamespace).InnerText -Expected $preview.action.executable -Because 'The XML command must match the reviewed native PowerShell action.'
 Assert-Equal -Actual $previewTaskXml.SelectSingleNode('//task:Actions/task:Exec/task:Arguments', $taskNamespace).InnerText -Expected $preview.action.arguments -Because 'The XML arguments must match the secret-free preview action.'
+Assert-Equal -Actual $previewTaskXml.SelectSingleNode('//task:Settings/task:StartWhenAvailable', $taskNamespace).InnerText -Expected 'false' -Because 'A missed task must not run later outside the approved operating window.'
 
 Remove-Item Function:\Register-ScheduledTask -ErrorAction SilentlyContinue
 
