@@ -1,0 +1,660 @@
+[
+ {
+  "slug": "veteran-preaux-wash",
+  "lead": "L43",
+  "business": "Veteran Preaux Wash",
+  "logo": "Veteran Preaux Wash",
+  "mark": "VP",
+  "layout": "banner",
+  "art": "concrete",
+  "area": "Gonzales, LA",
+  "phone": "(225) 936-8241",
+  "fonts": [
+   "family=Barlow+Condensed:wght@600;700;800",
+   "\"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+   "family=Source+Sans+3:wght@400;600;700",
+   "\"Source Sans 3\", system-ui, sans-serif"
+  ],
+  "palette": {
+   "ink": "#14202e",
+   "paper": "#f7f4ee",
+   "brand": "#1c2f48",
+   "brand_ink": "#f7f4ee",
+   "accent": "#d8a23a",
+   "muted": "#4f5b68",
+   "line": "#ddd6c8",
+   "panel": "#efeadf"
+  },
+  "h1max": "5.2rem",
+  "logo_track": "0.01em",
+  "mark_radius": "4px",
+  "btn_radius": "4px",
+  "title_tail": "Soft Wash and Pressure Washing in Gonzales, LA",
+  "meta": "Veteran owned soft washing and pressure washing in Gonzales, Louisiana, plus a store for pressure washing equipment and chemicals.",
+  "eyebrow": "Veteran owned in Gonzales, LA",
+  "h1": "Soft washing and pressure washing, done by a vet who sells the gear too.",
+  "lede": "We clean homes and businesses around Gonzales, and we run a store stocked with the equipment and chemicals we use on the job.",
+  "strip": [
+   "Soft wash and pressure wash",
+   "Equipment and chemical store",
+   "Veteran owned"
+  ],
+  "services_h2": "Washing, plus the gear to do it yourself",
+  "services": [
+   [
+    "house",
+    "House soft washing",
+    "Low pressure cleaning for siding, brick and stucco that lifts mildew without damage."
+   ],
+   [
+    "drive",
+    "Driveways and concrete",
+    "Pressure washing for driveways, sidewalks and patios."
+   ],
+   [
+    "roof",
+    "Roofs and gutters",
+    "Soft wash treatment for black streaks and growth up top."
+   ],
+   [
+    "store",
+    "Preaux Wash Store",
+    "Pressure washing equipment and chemical sales for homeowners and other washers."
+   ]
+  ],
+  "services_note": "Service list is a starting point. We'll match it to exactly what you offer.",
+  "extra_html": "<section id=\"store\" style=\"background:#1c2f48;color:#f7f4ee\"><div class=\"wrap two\"><div><p class=\"eyebrow\">The store</p><h2>Buy what the pros use</h2><p class=\"lede\" style=\"color:#f7f4ee;opacity:.85\">Pick up surface cleaners, soft wash chemicals and equipment from the same people who use them every day. Ask us what to buy before you rent anything.</p></div><div class=\"photo\" style=\"background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.25);color:#f7f4ee\">Photo: the store shelves or front counter</div></div></section>",
+  "ba_h2": "Mildew and grime, gone without blasting your siding",
+  "ba_text": "Drag the slider. On the real site this shows your own before and after shots from jobs around Ascension Parish.",
+  "about_h2": "Owned and run by a veteran",
+  "about": "Tell customers who you are, where you served, and why you started washing. This is the part of the page people read before they call.",
+  "facts": [
+   [
+    "Owned by",
+    "A U.S. veteran (your name and branch go here)"
+   ],
+   [
+    "Based in",
+    "Gonzales, LA"
+   ],
+   [
+    "On Facebook",
+    "About 1,270 people follow the page"
+   ]
+  ],
+  "photo1": "you and the rig on a job",
+  "photo2": "a finished house wash",
+  "rating_line": "Facebook: 10 reviews, 100% recommend",
+  "quote_h2": "Tell us what needs cleaning",
+  "quote_text": "Send a few details and we'll call you back with a price. Need supplies instead? Ask about the store."
+ },
+ {
+  "slug": "cypress-lawn-services",
+  "lead": "L44",
+  "business": "Cypress Lawn Services",
+  "logo": "Cypress Lawn Services",
+  "mark": "C",
+  "layout": "split",
+  "art": "lawn",
+  "area": "Gonzales, LA",
+  "phone": "225-450-4808",
+  "fonts": [
+   "family=Bricolage+Grotesque:opsz,wght@12..96,600;800",
+   "\"Bricolage Grotesque\", system-ui, sans-serif",
+   "family=Figtree:wght@400;600;700",
+   "Figtree, system-ui, sans-serif"
+  ],
+  "palette": {
+   "ink": "#16241b",
+   "paper": "#f4f6f0",
+   "brand": "#2f5d3a",
+   "brand_ink": "#f4f6f0",
+   "accent": "#b5772e",
+   "muted": "#506055",
+   "line": "#d6ddd0",
+   "panel": "#ebefe5"
+  },
+  "mark_radius": "50%",
+  "btn_radius": "999px",
+  "title_tail": "Lawn Care, Pressure Washing and Tree Trimming",
+  "meta": "Lawn care, pressure washing and tree trimming in Gonzales, Louisiana, as one package from one crew.",
+  "eyebrow": "Gonzales lawn care",
+  "h1": "Your lawn, your driveway and your trees. One crew, one call.",
+  "lede": "We mow, pressure wash and trim trees as a package, so you're not juggling three companies to keep the yard looking right.",
+  "chip": "Call or text 225-450-4808",
+  "services_h2": "Bundle it and save the headache",
+  "services": [
+   [
+    "mower",
+    "Lawn care",
+    "Regular mowing and upkeep on a schedule that fits your yard."
+   ],
+   [
+    "drive",
+    "Pressure washing",
+    "Driveways, walks and patios cleaned up."
+   ],
+   [
+    "tree",
+    "Tree trimming",
+    "Trim back limbs and keep things off the roof and lines."
+   ]
+  ],
+  "extra_html": "<section style=\"padding-block:0\"><div class=\"wrap\"><div style=\"background:#2f5d3a;color:#f4f6f0;border-radius:20px;padding:clamp(24px,5vw,48px);display:grid;gap:12px\"><p class=\"eyebrow\" style=\"color:#e9c48d\">Package deal</p><h2>Stay on lawn service for three months and we'll knock down the price of a driveway wash.</h2><p style=\"margin:0;opacity:.85\">Ask us for the details when you call. Exact discount is a placeholder until we confirm it with you.</p></div></div></section>",
+  "ba_h2": "From patchy to striped",
+  "ba_text": "Drag the slider to compare. Your real before and after photos from Gonzales yards go here.",
+  "about_h2": "A local crew that handles the whole yard",
+  "about": "Put a few lines here about who runs Cypress, how long you've been mowing, and the neighborhoods you work.",
+  "facts": [
+   [
+    "Services",
+    "Lawn care, pressure washing, tree trimming"
+   ],
+   [
+    "Area",
+    "Gonzales and nearby"
+   ],
+   [
+    "Reach us",
+    "Call or text 225-450-4808"
+   ]
+  ],
+  "photo1": "the crew and mowers",
+  "photo2": "a fresh cut yard with clean edges",
+  "quote_h2": "Get a package price",
+  "quote_text": "Tell us your address and what you need, and we'll text you a price for the bundle."
+ },
+ {
+  "slug": "bizzyb-pressure-washing",
+  "lead": "L45",
+  "business": "BizzyB Pressure Washing",
+  "logo": "BizzyB",
+  "mark": "B",
+  "layout": "dark",
+  "art": "concrete",
+  "area": "Gonzales, LA",
+  "phone": "",
+  "facebook": "https://www.facebook.com/BizzyBpressurewashing/",
+  "fonts": [
+   "family=Rubik:wght@500;700;900",
+   "Rubik, system-ui, sans-serif",
+   "family=Karla:wght@400;600;700",
+   "Karla, system-ui, sans-serif"
+  ],
+  "palette": {
+   "ink": "#f5f1e6",
+   "paper": "#141412",
+   "brand": "#f2c230",
+   "brand_ink": "#141412",
+   "accent": "#f2c230",
+   "muted": "#b9b3a3",
+   "line": "#34332e",
+   "panel": "#1d1c19"
+  },
+  "h1w": "900",
+  "btn_radius": "6px",
+  "mark_radius": "30%",
+  "extra_css": ".hero{background-image:radial-gradient(circle at 85% 20%,rgba(242,194,48,.12),transparent 40%)} .review{border-color:#3d3b34} .photo{border-color:#3d3b34}",
+  "title_tail": "Pressure Washing for Homes, Businesses and Vehicles",
+  "meta": "Owner run pressure washing in Gonzales, Louisiana for homes, businesses and vehicles.",
+  "eyebrow": "Gonzales, LA",
+  "h1": "Pressure washing for your <em>home</em>, your <em>business</em> and your <em>ride</em>.",
+  "lede": "Owner run, so the person who quotes the job is the person who shows up and does it.",
+  "services_h2": "If it holds dirt, we can wash it",
+  "services": [
+   [
+    "house",
+    "Homes",
+    "Siding, porches, driveways and fences."
+   ],
+   [
+    "store",
+    "Businesses",
+    "Storefronts, walkways and lots."
+   ],
+   [
+    "car",
+    "Vehicles",
+    "Trucks, trailers, boats and equipment."
+   ]
+  ],
+  "services_note": "Details are placeholders. We'll fill in your exact services and prices.",
+  "ba_h2": "Drag the slider to see a wash",
+  "ba_text": "This slider shows a sample. On your site it shows your own jobs, which is what gets people to message you.",
+  "about_h2": "One owner, one standard",
+  "about": "Say who you are and why you started BizzyB. Customers in a small town hire people, not logos.",
+  "facts": [
+   [
+    "Run by",
+    "The owner (your name goes here)"
+   ],
+   [
+    "Area",
+    "Gonzales and nearby"
+   ],
+   [
+    "Reach us",
+    "Facebook messages for now, a phone number goes here"
+   ]
+  ],
+  "photo1": "you with the trailer",
+  "photo2": "a clean driveway or truck",
+  "quote_h2": "Get a price in a message",
+  "quote_text": "Send what you need washed and a photo if you have one. We'll get back to you with a price.",
+  "deco": "<svg class=\"deco\" viewBox=\"0 0 520 500\" aria-hidden=\"true\"><polygon points=\"82.0,40.0 61.0,76.4 19.0,76.4 -2.0,40.0 19.0,3.6 61.0,3.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"160.0,40.0 139.0,76.4 97.0,76.4 76.0,40.0 97.0,3.6 139.0,3.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"238.0,40.0 217.0,76.4 175.0,76.4 154.0,40.0 175.0,3.6 217.0,3.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"316.0,40.0 295.0,76.4 253.0,76.4 232.0,40.0 253.0,3.6 295.0,3.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"394.0,40.0 373.0,76.4 331.0,76.4 310.0,40.0 331.0,3.6 373.0,3.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"472.0,40.0 451.0,76.4 409.0,76.4 388.0,40.0 409.0,3.6 451.0,3.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"121.0,108.0 100.0,144.4 58.0,144.4 37.0,108.0 58.0,71.6 100.0,71.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"199.0,108.0 178.0,144.4 136.0,144.4 115.0,108.0 136.0,71.6 178.0,71.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"277.0,108.0 256.0,144.4 214.0,144.4 193.0,108.0 214.0,71.6 256.0,71.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"355.0,108.0 334.0,144.4 292.0,144.4 271.0,108.0 292.0,71.6 334.0,71.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"433.0,108.0 412.0,144.4 370.0,144.4 349.0,108.0 370.0,71.6 412.0,71.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"511.0,108.0 490.0,144.4 448.0,144.4 427.0,108.0 448.0,71.6 490.0,71.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"82.0,176.0 61.0,212.4 19.0,212.4 -2.0,176.0 19.0,139.6 61.0,139.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"160.0,176.0 139.0,212.4 97.0,212.4 76.0,176.0 97.0,139.6 139.0,139.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"238.0,176.0 217.0,212.4 175.0,212.4 154.0,176.0 175.0,139.6 217.0,139.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"316.0,176.0 295.0,212.4 253.0,212.4 232.0,176.0 253.0,139.6 295.0,139.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"394.0,176.0 373.0,212.4 331.0,212.4 310.0,176.0 331.0,139.6 373.0,139.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"472.0,176.0 451.0,212.4 409.0,212.4 388.0,176.0 409.0,139.6 451.0,139.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"121.0,244.0 100.0,280.4 58.0,280.4 37.0,244.0 58.0,207.6 100.0,207.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"199.0,244.0 178.0,280.4 136.0,280.4 115.0,244.0 136.0,207.6 178.0,207.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"277.0,244.0 256.0,280.4 214.0,280.4 193.0,244.0 214.0,207.6 256.0,207.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"355.0,244.0 334.0,280.4 292.0,280.4 271.0,244.0 292.0,207.6 334.0,207.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"433.0,244.0 412.0,280.4 370.0,280.4 349.0,244.0 370.0,207.6 412.0,207.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"511.0,244.0 490.0,280.4 448.0,280.4 427.0,244.0 448.0,207.6 490.0,207.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"82.0,312.0 61.0,348.4 19.0,348.4 -2.0,312.0 19.0,275.6 61.0,275.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"160.0,312.0 139.0,348.4 97.0,348.4 76.0,312.0 97.0,275.6 139.0,275.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"238.0,312.0 217.0,348.4 175.0,348.4 154.0,312.0 175.0,275.6 217.0,275.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"316.0,312.0 295.0,348.4 253.0,348.4 232.0,312.0 253.0,275.6 295.0,275.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"394.0,312.0 373.0,348.4 331.0,348.4 310.0,312.0 331.0,275.6 373.0,275.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"472.0,312.0 451.0,348.4 409.0,348.4 388.0,312.0 409.0,275.6 451.0,275.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"121.0,380.0 100.0,416.4 58.0,416.4 37.0,380.0 58.0,343.6 100.0,343.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"199.0,380.0 178.0,416.4 136.0,416.4 115.0,380.0 136.0,343.6 178.0,343.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"277.0,380.0 256.0,416.4 214.0,416.4 193.0,380.0 214.0,343.6 256.0,343.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"355.0,380.0 334.0,416.4 292.0,416.4 271.0,380.0 292.0,343.6 334.0,343.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"433.0,380.0 412.0,416.4 370.0,416.4 349.0,380.0 370.0,343.6 412.0,343.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"511.0,380.0 490.0,416.4 448.0,416.4 427.0,380.0 448.0,343.6 490.0,343.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"82.0,448.0 61.0,484.4 19.0,484.4 -2.0,448.0 19.0,411.6 61.0,411.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"160.0,448.0 139.0,484.4 97.0,484.4 76.0,448.0 97.0,411.6 139.0,411.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"238.0,448.0 217.0,484.4 175.0,484.4 154.0,448.0 175.0,411.6 217.0,411.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"316.0,448.0 295.0,484.4 253.0,484.4 232.0,448.0 253.0,411.6 295.0,411.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"394.0,448.0 373.0,484.4 331.0,484.4 310.0,448.0 331.0,411.6 373.0,411.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/><polygon points=\"472.0,448.0 451.0,484.4 409.0,484.4 388.0,448.0 409.0,411.6 451.0,411.6\" fill=\"none\" stroke=\"#f2c230\" stroke-width=\"3\"/></svg>"
+ },
+ {
+  "slug": "pure-pressure-llc",
+  "lead": "L46",
+  "business": "Pure Pressure LLC",
+  "logo": "Pure Pressure",
+  "mark": "PP",
+  "layout": "editorial",
+  "art": "concrete",
+  "area": "Gonzales, LA",
+  "phone": "",
+  "facebook": "https://www.facebook.com/itspurepressure/",
+  "fonts": [
+   "family=Manrope:wght@500;700;800",
+   "Manrope, system-ui, sans-serif",
+   "family=DM+Sans:opsz,wght@9..40,400;500;700",
+   "\"DM Sans\", system-ui, sans-serif"
+  ],
+  "palette": {
+   "ink": "#0e2430",
+   "paper": "#f6fafb",
+   "brand": "#0b7fa3",
+   "brand_ink": "#ffffff",
+   "accent": "#16a39a",
+   "muted": "#4c6470",
+   "line": "#d3e2e7",
+   "panel": "#ecf4f6"
+  },
+  "btn_radius": "12px",
+  "mark_radius": "10px",
+  "title_tail": "Pressure Washing in Gonzales, LA",
+  "meta": "Pressure washing and exterior cleaning in Gonzales, Louisiana.",
+  "eyebrow": "Pressure washing in Gonzales",
+  "h1": "Pressure washing for Gonzales homes and storefronts.",
+  "lede": "Pure Pressure cleans siding, concrete and storefronts around Gonzales. Send a message and we'll get you a free quote.",
+  "strip": [
+   "Gonzales and nearby",
+   "Residential and commercial",
+   "Free quotes"
+  ],
+  "services_h2": "What we clean",
+  "services": [
+   [
+    "house",
+    "House washing",
+    "Siding, brick and trim."
+   ],
+   [
+    "drive",
+    "Driveways and walks",
+    "Concrete brought back to its real color."
+   ],
+   [
+    "deck",
+    "Patios and decks",
+    "Pool decks, patios and porches."
+   ],
+   [
+    "store",
+    "Commercial",
+    "Storefronts and walkways."
+   ]
+  ],
+  "services_note": "Sample services. We'll swap in your real list and prices.",
+  "ba_h2": "Drag to compare",
+  "ba_text": "Sample illustration. Your own before and after photos make this the most convincing part of the page.",
+  "about_h2": "Who we are",
+  "about": "Add how long you've been washing, who's on the crew, and whether you're licensed and insured. Only what's true goes on the live site.",
+  "facts": [
+   [
+    "Based in",
+    "Gonzales, LA"
+   ],
+   [
+    "Facebook",
+    "About 680 followers"
+   ],
+   [
+    "Reach us",
+    "Facebook messages, phone number goes here"
+   ]
+  ],
+  "photo1": "the crew or truck",
+  "photo2": "a finished driveway",
+  "quote_h2": "Ask for a free quote",
+  "quote_text": "Tell us what needs cleaning and roughly how big it is. We'll reply with a price."
+ },
+ {
+  "slug": "southern-exterior-softwash",
+  "lead": "L47",
+  "business": "Southern Exterior Softwash",
+  "logo": "Southern Exterior Softwash",
+  "mark": "SE",
+  "layout": "split",
+  "art": "concrete",
+  "area": "Gonzales, LA",
+  "phone": "",
+  "facebook": "https://www.facebook.com/southernexteriorsoftwash/",
+  "fonts": [
+   "family=DM+Serif+Display",
+   "\"DM Serif Display\", Georgia, serif",
+   "family=Work+Sans:wght@400;500;600;700",
+   "\"Work Sans\", system-ui, sans-serif"
+  ],
+  "palette": {
+   "ink": "#1b2a2b",
+   "paper": "#f7f2ea",
+   "brand": "#1f5c5b",
+   "brand_ink": "#f7f2ea",
+   "accent": "#b06a3b",
+   "muted": "#566563",
+   "line": "#e0d6c6",
+   "panel": "#efe8dc"
+  },
+  "h1w": "400",
+  "btn_radius": "8px",
+  "mark_radius": "50%",
+  "title_tail": "Soft Washing in Gonzales, LA",
+  "meta": "Soft washing for homes in Gonzales, Louisiana. Low pressure cleaning that is gentle on siding, roofs and paint.",
+  "eyebrow": "Soft washing in Gonzales",
+  "h1": "Soft washing that gets your house clean without tearing it up.",
+  "lede": "Soft washing uses gentle pressure and the right cleaner to kill mildew and algae at the root, so it stays clean longer than a blast with a wand.",
+  "chip": "Message us on Facebook",
+  "services_h2": "What soft washing is for",
+  "services": [
+   [
+    "house",
+    "Siding and brick",
+    "Vinyl, Hardie board, brick and stucco."
+   ],
+   [
+    "roof",
+    "Roofs",
+    "Black streaks and growth treated without high pressure."
+   ],
+   [
+    "deck",
+    "Porches and fences",
+    "Wood and painted surfaces cleaned without gouging."
+   ]
+  ],
+  "services_note": "We'll match these to the services and prices you offer.",
+  "extra_html": "<section style=\"padding-block:0\"><div class=\"wrap\"><div class=\"two\" style=\"background:#efe8dc;border:1px solid #e0d6c6;border-radius:20px;padding:clamp(24px,5vw,48px)\"><div><p class=\"eyebrow\">Soft wash vs pressure wash</p><h2>Why we don't blast your house</h2></div><ul class=\"facts\" style=\"margin:0\"><li><b>Pressure</b><span>Garden hose level, not a jet that strips paint</span></li><li><b>Cleaner</b><span>Treats mildew and algae so they don't grow right back</span></li><li><b>Result</b><span>Cleaner longer, with no etched siding or lifted shingles</span></li></ul></div></div></section>",
+  "ba_h2": "Green and gray, back to white",
+  "ba_text": "Drag the slider. Your real jobs go here on the finished site.",
+  "about_h2": "A Gonzales crew that knows soft washing",
+  "about": "Introduce yourself here: who runs the business, how you got into soft washing, and the areas you cover.",
+  "facts": [
+   [
+    "Based in",
+    "Gonzales, LA"
+   ],
+   [
+    "Facebook",
+    "About 650 followers"
+   ],
+   [
+    "Reach us",
+    "Facebook messages, phone number goes here"
+   ]
+  ],
+  "photo1": "a house mid wash",
+  "photo2": "a clean roof",
+  "quote_h2": "Get a soft wash quote",
+  "quote_text": "Tell us about the house and what you're seeing on it. We'll get back to you with a price."
+ },
+ {
+  "slug": "grassn-all",
+  "lead": "L48",
+  "business": "Grassn' All",
+  "logo": "Grassn' All",
+  "mark": "GA",
+  "layout": "banner",
+  "art": "lawn",
+  "area": "Gonzales, LA",
+  "phone": "(225) 939-5161",
+  "fonts": [
+   "family=Chivo:wght@700;900",
+   "Chivo, system-ui, sans-serif",
+   "family=Nunito+Sans:opsz,wght@6..12,400;600;700",
+   "\"Nunito Sans\", system-ui, sans-serif"
+  ],
+  "palette": {
+   "ink": "#1f2416",
+   "paper": "#fbf9f2",
+   "brand": "#3e6b2a",
+   "brand_ink": "#fbf9f2",
+   "accent": "#e2b437",
+   "muted": "#5a6150",
+   "line": "#e2dfcf",
+   "panel": "#f2efe2"
+  },
+  "h1w": "900",
+  "btn_radius": "12px",
+  "mark_radius": "12px",
+  "title_tail": "Lawn Care and Pressure Washing in Gonzales, LA",
+  "meta": "Family style lawn care, pressure washing and gutter cleaning in Gonzales, Louisiana. Open 6:30 AM to 7 PM.",
+  "eyebrow": "Family style, Gonzales LA",
+  "h1": "Lawn care and pressure washing with a personal touch.",
+  "lede": "We're a family style business. We mow, edge, wash your driveway and patio, and clean out the gutters while we're there.",
+  "strip": [
+   "Open 6:30 AM to 7 PM",
+   "Sundays until 5 PM",
+   "(225) 939-5161"
+  ],
+  "hours": "Open 6:30 AM to 7 PM most days, Sunday until 5 PM.",
+  "services_h2": "Three jobs, one family crew",
+  "services": [
+   [
+    "mower",
+    "Lawn care",
+    "Mowing and edging that keeps the yard sharp."
+   ],
+   [
+    "drive",
+    "Pressure washing",
+    "Driveways and patios cleaned up."
+   ],
+   [
+    "gutter",
+    "Gutter cleaning",
+    "Clear gutters before the next big storm."
+   ]
+  ],
+  "ba_h2": "From shaggy to sharp",
+  "ba_text": "Drag the slider. Your real yards and driveways go here on the finished site.",
+  "about_h2": "A family business in Gonzales",
+  "about": "Tell people who the family is and how you got started. A sentence or two about why you do this goes a long way.",
+  "facts": [
+   [
+    "Services",
+    "Lawn care, pressure washing, gutters"
+   ],
+   [
+    "Hours",
+    "6:30 AM to 7 PM, Sunday until 5 PM"
+   ],
+   [
+    "Reach us",
+    "(225) 939-5161"
+   ]
+  ],
+  "photo1": "the family crew",
+  "photo2": "a clean patio after a wash",
+  "quote_h2": "Request a quote",
+  "quote_text": "Tell us what needs doing and we'll call you back with a price."
+ },
+ {
+  "slug": "pals-lawn-services",
+  "lead": "L49",
+  "business": "Pals Lawn Services",
+  "logo": "Pals Lawn Services",
+  "mark": "P",
+  "layout": "editorial",
+  "art": "lawn",
+  "area": "Gonzales and Prairieville, LA",
+  "phone": "(225) 461-7063",
+  "fonts": [
+   "family=Outfit:wght@500;700;800",
+   "Outfit, system-ui, sans-serif",
+   "family=Libre+Franklin:wght@400;500;600;700",
+   "\"Libre Franklin\", system-ui, sans-serif"
+  ],
+  "palette": {
+   "ink": "#1c2120",
+   "paper": "#f8f9f5",
+   "brand": "#2d6a4f",
+   "brand_ink": "#ffffff",
+   "accent": "#8fb339",
+   "muted": "#56605b",
+   "line": "#dde3da",
+   "panel": "#eef2ea"
+  },
+  "btn_radius": "10px",
+  "mark_radius": "50%",
+  "extra_css": ".plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,12rem),1fr));gap:14px;margin-top:28px}.plan{all:unset;box-sizing:border-box;cursor:pointer;background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:20px;display:grid;gap:6px}.plan b{font-family:var(--display);font-size:1.25rem}.plan span{color:var(--muted);font-size:.95rem}.plan[aria-pressed=true]{border-color:var(--brand);background:#e3efe6}.plan:focus-visible{outline:3px solid var(--accent);outline-offset:3px}",
+  "title_tail": "Lawn Mowing Plans in Gonzales and Prairieville",
+  "meta": "Locally owned lawn service since 2016. Weekly, biweekly, twice monthly or one time mowing in Gonzales and Prairieville, Louisiana.",
+  "eyebrow": "Locally owned since 2016",
+  "h1": "Pick a mowing plan. We'll handle the rest.",
+  "lede": "Weekly, every other week, twice a month or one time. Every visit we mow, edge, trim and blow off your drive and walks.",
+  "strip": [
+   "Gonzales and Prairieville",
+   "Open 6 AM to 8 PM daily",
+   "Auto pay after each cut"
+  ],
+  "hours": "Open 6 AM to 8 PM, every day.",
+  "services_h2": "Every visit includes",
+  "services": [
+   [
+    "mower",
+    "Mow",
+    "A clean, even cut."
+   ],
+   [
+    "leaf",
+    "Edge and trim",
+    "Sharp lines on beds, walks and the curb."
+   ],
+   [
+    "drive",
+    "Blow off",
+    "Drive, walks and patio blown clean before we leave."
+   ],
+   [
+    "card",
+    "Easy pay",
+    "Cash, check, card, or automatic drafting after each cut."
+   ]
+  ],
+  "extra_html": "<section id=\"plans\" style=\"padding-top:0\"><div class=\"wrap\"><p class=\"eyebrow\">Choose your plan</p><h2>How often should we come by?</h2><div class=\"plans\" role=\"group\" aria-label=\"Mowing plans\"><button class=\"plan\" type=\"button\" aria-pressed=\"true\"><b>Weekly</b><span>Best in peak season</span></button><button class=\"plan\" type=\"button\" aria-pressed=\"false\"><b>Every other week</b><span>Most yards, most of the year</span></button><button class=\"plan\" type=\"button\" aria-pressed=\"false\"><b>Twice a month</b><span>On a set schedule</span></button><button class=\"plan\" type=\"button\" aria-pressed=\"false\"><b>One time</b><span>Before a party or a sale</span></button></div><p class=\"note\">Prices go here. Sign up online, then pay after each cut.</p></div></section><script>document.querySelectorAll('.plan').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.plan').forEach(function(x){x.setAttribute('aria-pressed','false')});b.setAttribute('aria-pressed','true')})})</script>",
+  "ba_h2": "What a good cut looks like",
+  "ba_text": "Drag the slider. Your own Gonzales and Prairieville yards go here on the finished site.",
+  "about_h2": "Mowing Gonzales since 2016",
+  "about": "We're a locally owned lawn service. Tell customers a little about the team and the neighborhoods you mow every week.",
+  "facts": [
+   [
+    "Since",
+    "2016"
+   ],
+   [
+    "Area",
+    "Gonzales and Prairieville"
+   ],
+   [
+    "Call",
+    "(225) 461-7063"
+   ]
+  ],
+  "photo1": "the crew and trailer",
+  "photo2": "a freshly striped lawn",
+  "quote_h2": "Start your plan",
+  "quote_text": "Send your address and the plan you want. We'll confirm a price and your first cut date."
+ },
+ {
+  "slug": "jmk-window-cleaning",
+  "lead": "L50",
+  "business": "JMK Window Cleaning",
+  "logo": "JMK Window Cleaning",
+  "mark": "JMK",
+  "layout": "dark",
+  "art": "window",
+  "area": "Southeast Louisiana",
+  "phone": "(225) 717-0134",
+  "fonts": [
+   "family=Sora:wght@500;700;800",
+   "Sora, system-ui, sans-serif",
+   "family=IBM+Plex+Sans:wght@400;500;600",
+   "\"IBM Plex Sans\", system-ui, sans-serif"
+  ],
+  "palette": {
+   "ink": "#eaf3f8",
+   "paper": "#0d1b26",
+   "brand": "#5cc4f0",
+   "brand_ink": "#0d1b26",
+   "accent": "#9ee3ff",
+   "muted": "#9fb4c2",
+   "line": "#22384a",
+   "panel": "#132635"
+  },
+  "btn_radius": "8px",
+  "mark_radius": "8px",
+  "extra_css": ".logo .mark{font-size:.7rem;letter-spacing:.04em}.hero{background:linear-gradient(160deg,rgba(92,196,240,.10),transparent 55%)}.review,.photo{border-color:#2b4558}",
+  "title_tail": "Window Cleaning in Southeast Louisiana",
+  "meta": "Window, screen, frame and blind cleaning, plus solar panel cleaning, across southeast Louisiana.",
+  "eyebrow": "Southeast Louisiana window cleaning",
+  "h1": "Clean windows across southeast Louisiana, <em>inside and out</em>.",
+  "lede": "Windows, screens, frames and blinds, inside and out. We clean solar panels too, so they keep making the power you paid for.",
+  "services_h2": "Inside, outside and up on the roof",
+  "services": [
+   [
+    "window",
+    "Window washing",
+    "Inside and out, streak free."
+   ],
+   [
+    "blind",
+    "Screens, frames and blinds",
+    "The parts most cleaners skip."
+   ],
+   [
+    "panel",
+    "Solar panel cleaning",
+    "Dust and pollen off so panels keep producing."
+   ],
+   [
+    "store",
+    "Storefronts",
+    "Glass that looks good to the people walking in."
+   ]
+  ],
+  "ba_h2": "Drag the slider",
+  "ba_text": "Sample illustration. Real shots of your glass before and after go here.",
+  "about_h2": "Southeast Louisiana's window cleaners",
+  "about": "Tell people where you're based, the towns you cover, and how long you've been cleaning glass.",
+  "facts": [
+   [
+    "Covers",
+    "Southeast Louisiana"
+   ],
+   [
+    "Also does",
+    "Solar panel cleaning"
+   ],
+   [
+    "Call",
+    "(225) 717-0134"
+   ]
+  ],
+  "photo1": "a crew member on a ladder",
+  "photo2": "sparkling storefront glass",
+  "quote_h2": "Get a window quote",
+  "quote_text": "Tell us how many windows, how many stories, and whether you want screens or solar panels done too.",
+  "deco": "<svg class=\"deco\" viewBox=\"0 0 540 500\" aria-hidden=\"true\"><rect x=\"20\" y=\"20\" width=\"110\" height=\"140\" rx=\"4\" fill=\"none\" stroke=\"#5cc4f0\" stroke-width=\"3\"/><path d=\"M35 35 l40 0 -60 100 -10 0Z\" fill=\"#5cc4f0\" opacity=\".5\"/><rect x=\"20\" y=\"180\" width=\"110\" height=\"140\" rx=\"4\" fill=\"none\" stroke=\"#5cc4f0\" stroke-width=\"3\"/><path d=\"M35 195 l40 0 -60 100 -10 0Z\" fill=\"#5cc4f0\" opacity=\".5\"/><rect x=\"20\" y=\"340\" width=\"110\" height=\"140\" rx=\"4\" fill=\"none\" stroke=\"#5cc4f0\" stroke-width=\"3\"/><path d=\"M35 355 l40 0 -60 100 -10 0Z\" fill=\"#5cc4f0\" opacity=\".5\"/><rect x=\"150\" y=\"20\" width=\"110\" height=\"140\" rx=\"4\" fill=\"none\" stroke=\"#5cc4f0\" stroke-width=\"3\"/><path d=\"M165 35 l40 0 -60 100 -10 0Z\" fill=\"#5cc4f0\" opacity=\".5\"/><rect x=\"150\" y=\"180\" width=\"110\" height=\"140\" rx=\"4\" fill=\"none\" stroke=\"#5cc4f0\" stroke-width=\"3\"/><path d=\"M165 195 l40 0 -60 100 -10 0Z\" fill=\"#5cc4f0\" opacity=\".5\"/><rect x=\"150\" y=\"340\" width=\"110\" height=\"140\" rx=\"4\" fill=\"none\" stroke=\"#5cc4f0\" stroke-width=\"3\"/><path d=\"M165 355 l40 0 -60 100 -10 0Z\" fill=\"#5cc4f0\" opacity=\".5\"/><rect x=\"280\" y=\"20\" width=\"110\" height=\"140\" rx=\"4\" fill=\"none\" stroke=\"#5cc4f0\" stroke-width=\"3\"/><path d=\"M295 35 l40 0 -60 100 -10 0Z\" fill=\"#5cc4f0\" opacity=\".5\"/><rect x=\"280\" y=\"180\" width=\"110\" height=\"140\" rx=\"4\" fill=\"none\" stroke=\"#5cc4f0\" stroke-width=\"3\"/><path d=\"M295 195 l40 0 -60 100 -10 0Z\" fill=\"#5cc4f0\" opacity=\".5\"/><rect x=\"280\" y=\"340\" width=\"110\" height=\"140\" rx=\"4\" fill=\"none\" stroke=\"#5cc4f0\" stroke-width=\"3\"/><path d=\"M295 355 l40 0 -60 100 -10 0Z\" fill=\"#5cc4f0\" opacity=\".5\"/><rect x=\"410\" y=\"20\" width=\"110\" height=\"140\" rx=\"4\" fill=\"none\" stroke=\"#5cc4f0\" stroke-width=\"3\"/><path d=\"M425 35 l40 0 -60 100 -10 0Z\" fill=\"#5cc4f0\" opacity=\".5\"/><rect x=\"410\" y=\"180\" width=\"110\" height=\"140\" rx=\"4\" fill=\"none\" stroke=\"#5cc4f0\" stroke-width=\"3\"/><path d=\"M425 195 l40 0 -60 100 -10 0Z\" fill=\"#5cc4f0\" opacity=\".5\"/><rect x=\"410\" y=\"340\" width=\"110\" height=\"140\" rx=\"4\" fill=\"none\" stroke=\"#5cc4f0\" stroke-width=\"3\"/><path d=\"M425 355 l40 0 -60 100 -10 0Z\" fill=\"#5cc4f0\" opacity=\".5\"/></svg>"
+ }
+]
