@@ -1,0 +1,514 @@
+<title>Sidequest HQ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=Work+Sans:wght@400;500;600&display=swap">
+<style>
+/* One visual world: a pixel town at dusk. Map on the left, guild ledger on the right; stacks on phones. */
+:root {
+  color-scheme: dark;
+  --ink: #f1ead8; --muted: #a9a3c2; --bg: #12142a; --panel: #1d2040; --panel-2: #262a52; --line: #363b6e;
+  --gold: #ffcf4a; --green: #6fd36f; --red: #ff6b6b; --blue: #5fb3d9;
+  --pixel: "Pixelify Sans", "Courier New", monospace; --body: "Work Sans", system-ui, sans-serif;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.45; }
+.wrap { max-width: 1240px; margin-inline: auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 18px 48px; display: grid; gap: 16px; }
+header.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+h1 { font-family: var(--pixel); font-weight: 700; font-size: 2rem; margin: 0; letter-spacing: .02em; color: var(--gold); text-shadow: 3px 3px 0 #6b3d10; }
+.sub { margin: 2px 0 0; color: var(--muted); }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tools a, .tools button { font-family: var(--pixel); font-size: 15px; color: var(--ink); background: var(--panel-2); border: 2px solid var(--line); border-bottom-width: 4px; padding: 6px 12px; text-decoration: none; cursor: pointer; border-radius: 2px; }
+.tools a:hover, .tools button:hover { border-color: var(--gold); }
+.tools a:focus-visible, .tools button:focus-visible, canvas:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.clock { font-family: var(--pixel); color: var(--muted); font-size: 15px; }
+.game { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 340px); gap: 16px; align-items: start; }
+@media (max-width: 900px) { .game { grid-template-columns: 1fr; } }
+.box { background: var(--panel); border: 2px solid var(--line); box-shadow: 0 4px 0 #0b0c1c; border-radius: 4px; min-width: 0; }
+.box h2 { font-family: var(--pixel); font-weight: 600; font-size: 17px; margin: 0; padding: 10px 14px; border-bottom: 2px solid var(--line); display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.box h2 small { font-family: var(--body); font-weight: 500; font-size: 12px; color: var(--muted); }
+.box .in { padding: 12px 14px; display: grid; gap: 10px; }
+.world { position: relative; }
+.stage { position: relative; aspect-ratio: 16 / 9; width: 100%; overflow: hidden; background: #2e5a32; }
+canvas#map { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; cursor: pointer; display: block; }
+.lbl { position: absolute; transform: translate(-50%, -50%); font-family: var(--pixel); font-size: clamp(9px, 1.25vw, 13px); color: #fff; background: rgba(15, 16, 34, .78); padding: 1px 6px; border-radius: 2px; white-space: nowrap; pointer-events: none; }
+.lbl.sel { background: var(--gold); color: #2a1a00; }
+.hint { font-size: 12px; color: var(--muted); padding: 8px 14px; border-top: 2px solid var(--line); }
+.ticker { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 15rem; overflow: auto; font-size: 13px; }
+.ticker li { display: grid; grid-template-columns: 3.4rem 1fr; gap: 8px; }
+.ticker time { font-family: var(--pixel); color: var(--muted); }
+.ticker b { font-weight: 600; }
+.card-top { display: flex; gap: 12px; align-items: center; }
+.avatar { width: 48px; height: 48px; image-rendering: pixelated; background: var(--panel-2); border: 2px solid var(--line); border-radius: 2px; flex: none; }
+.name { font-family: var(--pixel); font-size: 20px; line-height: 1.1; }
+.cls { color: var(--muted); font-size: 13px; }
+.lv { font-family: var(--pixel); color: var(--gold); font-size: 15px; }
+.bar { height: 12px; background: #0f1024; border: 2px solid var(--line); border-radius: 2px; position: relative; overflow: hidden; }
+.bar i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(180deg, #ffe17a, #e0a92a); }
+.bar.g i { background: linear-gradient(180deg, #9af09a, #3fae4a); }
+.bar.r i { background: linear-gradient(180deg, #ff9d9d, #d84a4a); }
+.barlbl { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); font-family: var(--pixel); }
+.quote { margin: 0; padding: 10px 12px; background: #f6efd9; color: #2a2318; border: 2px solid #b79a5a; border-radius: 2px; font-size: 14px; position: relative; }
+.quote::before { content: ""; position: absolute; top: -8px; left: 18px; border: 6px solid transparent; border-bottom-color: #b79a5a; border-top: 0; }
+dl.kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; font-size: 13px; }
+dl.kv dt { color: var(--muted); } dl.kv dd { margin: 0; }
+.state { font-family: var(--pixel); font-size: 13px; padding: 1px 8px; border-radius: 2px; border: 2px solid currentColor; justify-self: start; }
+.state.work { color: var(--green); } .state.sleep { color: var(--muted); } .state.late { color: var(--red); }
+.quests { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.quests li { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: start; font-size: 13px; padding-bottom: 8px; border-bottom: 1px dashed var(--line); }
+.quests li:last-child { border-bottom: 0; padding-bottom: 0; }
+.tag { font-family: var(--pixel); font-size: 12px; padding: 0 6px; border-radius: 2px; color: #1a1300; }
+.tag.p1 { background: var(--red); } .tag.p2 { background: var(--gold); } .tag.p3 { background: var(--muted); }
+.reward { font-family: var(--pixel); color: var(--gold); font-size: 13px; white-space: nowrap; }
+.who { font-weight: 600; }
+.badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 8px; }
+.badge { text-align: center; font-size: 11px; color: var(--muted); display: grid; gap: 4px; justify-items: center; }
+.badge .ic { width: 40px; height: 40px; display: grid; place-items: center; font-family: var(--pixel); font-size: 18px; border: 2px solid var(--line); background: #0f1024; border-radius: 2px; filter: grayscale(1); opacity: .45; }
+.badge.on { color: var(--ink); } .badge.on .ic { filter: none; opacity: 1; border-color: var(--gold); background: #3a2f10; color: var(--gold); }
+.notice { padding: 12px 14px; border: 2px solid var(--red); background: #3a1a26; border-radius: 2px; }
+.notice b { font-family: var(--pixel); display: block; }
+.empty { color: var(--muted); font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Sidequest HQ</h1>
+      <p class="sub">Your crew, live from the command center. Tap anyone in town to see what they're up to.</p>
+    </div>
+    <div class="tools">
+      <span class="clock" id="clock"></span>
+      <a href="https://claude.ai/artifact/My8ufd1itRBDSTHAK9VJ5E" target="_blank" rel="noopener">Lead Desk</a>
+      <a href="https://claude.ai/artifact/LjDPvPRUYEfi4DPcsrtYmN" target="_blank" rel="noopener">Dashboard</a>
+      <button id="refresh" type="button">Refresh</button>
+    </div>
+  </header>
+
+  <div id="problem"></div>
+
+  <div class="game">
+    <div style="display:grid;gap:16px;min-width:0">
+      <section class="box world">
+        <div class="stage" id="stage"><canvas id="map" width="320" height="180" tabindex="0" aria-label="Pixel map of Sidequest HQ. Each building is an agent's station."></canvas></div>
+        <div class="hint" id="legend">Green dots: working in the last few hours. Zzz: off duty until the next run. Red !: missed a run.</div>
+      </section>
+      <section class="box">
+        <h2>Town log <small id="updated">loading</small></h2>
+        <div class="in"><ul class="ticker" id="ticker"><li class="empty">Waiting for the crew to report in.</li></ul></div>
+      </section>
+    </div>
+
+    <aside style="display:grid;gap:16px;min-width:0">
+      <section class="box"><h2>Guild master</h2><div class="in" id="player"></div></section>
+      <section class="box"><h2 id="sel-h">Crew member <small>tap the map</small></h2><div class="in" id="selected"></div></section>
+      <section class="box"><h2>Weekly raid <small id="week-lbl"></small></h2><div class="in" id="raid"></div></section>
+      <section class="box"><h2>Quest log <small>do these in Lead Desk</small></h2><div class="in"><ul class="quests" id="quests"></ul></div></section>
+      <section class="box"><h2>Achievements</h2><div class="in"><div class="badges" id="badges"></div></div></section>
+    </aside>
+  </div>
+</div>
+
+<script>
+(() => {
+  const SERVER = 'Supabase', PROJECT = 'taskvfzqgpqxpdifmxru';
+  const W = 320, H = 180;
+  const SQL = `select json_build_object(
+    'agents', (select json_agg(a) from (select id, name, role, status, schedule, next_run, last_run, last_result from ops.agents where id in ('scout','planner','finder','detective','sales','builder','site','content')) a),
+    'acts', (select json_agg(x) from (select lower(agent) as agent, count(*) as n, max(at) as last_at from ops.activity group by 1) x),
+    'feed', (select json_agg(x) from (select agent, action, at from ops.activity order by at desc limit 14) x),
+    'todos', (select json_agg(x) from (select type, who, item, priority from ops.todos order by priority, id limit 10) x),
+    'todo_count', (select count(*) from ops.todos),
+    'leads', (select count(*) from ops.leads),
+    'with_phone', (select count(*) from ops.leads where phone <> ''),
+    'with_email', (select count(*) from ops.leads where email <> ''),
+    'contacted', (select count(*) from ops.leads where touches > 0),
+    'replied', (select count(*) from ops.leads where stage in ('Replied','Proposal sent','Won')),
+    'won', (select count(*) from ops.leads where stage = 'Won'),
+    'won_value', (select coalesce(sum(deal_value), 0) from ops.leads where stage = 'Won'),
+    'drafts', (select count(*) from ops.leads where draft_id <> ''),
+    'scripts', (select count(*) from ops.leads where call_script <> '' or dm_text <> ''),
+    'mockups_ever', (select count(distinct lead_id) from ops.lead_events where stage = 'Mockup ready'),
+    'events', (select count(*) from ops.lead_events),
+    'dossiers', (select count(*) from ops.dossiers),
+    'posts', (select count(*) from ops.posts),
+    'builds', (select count(*) from ops.builds),
+    'notes', (select count(*) from ops.leads where my_notes <> ''),
+    'week', (select row_to_json(w) from (select * from ops.weekly_stats order by week desc limit 1) w)
+  ) as hq`;
+
+  // Each agent's station, look and how its XP is earned from real work.
+  const AGENTS = [
+    { id: 'scout', cls: 'Ranger', house: 'Lookout Tower', body: '#7bc96f', hat: '#3f6b34', roof: '#3f6b34', wall: '#c9b48a', side: 'L', row: 0,
+      xp: (s) => s.leads * 10, stat: (s) => `${s.leads} leads found` },
+    { id: 'planner', cls: 'Quartermaster', house: 'Town Hall', body: '#d6b37a', hat: '#7a5a2e', roof: '#8a5a2e', wall: '#e2d2ae', side: 'L', row: 1,
+      xp: (s) => s.events * 3 + 50, stat: (s) => `${s.todo_count} quests on the board` },
+    { id: 'finder', cls: 'Tracker', house: 'Phone Booth', body: '#5fb3d9', hat: '#2b6b8a', roof: '#2b6b8a', wall: '#cfd9e0', side: 'L', row: 2,
+      xp: (s) => s.with_phone * 8 + s.with_email * 15 + acts(s, 'finder').n * 10, stat: (s) => `${s.with_phone} phones, ${s.with_email} emails` },
+    { id: 'detective', cls: 'Investigator', house: 'Detective Office', body: '#9b87d6', hat: '#3c3150', roof: '#3c3150', wall: '#b9b0c9', side: 'L', row: 3,
+      xp: (s) => s.dossiers * 25, stat: (s) => `${s.dossiers} case files` },
+    { id: 'sales', cls: 'Merchant', house: 'Post Office', body: '#e8835a', hat: '#9b3f22', roof: '#9b3f22', wall: '#ead2b8', side: 'R', row: 0,
+      xp: (s) => s.drafts * 20 + s.scripts * 10 + s.contacted * 15 + s.replied * 40, stat: (s) => `${s.drafts} drafts, ${s.scripts} scripts` },
+    { id: 'builder', cls: 'Artificer', house: 'Mockup Workshop', body: '#f2c14e', hat: '#8a6a12', roof: '#6b4f12', wall: '#d8c39a', side: 'R', row: 1,
+      xp: (s) => s.mockups_ever * 40 + acts(s, 'builder').n * 10, stat: (s) => `${s.mockups_ever} mockups built` },
+    { id: 'site', cls: 'Architect', house: 'Construction Yard', body: '#e07272', hat: '#7a2e2e', roof: '#7a2e2e', wall: '#d9c0b0', side: 'R', row: 2,
+      xp: (s) => s.builds * 150 + 20, stat: (s) => `${s.builds} client sites` },
+    { id: 'content', cls: 'Bard', house: 'Content Studio', body: '#e07bc4', hat: '#7a2e66', roof: '#7a2e66', wall: '#e0c7d8', side: 'R', row: 3,
+      xp: (s) => s.posts * 12, stat: (s) => `${s.posts} posts planned` },
+  ];
+  const ALIAS = { 'lead scout': 'scout', 'daily planner': 'planner', planner: 'planner', 'chief of staff': 'planner', 'contact finder': 'finder', finder: 'finder',
+    'site auditor': 'finder', detective: 'detective', 'sales agent': 'sales', sales: 'sales', 'outreach agent': 'sales', closer: 'sales', 'mockup builder': 'builder', builder: 'builder',
+    site: 'site', 'site builder': 'site', content: 'content', 'content agent': 'content', you: 'you' };
+  const STALE_DAYS = { scout: 3, planner: 3, finder: 4, detective: 5, sales: 3, builder: 5, site: 5, content: 8 };
+  const RAID = [['found', 'Leads found', 25], ['contacted', 'Outreach sent', 10], ['mockups', 'Mockups', 3], ['replied', 'Replies', 2], ['won', 'Deals won', 1]];
+
+  // House positions: two columns facing a central plaza.
+  const HOUSE_W = 56, HOUSE_H = 36;
+  AGENTS.forEach((a) => {
+    a.hx = a.side === 'L' ? 6 : W - 6 - HOUSE_W;
+    a.hy = 6 + a.row * 43;
+    a.home = { x: a.side === 'L' ? a.hx + HOUSE_W + 8 : a.hx - 8, y: a.hy + 26 };
+    a.pos = { ...a.home }; a.target = { ...a.home }; a.wait = Math.random() * 2; a.trip = 0; a.frame = 0; a.face = a.side === 'L' ? 1 : -1;
+  });
+  const BOARD = { x: 160, y: 86 };
+  const PLAYER = { x: 160, y: 104 };
+
+  let mcp = null, data = null, selected = null, problem = null, loadedAt = null;
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+  const fmt = (n) => Number(n || 0).toLocaleString('en-US');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const acts = (s, id) => (s._acts && s._acts[id]) || { n: 0, last_at: null };
+  const level = (xp) => { const lv = Math.floor(Math.sqrt(xp / 40)) + 1; const lo = 40 * (lv - 1) ** 2, hi = 40 * lv ** 2; return { lv, pct: Math.min(100, ((xp - lo) / (hi - lo)) * 100), toNext: hi - xp }; };
+  const chicago = () => { const p = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', hour: 'numeric', minute: '2-digit', weekday: 'short', hour12: true }).formatToParts(new Date()); const g = (t) => (p.find((x) => x.type === t) || {}).value; return { label: `${g('weekday')} ${g('hour')}:${g('minute')} ${g('dayPeriod')}`, hour: Number(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', hour: 'numeric', hour12: false }).format(new Date())) % 24 }; };
+  const todayStr = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chicago' }).format(new Date());
+
+  // Supabase wraps rows in a short note; pull the JSON array out.
+  const rowsFrom = (payload) => {
+    let txt = payload;
+    if (txt && typeof txt === 'object') txt = typeof txt.result === 'string' ? txt.result : JSON.stringify(txt);
+    const m = String(txt).match(/<(untrusted-data-[\w-]+)>\s*(\[[\s\S]*\])\s*<\/\1>/);
+    if (!m) throw { code: 'tool_error', message: String(txt).slice(0, 200) };
+    return JSON.parse(m[2]);
+  };
+  const explain = (err) => {
+    const c = err && err.code;
+    if (c === 'server_not_connected' || c === 'selection_required') return ['Supabase is not connected', 'Add the Supabase connector in claude.ai Settings, Connectors, then press Refresh.'];
+    if (c === 'needs_reauth') return ['Supabase needs you to sign in again', 'Reconnect Supabase in claude.ai Settings, Connectors.'];
+    if (c === 'not_in_manifest' || c === 'not_granted' || c === 'consent_required') return ['Supabase is turned off for this page', 'Allow Supabase from this page’s Permissions menu, then press Refresh.'];
+    if (c === 'server_unavailable') return ['Supabase did not answer', 'Give it a few seconds and press Refresh.'];
+    return ['Could not load the town', String((err && err.message) || 'Press Refresh to try again.').slice(0, 200)];
+  };
+
+  function state(a) {
+    if (!data) return 'sleep';
+    const ag = (data.agents || []).find((x) => x.id === a.id) || {};
+    const last = ag.last_run ? new Date(String(ag.last_run).slice(0, 10)) : null;
+    const days = last ? Math.round((new Date(todayStr()) - last) / 864e5) : 99;
+    if (ag.status === 'Live' && days > (STALE_DAYS[a.id] || 3)) return 'late';
+    const la = acts(data, a.id).last_at;
+    if (la && Date.now() - new Date(la).getTime() < 3 * 3600e3) return 'work';
+    if (ag.last_run && String(ag.last_run).slice(0, 10) === todayStr() && a.id !== 'planner' && a.id !== 'scout') return 'work';
+    return 'sleep';
+  }
+
+  async function load() {
+    if (!mcp) return;
+    $('updated').textContent = 'loading';
+    try {
+      const r = await mcp.callTool(SERVER, 'execute_sql', { project_id: PROJECT, query: SQL }, { cache: false });
+      const row = rowsFrom(r.payload)[0];
+      const d = row.hq || row;
+      d._acts = {};
+      (d.acts || []).forEach((x) => { const id = ALIAS[x.agent] || x.agent; const cur = d._acts[id] || { n: 0, last_at: null }; cur.n += Number(x.n) || 0; if (!cur.last_at || new Date(x.last_at) > new Date(cur.last_at)) cur.last_at = x.last_at; d._acts[id] = cur; });
+      ['leads', 'with_phone', 'with_email', 'contacted', 'replied', 'won', 'won_value', 'drafts', 'scripts', 'mockups_ever', 'events', 'dossiers', 'posts', 'builds', 'notes', 'todo_count'].forEach((k) => { d[k] = Number(d[k]) || 0; });
+      data = d; problem = null; loadedAt = new Date();
+    } catch (err) { problem = explain(err); }
+    renderSide();
+  }
+
+  /* ---------- drawing ---------- */
+  const cv = $('map'), ctx = cv.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), w, h); };
+
+  // Grass, plaza and paths pre-rendered once.
+  const ground = document.createElement('canvas'); ground.width = W; ground.height = H;
+  (() => {
+    const g = ground.getContext('2d');
+    let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    g.fillStyle = '#4c8a3f'; g.fillRect(0, 0, W, H);
+    for (let i = 0; i < 900; i++) { g.fillStyle = rnd() > .5 ? '#5a9a49' : '#437d38'; g.fillRect(Math.floor(rnd() * W), Math.floor(rnd() * H), 1, 1); }
+    for (let i = 0; i < 70; i++) { g.fillStyle = rnd() > .5 ? '#f2e36b' : '#f4f1ea'; g.fillRect(Math.floor(rnd() * W), Math.floor(rnd() * H), 1, 1); }
+    // plaza
+    g.fillStyle = '#9b9384'; g.fillRect(96, 46, 128, 90);
+    for (let y = 46; y < 136; y += 6) for (let x = 96; x < 224; x += 8) { g.fillStyle = ((x / 8 + y / 6) | 0) % 2 ? '#a9a192' : '#918a7c'; g.fillRect(x + ((y / 6) % 2 ? 4 : 0), y, 7, 5); }
+    g.fillStyle = '#7d766a'; g.fillRect(96, 46, 128, 1); g.fillRect(96, 135, 128, 1); g.fillRect(96, 46, 1, 90); g.fillRect(223, 46, 1, 90);
+    // paths from each door to the plaza
+    AGENTS.forEach((a) => {
+      const y = a.home.y - 2;
+      const x0 = a.side === 'L' ? a.hx + HOUSE_W : 224, x1 = a.side === 'L' ? 96 : a.hx;
+      g.fillStyle = '#b8a77f'; g.fillRect(x0, y, x1 - x0, 6);
+      g.fillStyle = '#a3936c'; for (let x = x0; x < x1; x += 4) g.fillRect(x, y + ((x / 4) % 2 ? 1 : 4), 2, 1);
+    });
+    // trees
+    [[80, 10], [236, 12], [84, 160], [234, 160], [78, 90], [240, 88], [140, 152], [180, 150]].forEach(([x, y]) => {
+      g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x - 5, y + 9, 12, 3);
+      g.fillStyle = '#6b4a2b'; g.fillRect(x, y + 5, 2, 6);
+      g.fillStyle = '#2f6b2f'; g.fillRect(x - 5, y - 4, 12, 10); g.fillStyle = '#3d8a3a'; g.fillRect(x - 4, y - 6, 10, 9); g.fillStyle = '#58a84f'; g.fillRect(x - 2, y - 5, 4, 3);
+    });
+  })();
+
+  function house(a, night) {
+    const { hx: x, hy: y } = a, w = HOUSE_W, h = HOUSE_H;
+    px(x + 2, y + h, w - 2, 3, 'rgba(0,0,0,.25)');
+    px(x, y + 10, w, h - 10, a.wall);
+    for (let yy = y + 13; yy < y + h; yy += 4) px(x, yy, w, 1, 'rgba(0,0,0,.08)');
+    px(x - 2, y, w + 4, 11, a.roof);
+    for (let xx = x - 2; xx < x + w + 2; xx += 4) px(xx, y + 2, 2, 8, 'rgba(255,255,255,.08)');
+    px(x - 2, y + 10, w + 4, 2, 'rgba(0,0,0,.3)');
+    const doorX = a.side === 'L' ? x + w - 12 : x + 4;
+    px(doorX, y + h - 13, 8, 13, '#5a3a22'); px(doorX + (a.side === 'L' ? 1 : 5), y + h - 7, 1, 1, '#ffcf4a');
+    const winX = a.side === 'L' ? x + 6 : x + w - 20;
+    const glow = night ? '#ffd86b' : '#a9d6ef';
+    px(winX, y + 16, 14, 9, '#3b2a1c'); px(winX + 1, y + 17, 5, 7, glow); px(winX + 8, y + 17, 5, 7, glow);
+    if (night) px(winX - 2, y + 26, 18, 2, 'rgba(255,216,107,.25)');
+  }
+
+  function person(x, y, body, hat, frame, face, crown) {
+    x = Math.round(x); y = Math.round(y);
+    px(x - 3, y + 6, 7, 2, 'rgba(0,0,0,.3)');
+    const step = frame % 2;
+    px(x - 2, y + 3, 2, 3 - step, '#2b2b3d'); px(x + 1, y + 3, 2, 2 + step, '#2b2b3d');
+    px(x - 3, y - 2, 7, 5, body); px(x - 3, y + 2, 7, 1, 'rgba(0,0,0,.2)');
+    px(x - 2, y - 7, 5, 5, '#f2c8a0');
+    px(x - 3, y - 8, 7, 2, hat); px(face > 0 ? x + 1 : x - 3, y - 6, 3, 1, hat);
+    px(face > 0 ? x + 1 : x - 1, y - 5, 1, 1, '#2b2b3d');
+    if (crown) { px(x - 3, y - 11, 7, 2, '#ffcf4a'); px(x - 3, y - 12, 1, 1, '#ffcf4a'); px(x, y - 12, 1, 1, '#ffcf4a'); px(x + 3, y - 12, 1, 1, '#ffcf4a'); }
+  }
+
+  function board(t) {
+    const { x, y } = BOARD;
+    px(x - 13, y + 8, 2, 8, '#5a3a22'); px(x + 11, y + 8, 2, 8, '#5a3a22');
+    px(x - 15, y - 8, 30, 17, '#7a5230'); px(x - 14, y - 7, 28, 15, '#a8774a');
+    const n = data ? Math.min(data.todo_count, 9) : 0;
+    for (let i = 0; i < n; i++) { const cx = x - 12 + (i % 5) * 5, cy = y - 5 + Math.floor(i / 5) * 6; px(cx, cy, 4, 4, ['#f6efd9', '#ffd86b', '#ffb3b3'][i % 3]); px(cx + 1, cy, 2, 1, '#c0392b'); }
+    if (n) { const bob = reduce ? 0 : Math.round(Math.sin(t / 300)); px(x - 1, y - 16 + bob, 2, 5, '#ffcf4a'); px(x - 1, y - 9 + bob, 2, 2, '#ffcf4a'); }
+  }
+
+  let last = performance.now();
+  function step(t) {
+    const dt = Math.min(0.1, (t - last) / 1000); last = t;
+    const hour = chicago().hour;
+    const night = hour >= 19 || hour < 6;
+    ctx.drawImage(ground, 0, 0);
+    AGENTS.forEach((a) => house(a, night));
+    board(t);
+    // agents
+    AGENTS.forEach((a) => {
+      const st = state(a);
+      if (!reduce) {
+        a.wait -= dt;
+        const dx = a.target.x - a.pos.x, dy = a.target.y - a.pos.y, dist = Math.hypot(dx, dy);
+        if (dist > 0.5) { const sp = st === 'work' ? 22 : 9; a.pos.x += (dx / dist) * Math.min(dist, sp * dt); a.pos.y += (dy / dist) * Math.min(dist, sp * dt); a.frame = Math.floor(t / 160); a.face = dx >= 0 ? 1 : -1; }
+        else if (a.wait <= 0) {
+          if (st === 'work') { a.trip = 1 - a.trip; a.target = a.trip ? { x: BOARD.x + (a.side === 'L' ? -20 : 20), y: BOARD.y + 4 + (a.row - 1.5) * 5 } : { ...a.home }; a.wait = 1 + Math.random() * 1.5; }
+          else if (st === 'sleep') { a.target = { ...a.home }; a.wait = 3; }
+          else { a.target = { x: a.home.x + (Math.random() * 10 - 5), y: a.home.y + (Math.random() * 8 - 4) }; a.wait = 1.5 + Math.random() * 3; }
+        }
+      }
+      person(a.pos.x, a.pos.y, a.body, a.hat, reduce ? 0 : a.frame, a.face, false);
+      if (selected === a.id) { px(a.pos.x - 5, a.pos.y + 8, 11, 1, '#ffcf4a'); }
+      const top = a.pos.y - 16;
+      if (st === 'late') { const b = reduce ? 0 : Math.round(Math.sin(t / 200) * 1.5); px(a.pos.x - 1, top - 4 + b, 2, 5, '#ff6b6b'); px(a.pos.x - 1, top + 2 + b, 2, 2, '#ff6b6b'); }
+      else if (st === 'sleep') { const k = reduce ? 0 : (t / 900 + a.row) % 1; ctx.globalAlpha = 1 - k; px(a.pos.x + 3 + k * 4, top - k * 6, 3, 1, '#e8e4ff'); px(a.pos.x + 4 + k * 4, top + 1 - k * 6, 1, 1, '#e8e4ff'); px(a.pos.x + 3 + k * 4, top + 2 - k * 6, 3, 1, '#e8e4ff'); ctx.globalAlpha = 1; }
+      else { px(a.pos.x - 1, top, 3, 3, '#6fd36f'); if (a.trip && !reduce) px(a.pos.x + 3, a.pos.y - 3, 3, 3, '#f6efd9'); }
+    });
+    // the player at the board
+    const pb = reduce ? 0 : Math.round(Math.sin(t / 500));
+    person(PLAYER.x, PLAYER.y + pb * 0, '#3b5bd9', '#22337a', 0, 1, true);
+    // time of day
+    if (night) { ctx.fillStyle = 'rgba(16,20,60,.45)'; ctx.fillRect(0, 0, W, H); }
+    else if (hour >= 17) { ctx.fillStyle = 'rgba(255,130,60,.12)'; ctx.fillRect(0, 0, W, H); }
+    else if (hour < 8) { ctx.fillStyle = 'rgba(255,210,140,.10)'; ctx.fillRect(0, 0, W, H); }
+    placeLabels();
+    if (!reduce) requestAnimationFrame(step);
+  }
+
+  // Building and player name tags as crisp HTML over the pixels.
+  const stage = $('stage');
+  const tags = AGENTS.map((a) => { const t = el('div', 'lbl', a.house); stage.append(t); return t; });
+  const youTag = el('div', 'lbl', 'You'); stage.append(youTag);
+  function placeLabels() {
+    AGENTS.forEach((a, i) => { tags[i].style.left = ((a.hx + HOUSE_W / 2) / W * 100) + '%'; tags[i].style.top = ((a.hy + 5) / H * 100) + '%'; tags[i].classList.toggle('sel', selected === a.id); });
+    youTag.style.left = (PLAYER.x / W * 100) + '%'; youTag.style.top = ((PLAYER.y + 14) / H * 100) + '%';
+  }
+
+  function pick(ev) {
+    const r = cv.getBoundingClientRect();
+    const x = (ev.clientX - r.left) / r.width * W, y = (ev.clientY - r.top) / r.height * H;
+    let hit = AGENTS.find((a) => Math.abs(a.pos.x - x) < 7 && y > a.pos.y - 12 && y < a.pos.y + 8);
+    if (!hit) hit = AGENTS.find((a) => x >= a.hx - 2 && x <= a.hx + HOUSE_W + 2 && y >= a.hy && y <= a.hy + HOUSE_H);
+    if (!hit && Math.abs(x - BOARD.x) < 18 && Math.abs(y - BOARD.y) < 14) { $('quests').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' }); return; }
+    selected = hit ? hit.id : null;
+    renderSelected();
+    if (reduce) step(performance.now());
+  }
+  cv.addEventListener('click', pick);
+  cv.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    e.preventDefault();
+    const i = AGENTS.findIndex((a) => a.id === selected);
+    selected = AGENTS[(i + (e.key === 'ArrowRight' ? 1 : AGENTS.length - 1) + (i < 0 ? 1 : 0)) % AGENTS.length].id;
+    renderSelected(); if (reduce) step(performance.now());
+  });
+
+  /* ---------- side panels ---------- */
+  function avatarCanvas(body, hat, crown) {
+    const c = el('canvas', 'avatar'); c.width = 16; c.height = 16;
+    const g = c.getContext("2d");
+    const f = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+    f(5, 13, 7, 2, 'rgba(0,0,0,.3)'); f(6, 10, 2, 3, '#2b2b3d'); f(9, 10, 2, 3, '#2b2b3d'); f(5, 6, 7, 5, body); f(6, 1, 5, 5, '#f2c8a0'); f(5, 0, 7, 2, hat); f(9, 2, 1, 1, '#2b2b3d');
+    if (crown) { f(5, 0, 7, 1, '#ffcf4a'); }
+    return c;
+  }
+  function bar(pct, cls) { const b = el('div', 'bar' + (cls ? ' ' + cls : '')); const i = el('i'); i.style.width = Math.max(0, Math.min(100, pct)) + '%'; b.append(i); return b; }
+
+  function renderPlayer() {
+    const box = $('player'); box.replaceChildren();
+    if (!data) { box.append(el('p', 'empty', 'Loading your stats.')); return; }
+    const xp = acts(data, 'you').n * 10 + data.contacted * 15 + data.replied * 40 + data.won * 500 + data.notes * 5;
+    const L = level(xp);
+    const top = el('div', 'card-top'); const t = el('div');
+    t.append(el('div', 'name', 'Thomas'), el('div', 'cls', 'Guild master, Sidequest Creative'), el('div', 'lv', `Level ${L.lv}  ·  ${fmt(xp)} XP`));
+    top.append(avatarCanvas('#3b5bd9', '#22337a', true), t);
+    const bl = el('div', 'barlbl'); bl.append(el('span', '', `${fmt(L.toNext)} XP to level ${L.lv + 1}`), el('span', '', `$${fmt(data.won_value)} gold`));
+    const kv = el('dl', 'kv');
+    [['Outreach sent', data.contacted], ['Replies', data.replied], ['Deals won', data.won], ['Quests waiting', data.todo_count]].forEach(([k, v]) => kv.append(el('dt', '', k), el('dd', '', fmt(v))));
+    box.append(top, bar(L.pct), bl, kv, el('p', 'empty', 'Earn XP by marking outreach, replies and wins in Lead Desk. A won deal is worth 500.'));
+  }
+
+  function renderSelected() {
+    const box = $('selected'); box.replaceChildren();
+    const a = AGENTS.find((x) => x.id === selected);
+    if (!a) {
+      $('sel-h').firstChild.textContent = 'The crew ';
+      if (!data) { box.append(el('p', 'empty', 'Loading the crew.')); return; }
+      const list = el('div'); list.style.display = 'grid'; list.style.gap = '8px';
+      AGENTS.forEach((ag) => {
+        const L = level(ag.xp(data)); const st = state(ag);
+        const row = el('button'); row.type = 'button';
+        Object.assign(row.style, { all: 'unset', cursor: 'pointer', display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: '10px', alignItems: 'center' });
+        const av = avatarCanvas(ag.body, ag.hat); av.style.width = '28px'; av.style.height = '28px';
+        const mid = el('div'); mid.append(el('div', 'who', ag.cls + ' · ' + ((data.agents || []).find((x) => x.id === ag.id) || {}).name), bar(L.pct));
+        row.append(av, mid, el('span', 'lv', 'Lv ' + L.lv));
+        row.setAttribute('aria-label', `${ag.house}, level ${L.lv}, ${st === 'work' ? 'working' : st === 'late' ? 'missed a run' : 'off duty'}`);
+        row.addEventListener('click', () => { selected = ag.id; renderSelected(); });
+        list.append(row);
+      });
+      box.append(list);
+      return;
+    }
+    $('sel-h').firstChild.textContent = a.house + ' ';
+    const ag = (data && (data.agents || []).find((x) => x.id === a.id)) || {};
+    const xp = data ? a.xp(data) : 0; const L = level(xp); const st = state(a);
+    const top = el('div', 'card-top'); const t = el('div');
+    t.append(el('div', 'name', ag.name || a.house), el('div', 'cls', a.cls), el('div', 'lv', `Level ${L.lv}  ·  ${fmt(xp)} XP`));
+    top.append(avatarCanvas(a.body, a.hat), t);
+    const stTag = el('span', 'state ' + st, st === 'work' ? 'Working' : st === 'late' ? 'Missed a run' : 'Off duty');
+    const bl = el('div', 'barlbl'); bl.append(el('span', '', data ? a.stat(data) : ''), el('span', '', `${fmt(L.toNext)} XP to Lv ${L.lv + 1}`));
+    const parts = [top, stTag, bar(L.pct), bl];
+    if (ag.last_result) parts.push(el('p', 'quote', ag.last_result));
+    const kv = el('dl', 'kv');
+    [['Job', ag.role], ['Shift', ag.schedule], ['Last run', ag.last_run ? String(ag.last_run).slice(0, 10) : 'Not yet'], ['Next run', ag.next_run]].forEach(([k, v]) => { if (v) kv.append(el('dt', '', k), el('dd', '', v)); });
+    parts.push(kv);
+    const back = el('button', '', 'Back to the crew'); back.type = 'button';
+    Object.assign(back.style, { font: '14px var(--pixel)', color: 'var(--ink)', background: 'var(--panel-2)', border: '2px solid var(--line)', padding: '4px 10px', cursor: 'pointer', justifySelf: 'start' });
+    back.addEventListener('click', () => { selected = null; renderSelected(); });
+    parts.push(back);
+    box.append(...parts);
+  }
+
+  function renderRaid() {
+    const box = $('raid'); box.replaceChildren();
+    const w = data && data.week;
+    if (!w) { box.append(el('p', 'empty', 'No numbers for this week yet.')); return; }
+    $('week-lbl').textContent = 'week of ' + new Date(String(w.week).slice(0, 10) + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    let done = 0;
+    RAID.forEach(([k, label, goal]) => {
+      const v = Number(w[k]) || 0; if (v >= goal) done++;
+      const lbl = el('div', 'barlbl'); lbl.append(el('span', '', label), el('span', '', `${fmt(v)} / ${goal}`));
+      box.append(lbl, bar((v / goal) * 100, v >= goal ? 'g' : ''));
+    });
+    box.prepend(el('p', 'empty', done === RAID.length ? 'Raid cleared. Every goal hit this week.' : `${done} of ${RAID.length} goals cleared. Resets Monday.`));
+  }
+
+  const REWARD = { Reply: 60, Call: 30, Message: 25, Send: 30, Build: 100, Fix: 15, Post: 20 };
+  function renderQuests() {
+    const ul = $('quests'); ul.replaceChildren();
+    const q = (data && data.todos) || [];
+    if (!q.length) { ul.append(el('li', 'empty', data ? 'Board is clear. Nice work.' : 'Loading quests.')); return; }
+    q.forEach((t) => {
+      const li = el('li');
+      const mid = el('div'); mid.append(el('div', 'who', t.who || ''), el('div', '', t.item || ''));
+      li.append(el('span', 'tag p' + (t.priority || 2), t.type), mid, el('span', 'reward', '+' + (REWARD[t.type] || 20) + ' XP'));
+      ul.append(li);
+    });
+  }
+
+  function renderBadges() {
+    const box = $('badges'); box.replaceChildren();
+    const d = data || {};
+    const list = [
+      ['Scout party', '25 leads found', d.leads >= 25, '25'],
+      ['Big map', '100 leads found', d.leads >= 100, '100'],
+      ['Case closed', '10 case files', d.dossiers >= 10, 'CF'],
+      ['First words', 'First outreach sent', d.contacted >= 1, '1st'],
+      ['They wrote back', 'First reply', d.replied >= 1, '!'],
+      ['First blood', 'First deal won', d.won >= 1, '$'],
+      ['Treasure', '$5,000 won', d.won_value >= 5000, '5K'],
+      ['On air', '12 posts planned', d.posts >= 12, 'TV'],
+    ];
+    list.forEach(([name, how, on, icon]) => {
+      const b = el('div', 'badge' + (on ? ' on' : '')); b.title = how;
+      b.append(el('div', 'ic', icon), el('div', '', name), el('div', '', on ? 'Unlocked' : how));
+      box.append(b);
+    });
+  }
+
+  function renderTicker() {
+    const ul = $('ticker'); ul.replaceChildren();
+    const f = (data && data.feed) || [];
+    if (!f.length) { ul.append(el('li', 'empty', 'Nothing in the log yet.')); return; }
+    f.forEach((r) => {
+      const li = el('li'); const d = new Date(r.at);
+      const tm = el('time', '', d.toLocaleTimeString('en-US', { timeZone: 'America/Chicago', hour: 'numeric', minute: '2-digit' }));
+      tm.dateTime = r.at;
+      const txt = el('div'); const who = ALIAS[String(r.agent).toLowerCase()] || r.agent;
+      const ag = AGENTS.find((a) => a.id === who);
+      txt.append(el('b', '', (who === 'you' ? 'You' : ag ? ag.house : r.agent) + ': '), document.createTextNode(r.action));
+      li.append(tm, txt); ul.append(li);
+    });
+  }
+
+  function renderSide() {
+    const p = $('problem'); p.replaceChildren();
+    if (problem) { const n = el('div', 'notice'); n.append(el('b', '', problem[0]), el('span', '', problem[1])); p.append(n); }
+    $('updated').textContent = loadedAt ? 'updated ' + loadedAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : (mcp ? 'loading' : '');
+    renderPlayer(); renderSelected(); renderRaid(); renderQuests(); renderBadges(); renderTicker();
+    if (reduce) step(performance.now());
+  }
+
+  function tickClock() { $('clock').textContent = chicago().label + ' in Gonzales'; }
+  tickClock(); setInterval(tickClock, 30000);
+  $('refresh').addEventListener('click', () => load());
+
+  renderSide();
+  if (!reduce) requestAnimationFrame(step); else step(performance.now());
+
+  claude.use('mcp').then((m) => {
+    mcp = m;
+    if (!mcp) { problem = ['Open this in claude.ai', 'Sidequest HQ reads your crew from Supabase, which works when you open it in claude.ai with the Supabase connector.']; renderSide(); return; }
+    load();
+    setInterval(() => { if (!document.hidden) load(); }, 90000);
+  }, () => { problem = ['Could not start', 'Reload the page.']; renderSide(); });
+})();
+</script>

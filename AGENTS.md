@@ -20,6 +20,7 @@ The crew finds local businesses with weak or missing websites, finds their conta
 | Content Agent | Claude scheduled task, Sunday 5:43 PM CT (Sonnet) | Claude |
 | Dashboard | Claude Dashboard artifact https://claude.ai/artifact/LjDPvPRUYEfi4DPcsrtYmN, reads Supabase live (read only) | claude.ai |
 | Lead Desk | Artifact https://claude.ai/artifact/My8ufd1itRBDSTHAK9VJ5E (`lead-desk/index.html`). Thomas's buttons: emailed, called, messaged, replied, won, lost, opted out, make a mockup, plus My notes and photo uploads for mockups. Calls `ops.lead_action(id, action, package)` through his Supabase connector | claude.ai |
+| Sidequest HQ | Artifact https://claude.ai/artifact/9oM7nvYymhhT1cB25Js7zj (`hq/index.html`). Game view of the crew: a pixel town with one house per agent, XP and levels computed from real `ops` data, quests from `ops.todos`, a weekly raid from `ops.weekly_stats`, achievements. Read only, one SQL query every 90s | claude.ai |
 
 Agent prompts are short: each one reads the playbook, then does only its own section. The **playbook is the real logic**.
 
@@ -34,6 +35,7 @@ supabase/migrations/        ops schema, functions (scout + planner), seed data a
 dashboard/index.html        dashboard page (live copy: files/index.html in the dashboard artifact)
 dashboard/datasets.json     the 7 live SQL queries the dashboard runs
 lead-desk/index.html        Lead Desk page (republish with the Artifact tool, same URL)
+hq/index.html               Sidequest HQ game view (republish with the Artifact tool, same URL)
 ```
 
 ## How edits reach production
