@@ -1,0 +1,77 @@
+{
+  "tiers": {
+    "fast": ["gpt-6-luna", "gpt-5.6-luna"],
+    "standard": ["gpt-6.1-sol", "gpt-6-sol"],
+    "deep": ["gpt-6-astra", "gpt-6.1-sol"]
+  },
+  "kinds": {
+    "contact_verification": {
+      "tier": "standard",
+      "prompt": "agents/codex/contact-finder.md",
+      "schema": "runner/job-schemas/contact_verification.json",
+      "tools": ["supabase", "browser"]
+    },
+    "research": {
+      "tier": "fast",
+      "prompt": "agents/codex/contact-finder.md",
+      "schema": "runner/job-schemas/research.json",
+      "tools": ["supabase", "browser"]
+    },
+    "qualification": {
+      "tier": "standard",
+      "prompt": "agents/codex/opportunity-analyst.md",
+      "schema": "runner/job-schemas/qualification.json",
+      "tools": ["supabase"]
+    },
+    "draft": {
+      "tier": "standard",
+      "prompt": "agents/codex/content-agent.md",
+      "schema": "runner/job-schemas/draft.json",
+      "tools": ["supabase"]
+    },
+    "review": {
+      "tier": "standard",
+      "prompt": "agents/codex/quality-reviewer.md",
+      "schema": "runner/job-schemas/review.json",
+      "tools": ["supabase"]
+    }
+  },
+  "agents": {
+    "contact-finder": {
+      "kinds": ["contact_verification", "research"],
+      "tier": "fast",
+      "prompt": "agents/codex/contact-finder.md",
+      "tools": ["supabase", "browser"]
+    },
+    "opportunity-analyst": {
+      "kinds": ["qualification"],
+      "tier": "standard",
+      "prompt": "agents/codex/opportunity-analyst.md",
+      "tools": ["supabase"]
+    },
+    "mockup-builder": {
+      "kinds": ["draft"],
+      "tier": "deep",
+      "prompt": "agents/codex/mockup-builder.md",
+      "tools": ["supabase", "browser"]
+    },
+    "sales-agent": {
+      "kinds": ["draft"],
+      "tier": "standard",
+      "prompt": "agents/codex/sales-agent.md",
+      "tools": ["supabase", "gmail"]
+    },
+    "content-agent": {
+      "kinds": ["draft"],
+      "tier": "standard",
+      "prompt": "agents/codex/content-agent.md",
+      "tools": ["supabase"]
+    },
+    "quality-reviewer": {
+      "kinds": ["review"],
+      "tier": "standard",
+      "prompt": "agents/codex/quality-reviewer.md",
+      "tools": ["supabase"]
+    }
+  }
+}

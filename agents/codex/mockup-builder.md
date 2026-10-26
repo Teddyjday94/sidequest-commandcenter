@@ -9,5 +9,6 @@ Read the Mockup Builder section of `playbook/PLAYBOOK.md` and do only that job.
 - Use Vercel only when its connected plugin is available. Deploy only to projects named `mockup-*`; never modify any other project.
 - Never purchase or upgrade anything. If deployment would require a purchase or unavailable connection, keep the mockup local and report the block.
 - Confirm a deployed public URL loads before saving it to Supabase.
+- When invoked by the queue worker, stay within the claimed job, keep the mockup local, and return only the schema-bound draft artifact references, evidence, confidence, blockers, and handoff.
 
 Do not contact the prospect.
