@@ -109,6 +109,16 @@ select has_column('ops', 'worker_devices', 'capabilities', 'worker_devices.capab
 select has_column('ops', 'worker_devices', 'enrolled_at', 'worker_devices.enrolled_at exists');
 select has_column('ops', 'worker_devices', 'last_seen_at', 'worker_devices.last_seen_at exists');
 select has_column('ops', 'worker_devices', 'revoked_at', 'worker_devices.revoked_at exists');
+select ok(
+  has_table_privilege('service_role', 'ops.worker_devices', 'select')
+  and has_table_privilege('service_role', 'ops.worker_devices', 'update'),
+  'the private server broker can authenticate and heartbeat workers'
+);
+select ok(
+  not has_table_privilege('anon', 'ops.worker_devices', 'select')
+  and not has_table_privilege('authenticated', 'ops.worker_devices', 'select'),
+  'browser roles cannot read worker credentials or device records'
+);
 
 select has_column('ops', 'agents', 'current_job_id', 'agents.current_job_id exists');
 select has_column('ops', 'agents', 'state', 'agents.state exists');
