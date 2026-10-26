@@ -116,7 +116,7 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
   const SERVER = 'Supabase';
   const PROJECT = 'taskvfzqgpqxpdifmxru';
   const COLS = 'id, business, niche, area, rating, website, email, phone, facebook, score, heat, stage, hook, next_step, you_action, mockup_url, mockup_requested, call_script, dm_text, first_contact, last_contact, touches, next_followup';
-  const LIST_SQL = `select ${COLS} from ops.leads where stage <> 'Opted out' order by score desc, id`;
+  const LIST_SQL = `select ${COLS}, coalesce(d.owner_name, '') as owner_name, coalesce(d.pitch_angles, '') as pitch_angles, (d.lead_id is not null) as has_case from ops.leads l left join ops.dossiers d on d.lead_id = l.id where l.stage <> 'Opted out' order by l.score desc, l.id`;
   const LANES = [
     { id: 'ready', label: 'Ready to contact', note: 'Researched and not contacted yet. Reach out, then mark how.', test: (l) => ['New', 'Audited', 'Mockup ready'].includes(l.stage) },
     { id: 'contacted', label: 'Contacted', note: 'You reached out. Follow-ups due today or earlier are flagged.', test: (l) => l.stage === 'Contacted' },
@@ -239,6 +239,7 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
       if (withCopy) dd.append(copyBtn(value));
       d.append(dd); dl.append(d);
     };
+    fact('Owner', l.owner_name, false);
     fact('Phone', l.phone, true);
     fact('Email', l.email, true);
     if (safeUrl(l.facebook)) { const d = el('div'); d.append(el('dt', '', 'Facebook')); const dd = el('dd'); const a = el('a', '', 'Open page'); a.href = safeUrl(l.facebook); a.target = '_blank'; a.rel = 'noopener'; dd.append(a); d.append(dd); dl.append(d); }
@@ -251,7 +252,7 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
     fact('Next step', l.next_step, false);
     body.append(dl);
 
-    [['Pitch hook', l.hook], ['Call script', l.call_script], ['Facebook message', l.dm_text]].forEach(([label, text]) => {
+    [['Detective\u2019s pitch angles', l.pitch_angles], ['Pitch hook', l.hook], ['Call script', l.call_script], ['Facebook message', l.dm_text]].forEach(([label, text]) => {
       if (!text) return;
       const wrap = el('div'); wrap.append(el('div', 'qlabel', label), el('p', 'quote', text)); body.append(wrap);
     });
@@ -306,6 +307,7 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
       const chips = el('div', 'chips');
       chips.append(el('span', 'chip stage', l.stage));
       [['email', 'Email'], ['phone', 'Phone'], ['facebook', 'Facebook']].forEach(([f, label]) => chips.append(el('span', 'chip' + (l[f] ? '' : ' off'), label)));
+      if (l.has_case) chips.append(el('span', 'chip', 'Case file'));
       if (l.mockup_url) chips.append(el('span', 'chip', 'Mockup'));
       else if (l.mockup_requested) chips.append(el('span', 'chip', 'Mockup requested'));
       if (l.touches > 0) chips.append(el('span', 'chip', `${l.touches} touch${l.touches == 1 ? '' : 'es'}`));

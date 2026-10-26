@@ -18,7 +18,7 @@
       "tool": "execute_sql",
       "args": {
         "project_id": "taskvfzqgpqxpdifmxru",
-        "query": "select id, ord, name, role, status, schedule, next_run, last_run, last_result, hands_to, uses_ai from ops.agents where id in ('scout','planner','finder','sales','builder','site','content') order by ord"
+        "query": "select id, ord, name, role, status, schedule, next_run, last_run, last_result, hands_to, uses_ai from ops.agents where id in ('scout','planner','finder','detective','sales','builder','site','content') order by ord"
       }
     },
     "description": "The live crew: each agent's job, schedule, last run and latest result, and whether it uses Claude. Reads ops.agents."
@@ -79,6 +79,19 @@
       "args": {
         "project_id": "taskvfzqgpqxpdifmxru",
         "query": "select id, lead_id, business, package, status, preview_url, live_domain, checklist, you_action, updated_at from ops.builds order by status = 'Launched', created_at desc"
+      }
+    }
+  },
+  "dossiers": {
+    "title": "Detective case files",
+    "description": "What the Detective found on each lead from public business sources: owner as the business publishes it, history, services, photos, reviews, rivals and pitch angles. Reads ops.dossiers.",
+    "source": {
+      "kind": "query",
+      "connector": "Supabase",
+      "tool": "execute_sql",
+      "args": {
+        "project_id": "taskvfzqgpqxpdifmxru",
+        "query": "select lead_id, owner_name, owner_source, founded, services, service_area, hours, story, credentials, brand_colors, logo_url, photos::text as photos, reviews, social, booking, competitors, pitch_angles, sources::text as sources, confidence, researched_at from ops.dossiers order by researched_at desc"
       }
     }
   }

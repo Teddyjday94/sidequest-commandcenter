@@ -86,6 +86,8 @@ a.sq-link { color: inherit; text-decoration: underline; text-underline-offset: 2
 .sq-detail .block { white-space: pre-wrap; font-size: var(--cds-font-size-body); background: var(--color-bg); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-md); margin: 0; }
 .sq-go { display: inline-block; font-size: var(--cds-font-size-body); font-weight: var(--cds-font-weight-medium); padding: 8px 14px; border-radius: var(--cds-radius); background: var(--color-fg); color: var(--color-bg); text-decoration: none; white-space: nowrap; }
 .sq-go:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 2px; }
+.sq-case { display: grid; gap: var(--cds-gap-sm); border-top: 1px solid var(--color-border-line); padding-top: var(--cds-pad-md); }
+.sq-case ul { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; font-size: var(--cds-font-size-body); }
 .sq-x { all: unset; cursor: pointer; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); padding: 4px 8px; border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); }
 
 /* Table */
@@ -195,7 +197,7 @@ a.sq-link { color: inherit; text-decoration: underline; text-underline-offset: 2
     <div>
       <h2 class="sq-h2">Pipeline board</h2>
       <p class="sq-note">Every open lead by stage, best score first. Chips show how you can reach them. Click a card for the pitch, call script, contact history and links. To mark someone contacted or send them to the Mockup Builder, use Update this lead.</p>
-      <div class="sq-board" id="board" data-source="leads"></div>
+      <div class="sq-board" id="board" data-source="leads dossiers"></div>
     </div>
 
     <section class="sq-card sq-detail" id="detail" hidden aria-live="polite"></section>
@@ -254,7 +256,7 @@ a.sq-link { color: inherit; text-decoration: underline; text-underline-offset: 2
   <section class="sq-page" id="crew" role="tabpanel" aria-labelledby="tab-crew" hidden>
     <div>
       <h2 class="sq-h2">The crew</h2>
-      <p class="sq-note">In the order work flows: find, research, pitch, build, post. A red dot means it hasn't run when it should have.</p>
+      <p class="sq-note">In the order work flows: find, research, investigate, pitch, build, post. A red dot means it hasn't run when it should have.</p>
       <div class="sq-agents" id="agents-grid" data-source="agents"></div>
     </div>
     <section class="sq-card" id="activity">
@@ -279,7 +281,7 @@ const sbRows = ({ answer }) => {
   if (!m) throw new Error(txt.slice(0, 300) || 'Empty answer from Supabase');
   return JSON.parse(m[2]);
 };
-['leads', 'agents', 'activity', 'posts', 'today', 'weekly', 'builds'].forEach((id) => dash.loader(id, { description: 'Reads the rows out of Supabase\'s answer (it wraps them in a short note).', fn: sbRows }));
+['leads', 'agents', 'activity', 'posts', 'today', 'weekly', 'builds', 'dossiers'].forEach((id) => dash.loader(id, { description: 'Reads the rows out of Supabase\'s answer (it wraps them in a short note).', fn: sbRows }));
 </script>
 
 <script>
@@ -444,6 +446,8 @@ dash.calc('stages', {
   const reachChips = (r) => {
     const c = el('div', 'sq-chips');
     [['email', 'Email'], ['phone', 'Phone'], ['facebook', 'Facebook']].forEach(([f, lbl]) => c.append(el('span', 'sq-chip' + (r[f] ? '' : ' off'), lbl)));
+    const Dz = dash.data('dossiers');
+    if (Dz.status === 'ok' && Dz.data.some((x) => x.lead_id === r.id)) c.append(el('span', 'sq-chip', 'Case file'));
     if (r.mockup_url) c.append(el('span', 'sq-chip', 'Mockup'));
     else if (r.mockup_requested) c.append(el('span', 'sq-chip', 'Mockup requested'));
     if (+r.touches > 0) c.append(el('span', 'sq-chip', r.touches + (+r.touches === 1 ? ' touch' : ' touches')));
@@ -506,7 +510,43 @@ dash.calc('stages', {
     item('Next step', 'next_step', r.next_step);
     if (r.you_action) item('Waiting on you', 'you_action', r.you_action);
     const blocks = [['Pitch hook', 'hook'], ['Call script', 'call_script'], ['Facebook message', 'dm_text']].filter(([, f]) => r[f]);
-    box.replaceChildren(top, dl, ...blocks.flatMap(([lbl, f]) => [el('div', 'sq-h2', lbl), mark(el('p', 'block', r[f]), 'leads', f, w)]));
+    const parts = [top, dl, ...blocks.flatMap(([lbl, f]) => [el('div', 'sq-h2', lbl), mark(el('p', 'block', r[f]), 'leads', f, w)])];
+    const D = dash.data('dossiers');
+    const c = D.status === 'ok' ? D.data.find((x) => x.lead_id === r.id) : null;
+    if (c) {
+      const cw = 'lead_id=' + r.id;
+      const sec = el('section', 'sq-case'); sec.id = 'case-' + r.id;
+      const head = el('div', 'sq-h2', 'Detective notes');
+      const when = el('span', 'sq-sub', ' · ' + (c.confidence || '') + (c.researched_at ? ' · ' + String(c.researched_at).slice(0, 10) : ''));
+      when.style.fontWeight = '400'; when.style.fontSize = 'var(--cds-font-size-caption)'; head.append(when);
+      const cdl = el('dl');
+      const fact = (label, field) => { if (!c[field]) return; const d = el('div'); d.append(el('dt', '', label), mark(el('dd', '', c[field]), 'dossiers', field, cw)); cdl.append(d); };
+      fact('Owner', 'owner_name'); fact('Owner source', 'owner_source'); fact('Around since', 'founded'); fact('Services', 'services');
+      fact('Service area', 'service_area'); fact('Hours', 'hours'); fact('Credentials', 'credentials'); fact('How customers book', 'booking');
+      fact('Brand colors', 'brand_colors'); fact('Social', 'social');
+      sec.append(head, cdl);
+      [['Pitch angles', 'pitch_angles'], ['Their story', 'story'], ['Reviews', 'reviews'], ['Rivals with websites', 'competitors']].forEach(([lbl, f]) => {
+        if (c[f]) sec.append(el('div', 'sq-sub', lbl), mark(el('p', 'block', c[f]), 'dossiers', f, cw));
+      });
+      const parse = (v) => { if (Array.isArray(v)) return v; try { const a = JSON.parse(v || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } };
+      const photos = parse(c.photos).filter((ph) => ph && safeUrl(ph.url));
+      if (safeUrl(c.logo_url)) photos.unshift({ url: c.logo_url, what: 'Logo' });
+      if (photos.length) {
+        const ul = el('ul');
+        photos.forEach((ph) => { const li = el('li'); li.append(link(safeUrl(ph.url), ph.what || 'Photo')); if (ph.source) li.append(document.createTextNode(' (' + ph.source + ')')); ul.append(li); });
+        sec.append(el('div', 'sq-sub', 'Their photos (' + photos.length + ')'), ul);
+      }
+      const srcs = parse(c.sources).filter((u) => safeUrl(u));
+      if (srcs.length) {
+        const det = el('details'); det.append(el('summary', '', 'Sources (' + srcs.length + ')'));
+        const ul = el('ul'); srcs.forEach((u) => { const li = el('li'); li.append(link(safeUrl(u), u.replace(/^https?:\/\/(www\.)?/, '').slice(0, 70))); ul.append(li); });
+        det.append(ul); sec.append(det);
+      }
+      parts.push(sec);
+    } else if (D.status === 'ok') {
+      parts.push(el('p', 'sq-sub', 'No Detective notes yet. The Detective researches hot leads on Tuesdays and Thursdays before their mockups are built.'));
+    }
+    box.replaceChildren(...parts);
   };
 
   const q = document.getElementById('q'), nicheSel = document.getElementById('niche'), heatSel = document.getElementById('heat'), reachSel = document.getElementById('reach');
@@ -628,7 +668,7 @@ dash.calc('stages', {
   };
 
   // Crew
-  const STALE = { finder: 4, sales: 3, builder: 5, site: 5, content: 8, scout: 3, planner: 3 };
+  const STALE = { finder: 4, detective: 5, sales: 3, builder: 5, site: 5, content: 8, scout: 3, planner: 3 };
   const drawAgents = () => {
     const grid = document.getElementById('agents-grid');
     const A = dash.data('agents');
