@@ -13,9 +13,9 @@ The crew finds local businesses with weak or missing websites, finds their conta
 | Piece | Where it lives | Runs on |
 |---|---|---|
 | Database (source of truth) | Supabase project `taskvfzqgpqxpdifmxru` (Side Quest Client Portal), schema **`ops`** only | Supabase |
-| Lead Scout (no AI) | `ops.run_scout(3)` via pg_cron `ops-lead-scout` (`30 11 * * 1-5` UTC) | Postgres |
+| Lead Scout (no AI) | HomeAdvisor: `ops.run_scout(3)` via pg_cron `ops-lead-scout` (`30 11 * * 1-5` UTC). Google Maps: `ops.run_maps_scout(2)` via `ops-maps-scout` (`35 11 * * 1-5`), Places API (New) Text Search over `ops.maps_targets`; key in Supabase Vault as `google_places_api_key` | Postgres |
 | Daily Planner (no AI) | `ops.build_todos()` via pg_cron `ops-daily-planner` (`50 11 * * 1-5`) and `ops-afternoon-planner` (`15 21 * * 1-5`) | Postgres |
-| Sales Agent (+ Contact Finder on Mon/Wed/Fri) | Claude scheduled task, weekdays 9:17 AM CT (Sonnet), cloud. On Mon/Wed/Fri it runs the playbook's Contact Finder section first with WebSearch/WebFetch | Claude |
+| Sales Agent (+ Contact Finder and Facebook Scout on Mon/Wed/Fri) | Claude scheduled task, weekdays 9:17 AM CT (Sonnet), cloud. On Mon/Wed/Fri it runs the playbook's Contact Finder and Facebook Scout sections first with WebSearch/WebFetch | Claude |
 | Mockup + Site Builder | Claude scheduled task, Tue/Thu 8:33 AM CT (Sonnet). Builds the next won client's site (`site-*` Vercel project, login wall stays on), then up to 3 prospect mockups (`mockup-*`, public) | Claude |
 | Content Agent | Claude scheduled task, Sunday 5:43 PM CT (Sonnet) | Claude |
 | Dashboard | Claude Dashboard artifact https://claude.ai/artifact/LjDPvPRUYEfi4DPcsrtYmN, reads Supabase live (read only) | claude.ai |
@@ -50,7 +50,7 @@ This repo is a mirror and a workbench. Nothing deploys from git automatically.
 ## Hard rules (do not break these)
 
 1. Never send emails, DMs, texts or posts. Gmail drafts only.
-2. Supabase: only read/write the `ops` schema. **Never touch `public`** — that is Thomas's live client portal. No DROP/TRUNCATE of ops tables without Thomas saying so.
+2. Supabase: only read/write the `ops` schema (the one exception: `ops.run_maps_scout` reads its API key from Supabase Vault; Thomas adds that key himself). **Never touch `public`** — that is Thomas's live client portal. No DROP/TRUNCATE of ops tables without Thomas saying so.
 3. Stripe: create customers and **draft** invoices only. Never finalize, send, pay, void, refund or delete.
 4. Vercel: turning off login protection is allowed **only** for projects named `mockup-*`. Client `site-*` projects keep it on.
 5. Never bypass CAPTCHAs or bot checks (the scout stops on 403/429/503 by design).
