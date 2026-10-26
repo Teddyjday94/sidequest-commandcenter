@@ -86,14 +86,22 @@ $workerModule = Get-Module SidequestWorker
 $modelOutputDirectory = Join-Path ([IO.Path]::GetTempPath()) ('sidequest-worker-test-' + [guid]::NewGuid().ToString('N'))
 $modelOutputPath = Join-Path $modelOutputDirectory 'result.json'
 $script:fakeModelJson = '{"job_id":"test-job"}'
+$script:fakePipedPrompt = @()
 New-Item -ItemType Directory -Path $modelOutputDirectory -Force | Out-Null
 function global:codex {
-    param([Parameter(ValueFromRemainingArguments = $true)] $Arguments)
-    $outputIndex = [Array]::IndexOf([object[]] $Arguments, '-o')
-    if ($outputIndex -lt 0) { throw 'fake_codex_output_path_missing' }
-    Set-Content -LiteralPath $Arguments[$outputIndex + 1] -Value $script:fakeModelJson -NoNewline -Encoding UTF8
-    Write-Output 'noisy codex console output that must not enter the structured result'
-    $global:LASTEXITCODE = 0
+    [CmdletBinding(PositionalBinding = $false)]
+    param(
+        [Parameter(ValueFromPipeline = $true)] [string] $PromptInput,
+        [Parameter(ValueFromRemainingArguments = $true)] $Arguments
+    )
+    process { $script:fakePipedPrompt += $PromptInput }
+    end {
+        $outputIndex = [Array]::IndexOf([object[]] $Arguments, '-o')
+        if ($outputIndex -lt 0) { throw 'fake_codex_output_path_missing' }
+        Set-Content -LiteralPath $Arguments[$outputIndex + 1] -Value $script:fakeModelJson -NoNewline -Encoding UTF8
+        Write-Output 'noisy codex console output that must not enter the structured result'
+        $global:LASTEXITCODE = 0
+    }
 }
 try {
     $defaultModelResult = & $workerModule {
@@ -101,6 +109,7 @@ try {
         Invoke-SidequestDefaultModel 'Run one test job.' $root $schema $output 'gpt-test' $false
     } $repoRoot (Join-Path $repoRoot 'runner\job-schemas\research.json') $modelOutputPath
     Assert-Equal $defaultModelResult $script:fakeModelJson 'The default model runner must return only the structured output file, never Codex console output.'
+    Assert-Equal ($script:fakePipedPrompt -join "`n") 'Run one test job.' 'The default worker model runner must deliver the trusted prompt through stdin.'
 } finally {
     Remove-Item Function:\global:codex -ErrorAction SilentlyContinue
     Remove-Item -LiteralPath $modelOutputDirectory -Recurse -Force -ErrorAction SilentlyContinue

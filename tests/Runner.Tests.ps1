@@ -147,6 +147,8 @@ Assert-NotContains -Actual $isolatedArgsJson -Unexpected '"--disable","unified_e
 Assert-Contains -Actual $isolatedArgsJson -Expected '"mcp_servers={}"' -Because 'Queued jobs must clear directly configured MCP servers at the process boundary.'
 Assert-Contains -Actual $isolatedArgsJson -Expected '"shell_environment_policy.inherit=\"none\""' -Because 'Queued jobs must not inherit host environment credentials.'
 Assert-Contains -Actual $isolatedArgsJson -Expected '"--sandbox","read-only"' -Because 'Queued model turns produce only a broker result envelope and must not write the workspace.'
+Assert-Equal -Actual $isolatedArgs[-1] -Expected '-' -Because 'Queued jobs must read their prompt from stdin so Windows PowerShell cannot split trusted multiline input into native arguments.'
+Assert-NotContains -Actual $isolatedArgsJson -Unexpected 'Run queued research.' -Because 'Queued prompts must never travel through the Windows native command line.'
 
 $isolatedNoSearchArgs = New-CodexExecArguments -Prompt 'Run queued review.' -RepoRoot 'C:\sidequest' -SchemaPath 'C:\schema.json' -OutputPath 'C:\result.json' -Model 'gpt-6.1-sol' -WorkerIsolation
 $isolatedNoSearchArgsJson = ConvertTo-Json -Compress -InputObject @($isolatedNoSearchArgs)

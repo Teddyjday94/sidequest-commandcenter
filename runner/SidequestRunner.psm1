@@ -177,7 +177,9 @@ function New-CodexExecArguments {
     $arguments.Add($SchemaPath)
     $arguments.Add('-o')
     $arguments.Add($OutputPath)
-    $arguments.Add($Prompt)
+    # Windows PowerShell 5.1 does not preserve a multiline prompt as one native
+    # argument. Queued workers pass '-' and stream the prompt over stdin instead.
+    $arguments.Add($(if ($WorkerIsolation) { '-' } else { $Prompt }))
 
     return $arguments.ToArray()
 }
