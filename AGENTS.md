@@ -15,13 +15,15 @@ The crew finds local businesses with weak or missing websites, finds their conta
 | Database (source of truth) | Supabase project `taskvfzqgpqxpdifmxru` (Side Quest Client Portal), schema **`ops`** only | Supabase |
 | Lead Scout (no AI) | `ops.run_scout(3)` via pg_cron `ops-lead-scout` (`30 11 * * 1-5` UTC) | Postgres |
 | Daily Planner (no AI) | `ops.build_todos()` via pg_cron `ops-daily-planner` (`50 11 * * 1-5`) and `ops-afternoon-planner` (`15 21 * * 1-5`) | Postgres |
-| Contact Finder | Claude scheduled task, Mon/Wed/Fri 8:07 AM CT, needs Thomas's PC (built-in browser) | Claude |
+| Contact Finder | Claude scheduled task, Mon/Wed/Fri 8:07 AM CT, runs on Thomas's PC (built-in browser; falls back to WebSearch) | Claude |
 | Sales Agent | Claude scheduled task, weekdays 9:17 AM CT (Sonnet) | Claude |
 | Mockup Builder | Claude scheduled task, Tue/Thu 8:33 AM CT (Sonnet), deploys to Vercel | Claude |
 | Content Agent | Claude scheduled task, Sunday 5:43 PM CT (Sonnet) | Claude |
 | Dashboard | Claude Dashboard artifact https://claude.ai/artifact/LjDPvPRUYEfi4DPcsrtYmN, reads Supabase live | claude.ai |
 
 Agent prompts are short: each one reads the playbook, then does only its own section. The **playbook is the real logic**.
+
+**Dormant: job queue + Windows worker.** The `ops` tables `missions`, `jobs`, `job_events`, `workflows`, `approvals`, `evidence`, `memory_items`, `inbound_messages`, `worker_devices` and `autonomy_events`, and the `ops.agents` rows with hyphenated ids (`sales-agent`, `contact-finder`, and so on), belong to a second crew built in Codex that runs through a local worker on Thomas's PC. On 2026-10-26 Thomas chose the Claude scheduled tasks above as the one live crew, and every mission was disabled. Worker results never write to `ops.leads`. Keep its missions off unless Thomas decides to switch, so the two crews don't both draft outreach to the same leads.
 
 ## Repo layout
 
