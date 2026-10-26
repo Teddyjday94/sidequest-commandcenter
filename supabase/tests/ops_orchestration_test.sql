@@ -38,6 +38,7 @@ select has_column('ops', 'jobs', 'idempotency_key', 'jobs.idempotency_key exists
 select has_column('ops', 'jobs', 'is_state_changing', 'jobs.is_state_changing exists');
 select has_column('ops', 'jobs', 'created_at', 'jobs.created_at exists');
 select has_column('ops', 'jobs', 'updated_at', 'jobs.updated_at exists');
+select has_trigger('ops', 'jobs', 'ops_jobs_enrich_contact_context', 'contact verification jobs receive trusted lead context');
 
 select has_table('ops', 'job_events', 'job_events table exists');
 select has_column('ops', 'job_events', 'id', 'job_events.id exists');

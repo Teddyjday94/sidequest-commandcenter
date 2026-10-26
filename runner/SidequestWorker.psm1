@@ -445,7 +445,9 @@ function Invoke-SidequestDefaultModel {
     $previousPreference = $ErrorActionPreference
     try {
         $ErrorActionPreference = 'Continue'
-        & codex @arguments
+        # Codex writes human-readable progress to stdout. Suppress that stream so
+        # the function returns only the schema-bound file read below.
+        $null = & codex @arguments
         $exitCode = $LASTEXITCODE
     } finally { $ErrorActionPreference = $previousPreference }
     if ($exitCode -ne 0) { throw 'codex_execution_failed' }

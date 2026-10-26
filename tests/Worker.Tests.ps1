@@ -81,6 +81,31 @@ foreach ($case in $cases) {
     $validated = Test-SidequestJobResult -JobEnvelope $envelope -Json $json -RepoRoot $repoRoot
     Assert-Equal $validated.kind $case.Kind "The smallest valid $($case.Kind) result must pass."
 }
+
+$workerModule = Get-Module SidequestWorker
+$modelOutputDirectory = Join-Path ([IO.Path]::GetTempPath()) ('sidequest-worker-test-' + [guid]::NewGuid().ToString('N'))
+$modelOutputPath = Join-Path $modelOutputDirectory 'result.json'
+$script:fakeModelJson = '{"job_id":"test-job"}'
+New-Item -ItemType Directory -Path $modelOutputDirectory -Force | Out-Null
+function global:codex {
+    param([Parameter(ValueFromRemainingArguments = $true)] $Arguments)
+    $outputIndex = [Array]::IndexOf([object[]] $Arguments, '-o')
+    if ($outputIndex -lt 0) { throw 'fake_codex_output_path_missing' }
+    Set-Content -LiteralPath $Arguments[$outputIndex + 1] -Value $script:fakeModelJson -NoNewline -Encoding UTF8
+    Write-Output 'noisy codex console output that must not enter the structured result'
+    $global:LASTEXITCODE = 0
+}
+try {
+    $defaultModelResult = & $workerModule {
+        param($root, $schema, $output)
+        Invoke-SidequestDefaultModel 'Run one test job.' $root $schema $output 'gpt-test' $false
+    } $repoRoot (Join-Path $repoRoot 'runner\job-schemas\research.json') $modelOutputPath
+    Assert-Equal $defaultModelResult $script:fakeModelJson 'The default model runner must return only the structured output file, never Codex console output.'
+} finally {
+    Remove-Item Function:\global:codex -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $modelOutputDirectory -Recurse -Force -ErrorAction SilentlyContinue
+}
+
 Assert-ThrowsLike {
     Get-SidequestJobSpec -JobEnvelope (New-TestEnvelope -Kind 'draft' -AgentId 'unregistered-agent') -RepoRoot $repoRoot
 } '*unsupported_agent_id*' 'Only explicitly registered agent roles may receive queued work.'
