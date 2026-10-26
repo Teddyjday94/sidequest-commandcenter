@@ -19,7 +19,7 @@ The crew finds local businesses with weak or missing websites, finds their conta
 | Detective + Mockup + Site Builder | Claude scheduled task, Tue/Thu 8:33 AM CT (Sonnet). The Detective first writes case files (`ops.dossiers`) on up to 5 leads from public business sources only; then it builds the next won client's site (`site-*` Vercel project, login wall stays on), then up to 3 prospect mockups (`mockup-*`, public) | Claude |
 | Content Agent | Claude scheduled task, Sunday 5:43 PM CT (Sonnet) | Claude |
 | Dashboard | Claude Dashboard artifact https://claude.ai/artifact/LjDPvPRUYEfi4DPcsrtYmN, reads Supabase live (read only) | claude.ai |
-| Lead Desk | Artifact https://claude.ai/artifact/My8ufd1itRBDSTHAK9VJ5E (`lead-desk/index.html`). Thomas's buttons: emailed, called, messaged, replied, won, lost, opted out, make a mockup. Calls `ops.lead_action(id, action, package)` through his Supabase connector | claude.ai |
+| Lead Desk | Artifact https://claude.ai/artifact/My8ufd1itRBDSTHAK9VJ5E (`lead-desk/index.html`). Thomas's buttons: emailed, called, messaged, replied, won, lost, opted out, make a mockup, plus My notes and photo uploads for mockups. Calls `ops.lead_action(id, action, package)` through his Supabase connector | claude.ai |
 
 Agent prompts are short: each one reads the playbook, then does only its own section. The **playbook is the real logic**.
 
@@ -34,7 +34,6 @@ supabase/migrations/        ops schema, functions (scout + planner), seed data a
 dashboard/index.html        dashboard page (live copy: files/index.html in the dashboard artifact)
 dashboard/datasets.json     the 7 live SQL queries the dashboard runs
 lead-desk/index.html        Lead Desk page (republish with the Artifact tool, same URL)
-mockups/<slug>/index.html   mockup sites deployed as Vercel projects named mockup-<slug>
 ```
 
 ## How edits reach production
@@ -45,7 +44,7 @@ This repo is a mirror and a workbench. Nothing deploys from git automatically.
 - **Playbook**: edit `playbook/PLAYBOOK.md`, then ask Claude to "sync the playbook to the artifact store" (it writes the file into the dashboard artifact's `ops/playbook` doc, which the agents read each run). Keep the existing section headings; old agent prompts look them up by name.
 - **Dashboard**: edit `dashboard/index.html`, then ask Claude to republish it to the dashboard artifact. The page uses the Claude Dashboard runtime (`dash.loader`, `dash.calc`, `dash.onData`), so it will not run as a plain local HTML file.
 - **Agent prompts**: edit `agents/*.md`, then ask Claude to update the matching scheduled task.
-- **Mockups**: edit `mockups/<slug>/index.html` and redeploy to the Vercel project `mockup-<slug>` (team `team_JpoOV9VCUX3FeIX8tsXZRIkv`). The eight from 2026-10-26 (`mockups/gen_mockups.py` + `mockups/mockups.json`) were deployed from this repo with each project's root directory set to `mockups/<slug>`, so pushing to `main` redeploys them.
+- **Mockups**: built by the Tue/Thu task only for leads Thomas requests in Lead Desk (`mockup_requested`), using photos he uploads there (`ops.lead_photos`, files in the Lead Desk asset store). Each deploys to the Vercel project `mockup-<slug>` (team `team_JpoOV9VCUX3FeIX8tsXZRIkv`). On 2026-10-26 Thomas had all earlier mockups taken down.
 
 ## Hard rules (do not break these)
 

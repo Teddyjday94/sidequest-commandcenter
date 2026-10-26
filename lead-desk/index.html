@@ -83,6 +83,14 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
 .act-group .lbl { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; width: 100%; }
 .confirm { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); }
 .notes { display: grid; gap: 8px; }
+.photos { display: grid; gap: 10px; padding: 14px; border: 1px dashed var(--line); border-radius: 10px; background: var(--bg); }
+.thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 9rem), 1fr)); gap: 10px; }
+.thumb { display: grid; gap: 6px; }
+.thumb img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); }
+.thumb input { font: inherit; font-size: 13px; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); width: 100%; box-sizing: border-box; }
+.thumb .rm { font: inherit; font-size: 12px; justify-self: start; background: none; border: 0; color: var(--hot); cursor: pointer; padding: 0; text-decoration: underline; }
+.pick { position: relative; overflow: hidden; }
+.pick input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .notes textarea { font: inherit; min-height: 6rem; resize: vertical; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); width: 100%; box-sizing: border-box; }
 .notes .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .notes .hint { font-size: 12px; color: var(--muted); }
@@ -131,6 +139,7 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
   ];
 
   const drafts = {};
+  let assets = null, photos = {}, uploading = false;
   let mcp = null, leads = [], lane = 'ready', openId = null, confirmFor = null, busy = false, loadedAt = null, problem = null;
   const $ = (id) => document.getElementById(id);
   const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
@@ -173,6 +182,9 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
     $('updated').textContent = 'Loading leads';
     try {
       leads = await sql(LIST_SQL);
+      const rows = await sql('select asset_id, lead_id, file_name, caption from ops.lead_photos order by created_at');
+      photos = {};
+      rows.forEach((r) => { (photos[r.lead_id] = photos[r.lead_id] || []).push(r); });
       loadedAt = new Date();
       problem = null;
     } catch (err) {
@@ -216,6 +228,83 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
     }
     busy = false;
     await load();
+  }
+
+  const okAsset = (id) => /^[A-Za-z0-9_-]{16,64}$/.test(String(id || ''));
+  const q = (t) => "'" + String(t ?? '').replace(/\u0000/g, '').replace(/'/g, "''") + "'";
+  const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
+  async function uploadPhotos(lead, files) {
+    if (!assets || uploading || !/^L\d{1,5}$/.test(lead.id)) return;
+    const list = [...files].filter((f) => IMAGE_TYPES.includes(f.type) && f.size > 0 && f.size <= 20 * 1024 * 1024);
+    const skipped = files.length - list.length;
+    if (!list.length) { toast('Pick JPG, PNG, WebP or GIF photos under 20 MB.'); return; }
+    uploading = true; render();
+    let saved = 0;
+    for (const f of list) {
+      try {
+        const up = await assets.upload(f, { type: f.type });
+        if (!okAsset(up.id)) continue;
+        await sql(`select ops.add_lead_photo('${lead.id}', '${up.id}', ${q(f.name.slice(0, 200))}, ${q(f.type)}) as saved`);
+        saved++;
+      } catch (err) {
+        const c = err && err.code;
+        toast(c === 'too_large' ? f.name + ' is too big.' : c === 'quota_or_state' ? 'Lead Desk is out of photo storage. Remove some old photos.' : c === 'rate_limited' ? 'Slow down a little, then try again.' : 'Could not upload ' + f.name + '.');
+      }
+    }
+    uploading = false;
+    toast(`Added ${saved} photo${saved === 1 ? '' : 's'} for ${lead.business}` + (skipped ? ` (skipped ${skipped} that weren't photos)` : ''));
+    await load();
+  }
+
+  async function captionPhoto(p, text) {
+    if (!okAsset(p.asset_id)) return;
+    try { await sql(`select ops.caption_lead_photo('${p.asset_id}', ${q(String(text).slice(0, 200))}) as saved`); p.caption = text; }
+    catch (err) { toast('Could not save that caption.'); }
+  }
+
+  async function removePhoto(lead, p) {
+    if (busy || !okAsset(p.asset_id)) return;
+    busy = true; render();
+    try {
+      await sql(`select ops.remove_lead_photo('${p.asset_id}') as removed`);
+      if (assets) { try { await assets.delete(p.asset_id); } catch (e) {} }
+      toast('Photo removed');
+    } catch (err) { toast('Could not remove that photo.'); }
+    busy = false;
+    await load();
+  }
+
+  function photoSection(l) {
+    const mine = photos[l.id] || [];
+    const box = el('div', 'photos');
+    box.append(el('div', 'qlabel', 'Photos for the mockup' + (mine.length ? ` (${mine.length})` : '')));
+    box.append(el('span', 'hint', 'Their logo, trucks, job photos, before and afters. Add a short caption so the builder knows where each one goes. No photos? Skip this and the mockup uses clean placeholders.'));
+    if (mine.length) {
+      const grid = el('div', 'thumbs');
+      mine.forEach((p) => {
+        if (!okAsset(p.asset_id)) return;
+        const t = el('div', 'thumb');
+        const img = el('img'); img.src = '/_blob/' + p.asset_id; img.alt = p.caption || p.file_name || 'Uploaded photo'; img.loading = 'lazy';
+        const cap = el('input'); cap.type = 'text'; cap.maxLength = 200; cap.placeholder = 'Caption, e.g. logo, before, truck'; cap.value = p.caption || '';
+        cap.setAttribute('aria-label', 'Caption for ' + (p.file_name || 'photo'));
+        cap.addEventListener('change', () => captionPhoto(p, cap.value));
+        const rm = el('button', 'rm', 'Remove'); rm.type = 'button'; rm.addEventListener('click', () => removePhoto(l, p));
+        t.append(img, cap, rm); grid.append(t);
+      });
+      box.append(grid);
+    }
+    if (assets) {
+      const pick = el('label', 'btn pick', uploading ? 'Uploading...' : 'Add photos');
+      const inp = el('input'); inp.type = 'file'; inp.accept = 'image/jpeg,image/png,image/webp,image/gif'; inp.multiple = true; inp.disabled = uploading;
+      inp.setAttribute('aria-label', 'Add photos for ' + l.business);
+      inp.addEventListener('change', () => { if (inp.files && inp.files.length) uploadPhotos(l, inp.files); });
+      pick.append(inp);
+      box.append(pick);
+    } else {
+      box.append(el('span', 'hint', 'Uploading works when you open Lead Desk yourself in claude.ai.'));
+    }
+    return box;
   }
 
   function laneCounts() {
@@ -288,6 +377,7 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
     nrow.append(actionBtn('Save notes', '', () => saveNote(l)), el('span', 'hint', l.my_notes ? 'Saved notes are shared with the agents.' : 'Not saved yet.'));
     notes.append(el('div', 'qlabel', 'My notes'), ta, nrow);
     body.append(notes);
+    if (!['Lost', 'Won'].includes(l.stage)) body.append(photoSection(l));
 
     const actions = el('div', 'actions');
     if (confirmFor && confirmFor.id === l.id) {
@@ -307,8 +397,9 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
       const reach = el('div', 'act-group'); reach.append(el('span', 'lbl', 'I reached out'));
       reach.append(actionBtn('I emailed them', 'primary', () => act(l, 'emailed')), actionBtn('I called them', 'primary', () => act(l, 'called')), actionBtn('I messaged on Facebook', 'primary', () => act(l, 'messaged')));
       const next = el('div', 'act-group'); next.append(el('span', 'lbl', 'Move it along'));
-      if (!l.mockup_url && !l.mockup_requested) next.append(actionBtn('Make a mockup', '', () => act(l, 'mockup')));
-      if (l.mockup_requested && !l.mockup_url) next.append(el('span', 'chip', 'Mockup requested'));
+      const nPh = (photos[l.id] || []).length;
+      if (!l.mockup_requested) next.append(actionBtn((l.mockup_url ? 'Make a new mockup' : 'Make a mockup') + (nPh ? ` with ${nPh} photo${nPh === 1 ? '' : 's'}` : ''), 'primary', () => act(l, 'mockup')));
+      else next.append(el('span', 'chip', 'Mockup requested for the next Tue or Thu run'));
       if (!['Replied', 'Proposal sent', 'Won'].includes(l.stage)) next.append(actionBtn('They replied', '', () => act(l, 'replied')));
       next.append(actionBtn('We won it', '', () => { confirmFor = { id: l.id, action: 'won' }; render(); }));
       next.append(actionBtn('Not interested', 'danger', () => { confirmFor = { id: l.id, action: 'lost' }; render(); }), actionBtn('Opted out', 'danger', () => { confirmFor = { id: l.id, action: 'optout' }; render(); }));
@@ -341,6 +432,7 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
       [['email', 'Email'], ['phone', 'Phone'], ['facebook', 'Facebook']].forEach(([f, label]) => chips.append(el('span', 'chip' + (l[f] ? '' : ' off'), label)));
       if (l.has_case) chips.append(el('span', 'chip', 'Case file'));
       if (l.my_notes) chips.append(el('span', 'chip', 'My notes'));
+      if ((photos[l.id] || []).length) chips.append(el('span', 'chip', (photos[l.id] || []).length + ' photos'));
       if (l.mockup_url) chips.append(el('span', 'chip', 'Mockup'));
       else if (l.mockup_requested) chips.append(el('span', 'chip', 'Mockup requested'));
       if (l.touches > 0) chips.append(el('span', 'chip', `${l.touches} touch${l.touches == 1 ? '' : 'es'}`));
@@ -359,6 +451,7 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
   $('q').addEventListener('input', render);
   $('refresh').addEventListener('click', () => load());
 
+  claude.use('assets').then((a) => { assets = a; render(); }, () => { assets = null; });
   claude.use('mcp').then((m) => {
     mcp = m;
     if (!mcp) { problem = null; render(); return; }
