@@ -29,6 +29,9 @@ All data lives in Supabase project taskvfzqgpqxpdifmxru, schema ops. Use the too
   - ops.todos: rebuilt by select ops.build_todos(); do not write it directly.
   - ops.settings: key, value (mailing_address, dashboard_url).
   - ops.clients: existing clients, never prospect them.
+  - ops.builds: one row per won client (opened by the database the moment a lead's stage becomes Won): id, lead_id, business, package, status (Waiting on intake, Building, Preview ready, Changes requested, Launched), intake, preview_url, live_domain, checklist, you_action.
+  - ops.lead_events: stage history, written by the database. Read only.
+  - ops.weekly_stats: a view of the last 8 weeks (week, found, contacted, mockups, replied, won, won_value). Read only.
 - New leads get ids from select ops.next_lead_id(). The heat for a score comes from ops.heat_for(score).
 - At the end of every run: update ops.agents set last_run = current_date, status = 'Live', last_result = $q$<one or two plain sentences>$q$, next_run = '<next run>' where id = '<your id>'; and insert 1 to 4 rows into ops.activity.
 
@@ -45,7 +48,7 @@ Scoring: start 50. +20 no website, +12 weak website, -25 a solid recent website.
 Load these with the Skill tool when listed; skip any that are missing.
 - Everyone writing copy: stop-slop.
 - Contact Finder: design:design-critique.
-- Mockup Builder: frontend-design, design:ux-copy, design:accessibility-review, social-media-skills:before-after-and-transformation.
+- Mockup Builder and Site Builder: frontend-design, design:ux-copy, design:accessibility-review, social-media-skills:before-after-and-transformation.
 - Sales Agent: social-media-skills:social-selling-and-dm, social-media-skills:hook-writer.
 - Content Agent: social-media-skills:batch-content-plan, social-media-skills:hook-writer, social-media-skills:caption-writer, social-media-skills:reels-script, social-media-skills:tiktok-script, social-media-skills:facebook-strategy.
 
@@ -56,7 +59,8 @@ Goal: for leads the Lead Scout added, find a way to reach them, confirm whether 
 - Pick up to 20: select id, business, area, niche, rating, website, contact from ops.leads where stage in ('New','Audited') and (website like 'Not confirmed%' or website = 'Not checked' or contact in ('','Not found yet')) order by score desc limit 20.
 - If you are on Thomas's computer: load the built-in-browser skill if listed, then the browser tools (ToolSearch query "mcp__remote-devices__Claude_Browser__", max_results 64). For each lead, navigate to https://www.google.com/search?q=<business>+<town>+LA and get_page_text (max_chars 2500). Use browser_batch to do several in one call.
 - If the browser tools are missing (cloud run), use WebSearch (mode "standard") for "<business> <town> LA" instead, and WebFetch the business's own site or Facebook page when a result looks like a match. Search several leads per turn. Only if neither the browser nor WebSearch works, log "Contact Finder: no web access" and stop.
-- Take only details clearly tied to the same business: phone, website, Facebook or Instagram, Google rating and review count. If unsure, add "(possible match, confirm on the call)".
+- Take only details clearly tied to the same business: phone, email, website, Facebook or Instagram, Google rating and review count. If unsure, add "(possible match, confirm on the call)".
+- Hunt for an email on every lead, because email is what the Sales Agent can draft for. In order, stop at the first hit: their own website (WebFetch the home page, then /contact, /contact-us and /about; look for mailto: links and addresses in the footer); a second search for "<business>" "<town>" email; their Facebook page's About or Intro text as it shows in search results; Yelp, BBB, Nextdoor, Angi or chamber of commerce listings. Only an address the business published itself; never guess one from a pattern like info@<domain>. Save it to email and add "email" to contact.
 - If a website shows up, WebFetch it. Solid and recent (agency-built, current copyright, working quote form): score under 45, heat Cold, next_step 'Skip for now'. Weak: website 'Weak site (<domain>, <builder>)' and a hook naming 2 or 3 specific problems. Nothing anywhere: website 'None found' and a hook about what having a site would fix for them.
 - Re-score, set heat and stage 'Audited', and next_step: 'Ready for Sales Agent' if email, 'Call them (script on board)' if phone only, 'Send a Facebook message (text on board)' if Facebook only, else 'Find a way to reach them'.
 - Never sign in, never click anything that contacts a business, never solve a CAPTCHA. If Google shows a CAPTCHA, stop and log it.
@@ -86,11 +90,11 @@ D. First emails. Up to 10 per run: stage in ('Audited','Mockup ready'), email <>
 
 E. Calls and Facebook. For leads with a phone but no email and an empty call_script (up to 10): write call_script (5 to 7 short lines: who Thomas is, the compliment, the hook, the free mockup offer, ask for the best email or number to text the link; if asked about price, "it depends on what you need, most land in the $600 to $800 range"). you_action 'Call <business>: script on the board'. Facebook only: dm_text (3 to 5 sentences), you_action 'Message <business> on Facebook: text on the board'.
 
-F. Finish: run select ops.build_todos(); then read select type, who, item from ops.todos order by priority limit 12. Your final message is Thomas's morning brief (it reaches his phone and email): 3 to 6 short plain lines on replies, drafts waiting, calls to make, and anything broken, ending with the dashboard link. On Fridays add one line with this week's numbers: new leads, emails sent, replies, won.
+F. Finish: run select ops.build_todos(); then read select type, who, item from ops.todos order by priority limit 12. Your final message is Thomas's morning brief (it reaches his phone and email): 3 to 6 short plain lines on replies, drafts waiting, calls to make, and anything broken, ending with the dashboard link. On Fridays add one line with this week's numbers from select * from ops.weekly_stats order by week desc limit 1: new leads, emails sent, mockups, replies, won.
 
 ## 3. Mockup Builder (Tue and Thu)
 
-Build up to 2 mockups. Pick: stage 'Replied' with no mockup_url first, then heat 'Hot' in stage 'Audited' with an email or phone and no mockup_url, highest score first. If none qualify, build nothing and say so.
+Do the Site Builder section (7) first if any ops.builds row needs work. Then build up to 3 mockups. Pick, with no mockup_url: stage 'Replied' first; then stage 'Contacted' with heat Hot or Warm; then stage 'Audited' with heat Hot or Warm and an email, phone or Facebook, highest score first. Skip leads whose website is solid (next_step 'Skip for now'). If none qualify, build nothing and say so.
 
 - One self-contained index.html, static HTML/CSS/a little JS, Google Fonts allowed. Mobile-first, distinctive, fitted to their niche, never the same template twice in a row.
 - Yellow ribbon at the top: "Concept homepage designed for <business> by Sidequest Creative. Photos and details are placeholders."
@@ -98,6 +102,20 @@ Build up to 2 mockups. Pick: stage 'Replied' with no mockup_url first, then heat
 - Deploy with Vercel create_deployment: teamId team_JpoOV9VCUX3FeIX8tsXZRIkv, name 'mockup-<business-slug>', target 'production', projectSettings framework, buildCommand, outputDirectory, installCommand all null, skipAutoDetectionConfirmation '1', files [{file:'index.html', encoding:'utf-8', data:<html>}].
 - Vercel exception (approved by Thomas on 2026-10-23): update_project idOrName 'mockup-<slug>', requestBody {"ssoProtection": null}, only for projects named mockup-. Never touch any other project.
 - Confirm https://mockup-<slug>-teddster.vercel.app loads with WebFetch, then set mockup_url and stage 'Mockup ready' (keep 'Replied' if it was, and set you_action 'Mockup for <business> is ready to send: <url>').
+
+## 7. Site Builder (Tue and Thu, inside the Mockup Builder run)
+
+Goal: turn a won client into a finished website Thomas can show them and launch. One site per run.
+
+- Pick: select * from ops.builds where status in ('Waiting on intake','Building','Changes requested') order by status = 'Changes requested' desc, created_at limit 1. Read the lead row too (business, niche, area, phone, email, facebook, rating, hook, mockup_url, package).
+- Intake: search Gmail (search_threads from:<their email> or to:<their email>, newest first) for what they sent: services, prices, hours, service area, story, logo or photo notes. Add anything new to intake as short plain notes with the date. Thomas may also have typed notes into intake himself; keep them.
+- Not enough to build yet (no services list at all): status 'Waiting on intake', you_action 'Send <business> the intake list: logo, photos, services, hours, service area' if no request has gone out, and stop for this client.
+- Build: start from the mockup's design (WebFetch mockup_url) and keep its look. Starter package: one page, with hero, services, about, reviews, service area, contact. Full package: home plus separate services, about and contact pages (index.html, services.html, about.html, contact.html with a shared nav). Use only the client's real details from intake and the lead row. Where a photo or detail is missing, use a clearly marked placeholder (a neutral block that says "Photo: <what goes here>"). Never invent reviews, prices, licenses or years in business. Contact form: a mailto link or tel link, no backend. Add a page title, meta description, and LocalBusiness schema with the real name, phone and town. No yellow mockup ribbon.
+- Deploy with Vercel create_deployment: teamId team_JpoOV9VCUX3FeIX8tsXZRIkv, name 'site-<business-slug>', target 'production', the same null projectSettings as the mockups, one file entry per page. Leave its login wall on (do not call update_project on site- projects): Thomas shares the preview with the client himself.
+- Save preview_url (the deployment url), status 'Preview ready', checklist (plain lines: placeholders still to fill, each with what's needed; domain to buy or connect; Google Business Profile link to add; final check on phone), and you_action 'Review <business>'s site preview, then share it with them'.
+- Changes requested: Thomas writes what to change into intake or the client emails it. Make the changes, redeploy to the same project, then status 'Preview ready' again.
+- Never buy a domain, never change DNS, never launch. Thomas sets status 'Launched'.
+- Update ops.agents row id 'site' (last_run, status 'Live', last_result, next_run 'next Tue or Thu 8:33 AM') and add an ops.activity row with agent 'site'. If nothing needed work, just update the row with "No sites to build."
 
 ## 6. Content Agent (Sundays)
 

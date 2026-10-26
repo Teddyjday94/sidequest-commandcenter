@@ -17,9 +17,10 @@
       "tool": "execute_sql",
       "args": {
         "project_id": "taskvfzqgpqxpdifmxru",
-        "query": "select id, ord, name, role, status, schedule, next_run, last_run, last_result, hands_to, uses_ai from ops.agents order by ord"
+        "query": "select id, ord, name, role, status, schedule, next_run, last_run, last_result, hands_to, uses_ai from ops.agents where id in ('scout','planner','finder','sales','builder','site','content') order by ord"
       }
-    }
+    },
+    "description": "The live crew: each agent's job, schedule, last run and latest result, and whether it uses Claude. Reads ops.agents."
   },
   "activity": {
     "source": {
@@ -51,6 +52,32 @@
       "args": {
         "project_id": "taskvfzqgpqxpdifmxru",
         "query": "select id, type, item, who, agent, priority from ops.todos order by priority, type, id"
+      }
+    }
+  },
+  "weekly": {
+    "title": "Weekly numbers",
+    "description": "Leads found, emails sent, mockups made, replies and deals won per week for the last 8 weeks, Central time. Reads the ops.weekly_stats view (built on ops.leads and ops.lead_events).",
+    "source": {
+      "kind": "query",
+      "connector": "Supabase",
+      "tool": "execute_sql",
+      "args": {
+        "project_id": "taskvfzqgpqxpdifmxru",
+        "query": "select week, found, contacted, mockups, replied, won, won_value from ops.weekly_stats order by week"
+      }
+    }
+  },
+  "builds": {
+    "title": "Client site builds",
+    "description": "One row per won client the Site Builder is building a site for, with status, preview link and launch checklist. Reads ops.builds.",
+    "source": {
+      "kind": "query",
+      "connector": "Supabase",
+      "tool": "execute_sql",
+      "args": {
+        "project_id": "taskvfzqgpqxpdifmxru",
+        "query": "select id, lead_id, business, package, status, preview_url, live_domain, checklist, you_action, updated_at from ops.builds order by status = 'Launched', created_at desc"
       }
     }
   }
