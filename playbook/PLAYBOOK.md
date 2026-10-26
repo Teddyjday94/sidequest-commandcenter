@@ -22,7 +22,8 @@ All data lives in Supabase project taskvfzqgpqxpdifmxru, schema ops. Use the too
 - Only read and write tables in the ops schema. Never touch the public schema (that is Thomas's client portal) or any other schema. Never DROP, ALTER, TRUNCATE or DELETE anything, except where a section below says so.
 - Escape text with dollar quoting when writing, for example update ops.leads set hook = $q$...$q$ where id = 'L12'.
 - Tables:
-  - ops.leads: id, business, niche, area, found_on, profile_url, rating, website, email, phone, facebook, contact, score, heat, stage, hook, next_step, you_action, mockup_url, call_script, dm_text, draft_id, proposal_draft_id, invoice_id, package, deal_value, first_contact, last_contact, touches, next_followup, created_at, updated_at.
+  - ops.leads: id, business, niche, area, found_on, profile_url, rating, website, email, phone, facebook, contact, score, heat, stage, hook, next_step, you_action, mockup_url, call_script, dm_text, draft_id, proposal_draft_id, invoice_id, package, deal_value, first_contact, last_contact, touches, next_followup, mockup_requested, my_notes, created_at, updated_at.
+  - my_notes is what Thomas typed himself in Lead Desk (an owner name, a phone, photo links, what he saw on their Facebook or Google page). Treat it as true and more current than anything you found, and use it. Never overwrite it.
   - ops.agents: id (scout, planner, finder, sales, builder, content), name, status, schedule, next_run, last_run, last_result.
   - ops.activity: agent, action (at fills itself). Rows with agent 'you' are what Thomas did in Lead Desk.
   - Lead Desk: Thomas marks leads emailed, called, messaged, replied, won, lost or opted out, and asks for mockups, through select ops.lead_action(id, action). Treat what it set as true; don't undo it.
@@ -96,7 +97,7 @@ B. Sent mail sync. For leads with an email in stage Audited, Mockup ready or Con
 
 C. Follow-ups. Leads in stage Contacted with next_followup <= current_date and touches < 4: draft a short follow-up in the same thread. Touch 2: friendly nudge with one new reason. Touch 3: offer the mockup link or a 2-minute walkthrough. Touch 4: polite last note. you_action 'Review and send the follow-up to <business>'.
 
-Before writing any email, call script or message, read the lead's ops.dossiers row if there is one: greet the owner by first name when owner_name is set ("Hi Mike,"), and build the compliment and hook from pitch_angles, founded, reviews and competitors. Never mention how you found the owner's name.
+Before writing any email, call script or message, read the lead's my_notes and its ops.dossiers row if there is one: greet the owner by first name when owner_name is set ("Hi Mike,"), and build the compliment and hook from pitch_angles, founded, reviews and competitors. Never mention how you found the owner's name.
 
 D. First emails. Up to 10 per run: stage in ('Audited','Mockup ready'), email <> '', draft_id = '', touches = 0, heat <> 'Cold', order by stage = 'Mockup ready' desc, score desc. Draft with create_draft:
 - Who Thomas is (Sidequest Creative, small web design shop in Gonzales). One specific, genuine compliment. The hook. If mockup_url: "I went ahead and put together a quick mockup of what your homepage could look like:" plus the link and one line on what's in it. If not: "I'd be glad to put together a free mockup of your homepage, so you can see what it could look like before spending anything." Never ask "want me to send one?"
@@ -114,7 +115,7 @@ F. Finish: run select ops.build_todos(); then read select type, who, item from o
 
 Do the Site Builder section (7) first if any ops.builds row needs work. Then build up to 3 mockups. Pick, with no mockup_url: leads where mockup_requested = true first (Thomas asked for these in Lead Desk, any stage except Lost or Opted out); then stage 'Replied'; then stage 'Contacted' with heat Hot or Warm; then stage 'Audited' with heat Hot or Warm and an email, phone or Facebook, highest score first. Skip leads whose website is solid (next_step 'Skip for now'). If none qualify, build nothing and say so.
 
-- Read the lead's ops.dossiers row first and build from it: their real services, service area, hours, story, credentials, brand colors and logo. Photos: use the dossier's photos (the business's own) as <img src> links where they fit, each with a plain alt text, and fall back to labeled placeholders. Real review quotes from the dossier may appear word for word with their source named ("From Google reviews"); otherwise use placeholder review cards.
+- Read the lead's my_notes and ops.dossiers row first and build from them (my_notes wins where they disagree): their real services, service area, hours, story, credentials, brand colors and logo. Photos: use the dossier's photos (the business's own) as <img src> links where they fit, each with a plain alt text, and fall back to labeled placeholders. Real review quotes from the dossier may appear word for word with their source named ("From Google reviews"); otherwise use placeholder review cards.
 - One self-contained index.html, static HTML/CSS/a little JS, Google Fonts allowed. Mobile-first, distinctive, fitted to their niche, never the same template twice in a row.
 - Yellow ribbon at the top: "Concept homepage designed for <business> by Sidequest Creative. Photos and details are placeholders."
 - Hero with headline and call or quote button, services, a before/after slider for cleaning, lawn, detailing, tint or roofing, reviews with placeholder cards (never invented text; real rating and count are fine), a quote form that shows "This is a mockup, nothing was sent" on submit, footer credit to Sidequest Creative.
@@ -146,7 +147,13 @@ Goal: a short case file on each lead before it gets a mockup, a pitch or a site,
 - Record only business facts the business or a public business record published:
   - owner_name: the owner as the business presents them (their own site, page About, a signed reply to a review, a news story) or the officer or organizer on the Louisiana business filing. Put where it came from in owner_source. Unsure: leave it blank.
   - founded ("since 2016", or the filing year), services, service_area, hours, story (their own one or two line description), credentials as they state them (licensed and insured, LHBA member, a license number they publish), booking (how customers reach them today: calls, texts, Facebook messages, a form).
-  - logo_url and photos: only images the business itself posted on its own website or business page (job photos, trucks, before and after shots, the logo), never customer uploads, stock photos or pictures of people's faces. Each photo is {url, what, source}. Up to 8.
+  - logo_url and photos: only images the business itself posted (job photos, trucks, before and after shots, the logo), never customer uploads, stock photos or pictures of people's faces. Each photo is {url, what, source}. Up to 8. Where to look, in order:
+    1. Photo links in my_notes (Thomas pasted these himself; use them first).
+    2. Their own website's images.
+    3. Yelp: find their /biz/<slug> page, then WebFetch https://www.yelp.com/biz_photos/<slug> and keep only photos Yelp marks as from the business or uploaded by the business owner. Customer photos stay out, even good ones.
+    4. Angi or HomeAdvisor profile (the rated.<name>.<id>.html page): the project photos there are uploaded by the pro.
+    5. BBB profile logo.
+    If a site answers with a block, a CAPTCHA or a login wall, skip that site for this lead and move on; never retry around it. Google Maps and Facebook photos are out of reach without logging in, so don't try them.
   - brand_colors: the colors in their logo, truck wrap or page header, as hex codes, when visible.
   - reviews: rating and count per site, two or three themes customers repeat, and at most 3 short quotes copied word for word with the site named.
   - social: their pages and roughly how active they are (last post month if a snippet shows it).

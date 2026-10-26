@@ -509,7 +509,7 @@ dash.calc('stages', {
     if (r.mockup_requested && !r.mockup_url) item('Mockup', null, 'Requested, coming next Tue or Thu');
     item('Next step', 'next_step', r.next_step);
     if (r.you_action) item('Waiting on you', 'you_action', r.you_action);
-    const blocks = [['Pitch hook', 'hook'], ['Call script', 'call_script'], ['Facebook message', 'dm_text']].filter(([, f]) => r[f]);
+    const blocks = [['My notes', 'my_notes'], ['Pitch hook', 'hook'], ['Call script', 'call_script'], ['Facebook message', 'dm_text']].filter(([, f]) => r[f]);
     const parts = [top, dl, ...blocks.flatMap(([lbl, f]) => [el('div', 'sq-h2', lbl), mark(el('p', 'block', r[f]), 'leads', f, w)])];
     const D = dash.data('dossiers');
     const c = D.status === 'ok' ? D.data.find((x) => x.lead_id === r.id) : null;

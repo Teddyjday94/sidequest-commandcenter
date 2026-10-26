@@ -82,6 +82,10 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
 .act-group { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .act-group .lbl { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; width: 100%; }
 .confirm { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); }
+.notes { display: grid; gap: 8px; }
+.notes textarea { font: inherit; min-height: 6rem; resize: vertical; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); width: 100%; box-sizing: border-box; }
+.notes .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.notes .hint { font-size: 12px; color: var(--muted); }
 .empty, .notice { color: var(--muted); padding: 24px 16px; text-align: center; background: var(--panel); border: 1px dashed var(--line); border-radius: 10px; }
 .notice.bad { color: var(--ink); border-style: solid; border-color: var(--hot); text-align: left; }
 .notice b { display: block; margin-bottom: 4px; }
@@ -115,7 +119,7 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
 (() => {
   const SERVER = 'Supabase';
   const PROJECT = 'taskvfzqgpqxpdifmxru';
-  const COLS = 'id, business, niche, area, rating, website, email, phone, facebook, score, heat, stage, hook, next_step, you_action, mockup_url, mockup_requested, call_script, dm_text, first_contact, last_contact, touches, next_followup';
+  const COLS = 'id, business, niche, area, rating, website, email, phone, facebook, score, heat, stage, hook, next_step, you_action, mockup_url, mockup_requested, call_script, dm_text, first_contact, last_contact, touches, next_followup, my_notes';
   const LIST_SQL = `select ${COLS}, coalesce(d.owner_name, '') as owner_name, coalesce(d.pitch_angles, '') as pitch_angles, (d.lead_id is not null) as has_case from ops.leads l left join ops.dossiers d on d.lead_id = l.id where l.stage <> 'Opted out' order by l.score desc, l.id`;
   const LANES = [
     { id: 'ready', label: 'Ready to contact', note: 'Researched and not contacted yet. Reach out, then mark how.', test: (l) => ['New', 'Audited', 'Mockup ready'].includes(l.stage) },
@@ -126,6 +130,7 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
     { id: 'all', label: 'Everyone', note: 'Every lead except anyone who opted out.', test: () => true },
   ];
 
+  const drafts = {};
   let mcp = null, leads = [], lane = 'ready', openId = null, confirmFor = null, busy = false, loadedAt = null, problem = null;
   const $ = (id) => document.getElementById(id);
   const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
@@ -197,6 +202,22 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
     await load();
   }
 
+  async function saveNote(lead) {
+    if (busy || !/^L\d{1,5}$/.test(lead.id)) return;
+    const text = String(drafts[lead.id] ?? lead.my_notes ?? '').replace(/\u0000/g, '').slice(0, 4000);
+    busy = true; render();
+    try {
+      await sql(`select ops.lead_note('${lead.id}', '${text.replace(/'/g, "''")}') as saved`);
+      delete drafts[lead.id];
+      toast('Notes saved for ' + lead.business);
+    } catch (err) {
+      const [t, d] = explain(err);
+      toast(t + '. ' + d);
+    }
+    busy = false;
+    await load();
+  }
+
   function laneCounts() {
     const c = {}; LANES.forEach((l) => { c[l.id] = leads.filter(l.test).length; }); return c;
   }
@@ -257,6 +278,17 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
       const wrap = el('div'); wrap.append(el('div', 'qlabel', label), el('p', 'quote', text)); body.append(wrap);
     });
 
+    const notes = el('div', 'notes');
+    const ta = el('textarea'); ta.id = 'notes-' + l.id; ta.maxLength = 4000;
+    ta.placeholder = 'Owner name, a better phone, photo links you copied from their Facebook or Google page, anything you saw. The Detective, Sales Agent and Mockup Builder use this first.';
+    ta.value = drafts[l.id] ?? l.my_notes ?? '';
+    ta.addEventListener('input', () => { drafts[l.id] = ta.value; });
+    ta.addEventListener('click', (e) => e.stopPropagation());
+    const nrow = el('div', 'row');
+    nrow.append(actionBtn('Save notes', '', () => saveNote(l)), el('span', 'hint', l.my_notes ? 'Saved notes are shared with the agents.' : 'Not saved yet.'));
+    notes.append(el('div', 'qlabel', 'My notes'), ta, nrow);
+    body.append(notes);
+
     const actions = el('div', 'actions');
     if (confirmFor && confirmFor.id === l.id) {
       const c = el('div', 'confirm');
@@ -308,6 +340,7 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
       chips.append(el('span', 'chip stage', l.stage));
       [['email', 'Email'], ['phone', 'Phone'], ['facebook', 'Facebook']].forEach(([f, label]) => chips.append(el('span', 'chip' + (l[f] ? '' : ' off'), label)));
       if (l.has_case) chips.append(el('span', 'chip', 'Case file'));
+      if (l.my_notes) chips.append(el('span', 'chip', 'My notes'));
       if (l.mockup_url) chips.append(el('span', 'chip', 'Mockup'));
       else if (l.mockup_requested) chips.append(el('span', 'chip', 'Mockup requested'));
       if (l.touches > 0) chips.append(el('span', 'chip', `${l.touches} touch${l.touches == 1 ? '' : 'es'}`));
