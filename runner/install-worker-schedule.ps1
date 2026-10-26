@@ -11,6 +11,7 @@ Set-StrictMode -Version Latest
 
 $taskName = 'Sidequest Command Center Worker'
 $credentialTarget = 'SidequestCommandCenterWorker'
+$protectionBypassCredentialTarget = 'SidequestCommandCenterVercelBypass'
 $windowsTimeZone = 'Central Standard Time'
 $ianaTimeZone = 'America/Chicago'
 $intervalMinutes = 15
@@ -45,8 +46,8 @@ $brokerUri = ConvertTo-SidequestScheduleBrokerUri -Value $BaseUri
 $runnerPath = Join-Path $PSScriptRoot 'run-next-job.ps1'
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $powerShellPath = (Get-Command powershell.exe -ErrorAction Stop).Source
-$taskArguments = '-NoProfile -ExecutionPolicy Bypass -File "{0}" -BaseUri "{1}" -CredentialTarget "{2}"' -f `
-    $runnerPath, $brokerUri.AbsoluteUri, $credentialTarget
+$taskArguments = '-NoProfile -ExecutionPolicy Bypass -File "{0}" -BaseUri "{1}" -CredentialTarget "{2}" -ProtectionBypassCredentialTarget "{3}"' -f `
+    $runnerPath, $brokerUri.AbsoluteUri, $credentialTarget, $protectionBypassCredentialTarget
 $startBoundary = [datetime]::Today.AddHours(7).ToString('yyyy-MM-ddTHH:mm:ss')
 $principalSid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
 $escapedPowerShellPath = [System.Security.SecurityElement]::Escape($powerShellPath)
@@ -111,6 +112,7 @@ $preview = [ordered]@{
         arguments = $taskArguments
         workingDirectory = $repoRoot
         credentialTarget = $credentialTarget
+        protectionBypassCredentialTarget = $protectionBypassCredentialTarget
     }
     taskXml = $taskXml
 }

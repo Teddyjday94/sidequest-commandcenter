@@ -45,9 +45,17 @@ Enrollment is a future, separate checkpoint. Generate one opaque token outside t
 
 The script reads the token as a secure string and stores it in Windows Credential Manager under `SidequestCommandCenterWorker`. Do not pass the raw token on a command line, place it in an environment file, paste it into an agent prompt, or record it in an issue.
 
+When the reviewed Vercel preview uses Vercel Authentication, create one project-scoped automation bypass instead of disabling deployment protection. Store it separately under `SidequestCommandCenterVercelBypass`:
+
+```powershell
+.\runner\enroll-vercel-bypass.ps1
+```
+
+The worker reads that second secret only after the operating-window and single-process guards pass, then sends it only in the `x-vercel-protection-bypass` request header. The task definition contains credential target names, never either secret. Revoke and rotate this bypass in Vercel if the PC is lost or the credential may have been exposed.
+
 The scheduled worker base URL must use HTTPS and must not contain user info, a query string, or a fragment. The lower-level broker module accepts explicit loopback HTTP only for isolated broker tests; `runner/run-next-job.ps1` rejects it before reading a credential.
 
-To revoke a device, set that exact worker row’s status to `revoked` through an authenticated administrative database session. Confirm the worker endpoints return `401` before removing the matching Windows credential. Re-enrollment requires a new token and a new stored hash; do not reactivate or reuse the old token.
+To revoke a device, set that exact worker row’s status to `revoked` through an authenticated administrative database session. Confirm the worker endpoints return `401` before removing the matching Windows credential and its Vercel bypass credential. Re-enrollment requires a new worker token and stored hash; do not reactivate or reuse the old token. Revoke the Vercel automation bypass separately when retiring the device.
 
 ## Scheduling and PC-off behavior
 

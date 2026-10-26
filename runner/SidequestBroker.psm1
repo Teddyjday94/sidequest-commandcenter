@@ -166,6 +166,7 @@ function Invoke-SidequestBrokerRequest {
         [Parameter(Mandatory)] [ValidateSet('GET', 'POST')] [string] $Method,
         [Parameter(Mandatory)] [uri] $Uri,
         [Parameter(Mandatory)] [pscredential] $Credential,
+        [securestring] $ProtectionBypassSecret,
         [AllowNull()] $Body,
         [scriptblock] $Transport = ${function:Invoke-DefaultSidequestTransport}
     )
@@ -177,8 +178,16 @@ function Invoke-SidequestBrokerRequest {
     }
 
     $token = ConvertFrom-SidequestSecureString $Credential.Password
+    $protectionBypass = $null
     try {
         $headers = @{ Authorization = "Worker $token"; Accept = 'application/json' }
+        if ($null -ne $ProtectionBypassSecret) {
+            $protectionBypass = ConvertFrom-SidequestSecureString $ProtectionBypassSecret
+            if ($protectionBypass -notmatch '^[A-Za-z0-9_-]{16,512}$') {
+                throw [InvalidOperationException]::new('protection_bypass_invalid')
+            }
+            $headers['x-vercel-protection-bypass'] = $protectionBypass
+        }
         $jsonBody = if ($null -eq $Body) { $null } else { $Body | ConvertTo-Json -Compress -Depth 12 }
         $response = & $Transport $Method $Uri.AbsoluteUri.TrimEnd('/') $headers $jsonBody
         $statusCode = [int] $response.StatusCode
@@ -198,6 +207,7 @@ function Invoke-SidequestBrokerRequest {
         if ([string]::IsNullOrWhiteSpace([string] $response.Content)) { return $null }
         return [string] $response.Content | ConvertFrom-Json
     } finally {
+        $protectionBypass = $null
         $token = $null
     }
 }
@@ -207,10 +217,11 @@ function Get-SidequestOffer {
     param(
         [Parameter(Mandatory)] [uri] $BaseUri,
         [pscredential] $Credential = (Get-SidequestWorkerCredential),
+        [securestring] $ProtectionBypassSecret,
         [scriptblock] $Transport = ${function:Invoke-DefaultSidequestTransport}
     )
 
-    Invoke-SidequestBrokerRequest -Method GET -Uri ([uri]::new($BaseUri, '/api/worker-offer')) -Credential $Credential -Body $null -Transport $Transport
+    Invoke-SidequestBrokerRequest -Method GET -Uri ([uri]::new($BaseUri, '/api/worker-offer')) -Credential $Credential -ProtectionBypassSecret $ProtectionBypassSecret -Body $null -Transport $Transport
 }
 
 function Claim-SidequestJob {
@@ -219,10 +230,11 @@ function Claim-SidequestJob {
         [Parameter(Mandatory)] [uri] $BaseUri,
         [Parameter(Mandatory)] [guid] $JobId,
         [pscredential] $Credential = (Get-SidequestWorkerCredential),
+        [securestring] $ProtectionBypassSecret,
         [scriptblock] $Transport = ${function:Invoke-DefaultSidequestTransport}
     )
 
-    Invoke-SidequestBrokerRequest -Method POST -Uri ([uri]::new($BaseUri, '/api/worker-claim')) -Credential $Credential -Body @{ jobId = $JobId.ToString() } -Transport $Transport
+    Invoke-SidequestBrokerRequest -Method POST -Uri ([uri]::new($BaseUri, '/api/worker-claim')) -Credential $Credential -ProtectionBypassSecret $ProtectionBypassSecret -Body @{ jobId = $JobId.ToString() } -Transport $Transport
 }
 
 function Send-SidequestHeartbeat {
@@ -231,10 +243,11 @@ function Send-SidequestHeartbeat {
         [Parameter(Mandatory)] [uri] $BaseUri,
         [Parameter(Mandatory)] [guid] $JobId,
         [pscredential] $Credential = (Get-SidequestWorkerCredential),
+        [securestring] $ProtectionBypassSecret,
         [scriptblock] $Transport = ${function:Invoke-DefaultSidequestTransport}
     )
 
-    Invoke-SidequestBrokerRequest -Method POST -Uri ([uri]::new($BaseUri, '/api/worker-heartbeat')) -Credential $Credential -Body @{ jobId = $JobId.ToString() } -Transport $Transport
+    Invoke-SidequestBrokerRequest -Method POST -Uri ([uri]::new($BaseUri, '/api/worker-heartbeat')) -Credential $Credential -ProtectionBypassSecret $ProtectionBypassSecret -Body @{ jobId = $JobId.ToString() } -Transport $Transport
 }
 
 function Submit-SidequestResult {
@@ -244,10 +257,11 @@ function Submit-SidequestResult {
         [Parameter(Mandatory)] [guid] $JobId,
         [Parameter(Mandatory)] [System.Collections.IDictionary] $Result,
         [pscredential] $Credential = (Get-SidequestWorkerCredential),
+        [securestring] $ProtectionBypassSecret,
         [scriptblock] $Transport = ${function:Invoke-DefaultSidequestTransport}
     )
 
-    Invoke-SidequestBrokerRequest -Method POST -Uri ([uri]::new($BaseUri, '/api/worker-result')) -Credential $Credential -Body @{ jobId = $JobId.ToString(); result = $Result } -Transport $Transport
+    Invoke-SidequestBrokerRequest -Method POST -Uri ([uri]::new($BaseUri, '/api/worker-result')) -Credential $Credential -ProtectionBypassSecret $ProtectionBypassSecret -Body @{ jobId = $JobId.ToString(); result = $Result } -Transport $Transport
 }
 
 function Fail-SidequestJob {
@@ -259,10 +273,11 @@ function Fail-SidequestJob {
         [Parameter(Mandatory)] [ValidateLength(1, 1000)] [string] $Summary,
         [Parameter(Mandatory)] [bool] $Retryable,
         [pscredential] $Credential = (Get-SidequestWorkerCredential),
+        [securestring] $ProtectionBypassSecret,
         [scriptblock] $Transport = ${function:Invoke-DefaultSidequestTransport}
     )
 
-    Invoke-SidequestBrokerRequest -Method POST -Uri ([uri]::new($BaseUri, '/api/worker-fail')) -Credential $Credential -Body @{
+    Invoke-SidequestBrokerRequest -Method POST -Uri ([uri]::new($BaseUri, '/api/worker-fail')) -Credential $Credential -ProtectionBypassSecret $ProtectionBypassSecret -Body @{
         jobId = $JobId.ToString()
         code = $Code
         summary = $Summary

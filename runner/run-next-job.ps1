@@ -4,7 +4,10 @@ param(
     [uri] $BaseUri,
 
     [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$')]
-    [string] $CredentialTarget = 'SidequestCommandCenterWorker'
+    [string] $CredentialTarget = 'SidequestCommandCenterWorker',
+
+    [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$')]
+    [string] $ProtectionBypassCredentialTarget = 'SidequestCommandCenterVercelBypass'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -26,6 +29,7 @@ Import-Module $modulePath -Force -DisableNameChecking
 $parameters = @{
     BaseUri = $BaseUri
     CredentialTarget = $CredentialTarget
+    ProtectionBypassCredentialTarget = $ProtectionBypassCredentialTarget
 }
 $result = Invoke-SidequestWorkerTurn @parameters
 if ($null -ne $result) {

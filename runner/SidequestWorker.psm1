@@ -366,6 +366,7 @@ function Start-SidequestHeartbeatPump {
         [Parameter(Mandatory)] [uri] $BaseUri,
         [Parameter(Mandatory)] [guid] $JobId,
         [Parameter(Mandatory)] [pscredential] $Credential,
+        [securestring] $ProtectionBypassSecret,
         [ValidateRange(25, 2147483647)]
         [int] $IntervalMilliseconds = 240000,
         [scriptblock] $HeartbeatAction
@@ -373,8 +374,8 @@ function Start-SidequestHeartbeatPump {
 
     if ($null -eq $HeartbeatAction) {
         $HeartbeatAction = {
-            param($base, $jobId, $credential)
-            Send-SidequestHeartbeat -BaseUri $base -JobId $jobId -Credential $credential | Out-Null
+            param($base, $jobId, $credential, $protectionBypassSecret)
+            Send-SidequestHeartbeat -BaseUri $base -JobId $jobId -Credential $credential -ProtectionBypassSecret $protectionBypassSecret | Out-Null
         }
     }
 
@@ -387,6 +388,7 @@ function Start-SidequestHeartbeatPump {
         BaseUri = $BaseUri
         JobId = $JobId
         Credential = $Credential
+        ProtectionBypassSecret = $ProtectionBypassSecret
         Errors = $errors
     }
 
@@ -401,7 +403,8 @@ function Start-SidequestHeartbeatPump {
                     & $event.MessageData.Action `
                         $event.MessageData.BaseUri `
                         $event.MessageData.JobId `
-                        $event.MessageData.Credential
+                        $event.MessageData.Credential `
+                        $event.MessageData.ProtectionBypassSecret
                 } catch {
                     $event.MessageData.Errors.Enqueue('heartbeat_failed')
                 }
@@ -492,6 +495,9 @@ function Invoke-SidequestWorkerTurn {
         [Parameter(Mandatory)] [uri] $BaseUri,
         [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$')]
         [string] $CredentialTarget = 'SidequestCommandCenterWorker',
+        [AllowEmptyString()]
+        [ValidatePattern('^$|^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$')]
+        [string] $ProtectionBypassCredentialTarget = '',
         [string] $RepoRoot = (Split-Path -Parent $PSScriptRoot),
         [System.Collections.IDictionary] $ProviderEnvironment,
         [System.Collections.IDictionary] $Dependencies
@@ -530,30 +536,33 @@ function Invoke-SidequestWorkerTurn {
 
     try {
         $getCredential = Get-SidequestDependency $Dependencies 'GetCredential' { param($target) Get-SidequestWorkerCredential -TargetName $target }
-        $getOffer = Get-SidequestDependency $Dependencies 'GetOffer' { param($base, $credential) Get-SidequestOffer -BaseUri $base -Credential $credential }
-        $claim = Get-SidequestDependency $Dependencies 'Claim' { param($base, $jobId, $credential) Claim-SidequestJob -BaseUri $base -JobId $jobId -Credential $credential }
+        $getProtectionBypassCredential = Get-SidequestDependency $Dependencies 'GetProtectionBypassCredential' { param($target) Get-SidequestWorkerCredential -TargetName $target }
+        $getOffer = Get-SidequestDependency $Dependencies 'GetOffer' { param($base, $credential, $bypassSecret) Get-SidequestOffer -BaseUri $base -Credential $credential -ProtectionBypassSecret $bypassSecret }
+        $claim = Get-SidequestDependency $Dependencies 'Claim' { param($base, $jobId, $credential, $bypassSecret) Claim-SidequestJob -BaseUri $base -JobId $jobId -Credential $credential -ProtectionBypassSecret $bypassSecret }
         $preflight = Get-SidequestDependency $Dependencies 'Preflight' { param($spec) Invoke-SidequestDefaultPreflight $spec }
         $getModelCatalog = Get-SidequestDependency $Dependencies 'GetModelCatalog' { Get-SidequestDefaultModelCatalog }
-        $startHeartbeat = Get-SidequestDependency $Dependencies 'StartHeartbeat' { param($base, $jobId, $credential) Start-SidequestHeartbeatPump -BaseUri $base -JobId $jobId -Credential $credential }
+        $startHeartbeat = Get-SidequestDependency $Dependencies 'StartHeartbeat' { param($base, $jobId, $credential, $bypassSecret) Start-SidequestHeartbeatPump -BaseUri $base -JobId $jobId -Credential $credential -ProtectionBypassSecret $bypassSecret }
         $stopHeartbeat = Get-SidequestDependency $Dependencies 'StopHeartbeat' { param($pump) Stop-SidequestHeartbeatPump -Pump $pump }
         $invokeModel = Get-SidequestDependency $Dependencies 'InvokeModel' { param($prompt, $repo, $schema, $output, $model, $nativeSearch) Invoke-SidequestDefaultModel $prompt $repo $schema $output $model $nativeSearch }
-        $complete = Get-SidequestDependency $Dependencies 'Complete' { param($base, $jobId, $result, $credential) Submit-SidequestResult -BaseUri $base -JobId $jobId -Result $result -Credential $credential }
-        $fail = Get-SidequestDependency $Dependencies 'Fail' { param($base, $jobId, $code, $summary, $retryable, $credential) Fail-SidequestJob -BaseUri $base -JobId $jobId -Code $code -Summary $summary -Retryable $retryable -Credential $credential }
+        $complete = Get-SidequestDependency $Dependencies 'Complete' { param($base, $jobId, $result, $credential, $bypassSecret) Submit-SidequestResult -BaseUri $base -JobId $jobId -Result $result -Credential $credential -ProtectionBypassSecret $bypassSecret }
+        $fail = Get-SidequestDependency $Dependencies 'Fail' { param($base, $jobId, $code, $summary, $retryable, $credential, $bypassSecret) Fail-SidequestJob -BaseUri $base -JobId $jobId -Code $code -Summary $summary -Retryable $retryable -Credential $credential -ProtectionBypassSecret $bypassSecret }
 
         $credential = & $getCredential $CredentialTarget
-        $offer = & $getOffer $BaseUri $credential
+        $protectionBypassCredential = if ([string]::IsNullOrWhiteSpace($ProtectionBypassCredentialTarget)) { $null } else { & $getProtectionBypassCredential $ProtectionBypassCredentialTarget }
+        $protectionBypassSecret = if ($null -eq $protectionBypassCredential) { $null } else { $protectionBypassCredential.Password }
+        $offer = & $getOffer $BaseUri $credential $protectionBypassSecret
         if ($null -eq $offer) { return [pscustomobject]@{ status = 'empty' } }
         $spec = Get-SidequestJobSpec -JobEnvelope $offer -RepoRoot $RepoRoot
         $prompt = New-SidequestJobPrompt -JobEnvelope $offer -RepoRoot $RepoRoot
         & $preflight $spec
         $modelCatalog = @(& $getModelCatalog)
-        $claimedEnvelope = & $claim $BaseUri ([guid] $offer.id) $credential
+        $claimedEnvelope = & $claim $BaseUri ([guid] $offer.id) $credential $protectionBypassSecret
         if ($null -eq $claimedEnvelope) { return [pscustomobject]@{ status = 'claim_lost'; job_id = [string] $offer.id } }
 
         $heartbeatPump = $null
         try {
             try {
-                $heartbeatPump = & $startHeartbeat $BaseUri ([guid] $claimedEnvelope.id) $credential
+                $heartbeatPump = & $startHeartbeat $BaseUri ([guid] $claimedEnvelope.id) $credential $protectionBypassSecret
                 $claimedSpec = Get-SidequestJobSpec -JobEnvelope $claimedEnvelope -RepoRoot $RepoRoot
                 $selectedModel = Resolve-SidequestModelForTier -Tier $claimedSpec.Tier -Catalog $modelCatalog -RepoRoot $RepoRoot
                 $prompt = New-SidequestJobPrompt -JobEnvelope $claimedEnvelope -RepoRoot $RepoRoot
@@ -562,7 +571,7 @@ function Invoke-SidequestWorkerTurn {
                 $outputPath = Join-Path (Join-Path $RepoRoot '.codex-runs') "$safeId.json"
                 $json = & $invokeModel $prompt $RepoRoot $claimedSpec.SchemaPath $outputPath $selectedModel $nativeSearch
             } catch {
-                $failure = & $fail $BaseUri ([guid] $claimedEnvelope.id) 'model_execution_failed' 'The claimed job model run failed before producing a result.' $true $credential
+                $failure = & $fail $BaseUri ([guid] $claimedEnvelope.id) 'model_execution_failed' 'The claimed job model run failed before producing a result.' $true $credential $protectionBypassSecret
                 if ($null -eq $failure) { return [pscustomobject]@{ status = 'failed'; code = 'model_execution_failed'; job_id = [string] $claimedEnvelope.id } }
                 return $failure
             }
@@ -570,12 +579,12 @@ function Invoke-SidequestWorkerTurn {
             try {
                 $validated = Test-SidequestJobResult -JobEnvelope $claimedEnvelope -Json ([string] $json) -RepoRoot $RepoRoot
             } catch {
-                $failure = & $fail $BaseUri ([guid] $claimedEnvelope.id) 'invalid_result' 'The claimed job did not produce a valid schema-bound result.' $false $credential
+                $failure = & $fail $BaseUri ([guid] $claimedEnvelope.id) 'invalid_result' 'The claimed job did not produce a valid schema-bound result.' $false $credential $protectionBypassSecret
                 if ($null -eq $failure) { return [pscustomobject]@{ status = 'failed'; code = 'invalid_result'; job_id = [string] $claimedEnvelope.id } }
                 return $failure
             }
 
-            $submitted = & $complete $BaseUri ([guid] $claimedEnvelope.id) (ConvertTo-SidequestDictionary $validated) $credential
+            $submitted = & $complete $BaseUri ([guid] $claimedEnvelope.id) (ConvertTo-SidequestDictionary $validated) $credential $protectionBypassSecret
             if ($null -eq $submitted) { return [pscustomobject]@{ status = 'completed'; job_id = [string] $claimedEnvelope.id } }
             return $submitted
         } finally {

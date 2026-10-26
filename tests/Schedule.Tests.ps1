@@ -3,6 +3,7 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $installerPath = Join-Path $repoRoot 'runner\install-worker-schedule.ps1'
 $runnerPath = Join-Path $repoRoot 'runner\run-next-job.ps1'
+$bypassEnrollmentPath = Join-Path $repoRoot 'runner\enroll-vercel-bypass.ps1'
 
 function Assert-Equal {
     param(
@@ -59,6 +60,7 @@ function Assert-ThrowsContaining {
 
 Assert-Equal -Actual (Test-Path -LiteralPath $installerPath -PathType Leaf) -Expected $true -Because 'The preview-first schedule installer must exist.'
 Assert-Equal -Actual (Test-Path -LiteralPath $runnerPath -PathType Leaf) -Expected $true -Because 'The scheduled action must invoke the queue-aware one-job runner.'
+Assert-Equal -Actual (Test-Path -LiteralPath $bypassEnrollmentPath -PathType Leaf) -Expected $true -Because 'Protected previews must have a dedicated secure bypass enrollment path.'
 
 $runnerSource = Get-Content -LiteralPath $runnerPath -Raw
 Assert-Contains -Actual $runnerSource -Expected "Import-Module `$modulePath" -Because 'The scheduled entrypoint must load the reviewed Sidequest worker module.'
@@ -98,8 +100,10 @@ Assert-Equal -Actual $preview.schedule.durationMinutes -Expected 781 -Because 'T
 Assert-Equal -Actual ([System.IO.Path]::GetFileName($preview.action.executable)) -Expected 'powershell.exe' -Because 'The native task must use stable inbox Windows PowerShell rather than the temporary Codex runtime.'
 Assert-NotContains -Actual $preview.action.executable -Unexpected '\.cache\codex-runtimes\' -Because 'A persistent native task must not depend on a disposable Codex runtime path.'
 Assert-Equal -Actual $preview.action.credentialTarget -Expected 'SidequestCommandCenterWorker' -Because 'The scheduled action must resolve only the named Windows credential.'
+Assert-Equal -Actual $preview.action.protectionBypassCredentialTarget -Expected 'SidequestCommandCenterVercelBypass' -Because 'The scheduled action must reference the separate Vercel bypass credential by target name only.'
 Assert-Contains -Actual $preview.action.arguments -Expected '-BaseUri "https://studio.example.test/"' -Because 'The task action must bind the reviewed HTTPS broker URL.'
 Assert-Contains -Actual $preview.action.arguments -Expected '-CredentialTarget "SidequestCommandCenterWorker"' -Because 'The task action must pass only the credential target, never its secret.'
+Assert-Contains -Actual $preview.action.arguments -Expected '-ProtectionBypassCredentialTarget "SidequestCommandCenterVercelBypass"' -Because 'The task action must pass only the Vercel bypass credential target, never its secret.'
 Assert-NotContains -Actual $preview.action.arguments -Unexpected 'worker_token_' -Because 'No raw worker token may appear in the scheduled task arguments.'
 Assert-NotContains -Actual $preview.action.arguments -Unexpected 'OPENAI_API_KEY' -Because 'The scheduled task must not carry usage-based provider credentials.'
 

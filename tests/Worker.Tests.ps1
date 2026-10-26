@@ -247,15 +247,20 @@ Assert-Equal $busyTurn.status 'busy' 'A second worker process must exit cleanly 
 Assert-Equal $script:busyCredentialCalls 0 'A worker that loses the mutex must not read credentials or contact the broker.'
 
 $script:emptyModelCalls = 0
+$script:emptyBypassReads = 0
+$script:emptyBypassForwarded = $false
 $emptyTurn = Invoke-SidequestWorkerTurn -BaseUri 'https://studio.example.test' -CredentialTarget 'SidequestTest' -RepoRoot $repoRoot -ProviderEnvironment @{} -Dependencies @{
     Now = $testNow
     GetCredential = { param($target) [pscredential]::new('worker-one', (ConvertTo-SecureString 'token' -AsPlainText -Force)) }
-    GetOffer = { param($base, $credential) $null }
+    GetProtectionBypassCredential = { param($target) $script:emptyBypassReads++; [pscredential]::new('vercel-bypass', (ConvertTo-SecureString 'bypass-secret' -AsPlainText -Force)) }
+    GetOffer = { param($base, $credential, $bypassSecret) $script:emptyBypassForwarded = $null -ne $bypassSecret; $null }
     GetModelCatalog = { throw 'an empty queue must not discover models' }
     InvokeModel = { param($prompt, $repo, $schema, $output, $model) $script:emptyModelCalls++; throw 'an empty queue must not run a model' }
-}
+} -ProtectionBypassCredentialTarget 'SidequestTestVercelBypass'
 Assert-Equal $emptyTurn.status 'empty' 'An empty broker queue must complete without claiming or invoking a model.'
 Assert-Equal $script:emptyModelCalls 0 'An empty broker queue must invoke no model.'
+Assert-Equal $script:emptyBypassReads 1 'A protected preview worker must read the separate bypass credential exactly once.'
+Assert-Equal $script:emptyBypassForwarded $true 'The worker must forward the separate bypass secret to the broker request.'
 
 $script:claimCalls = 0
 $preflightDependencies = @{

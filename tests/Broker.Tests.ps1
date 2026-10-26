@@ -62,6 +62,8 @@ function Assert-ThrowsBrokerStatus {
 $rawToken = 'worker_token_abcdefghijklmnopqrstuvwxyz_1234567890'
 $secureToken = ConvertTo-SecureString $rawToken -AsPlainText -Force
 $credential = [pscredential]::new('worker-one', $secureToken)
+$rawProtectionBypass = 'vercel_bypass_abcdefghijklmnopqrstuvwxyz_1234567890'
+$secureProtectionBypass = ConvertTo-SecureString $rawProtectionBypass -AsPlainText -Force
 $baseUri = 'https://studio.example.test'
 $jobId = '21000000-0000-4000-8000-000000000001'
 Assert-Contains -Actual $moduleSource -Expected 'MaximumRedirection = 0' -Because 'The default broker transport must not forward the worker authorization header through redirects.'
@@ -106,6 +108,31 @@ Assert-Equal -Actual $script:capturedRequest.Method -Expected 'POST' -Because 'C
 Assert-Equal -Actual $script:capturedRequest.Uri -Expected "$baseUri/api/worker-claim" -Because 'Claim must use the fixed worker endpoint.'
 Assert-Equal -Actual $script:capturedRequest.Headers.Authorization -Expected "Worker $rawToken" -Because 'The worker credential must be sent only in the authorization header.'
 Assert-Equal -Actual (($script:capturedRequest.Body | ConvertFrom-Json).jobId) -Expected $jobId -Because 'Claim must bind the exact offered job id.'
+
+$script:capturedBypassHeaders = $null
+$bypassTransport = {
+    param($Method, $Uri, $Headers, $Body)
+    $script:capturedBypassHeaders = $Headers
+    [pscustomobject]@{ StatusCode = 204; Content = '' }
+}
+$null = Get-SidequestOffer -BaseUri $baseUri -Credential $credential -ProtectionBypassSecret $secureProtectionBypass -Transport $bypassTransport
+Assert-Equal -Actual $script:capturedBypassHeaders.Authorization -Expected "Worker $rawToken" -Because 'Adding Vercel protection bypass must not alter worker authentication.'
+Assert-Equal -Actual $script:capturedBypassHeaders['x-vercel-protection-bypass'] -Expected $rawProtectionBypass -Because 'The protected preview must receive its automation bypass only as a request header.'
+
+$script:invalidBypassTransportCalled = $false
+$invalidBypassTransport = {
+    param($Method, $Uri, $Headers, $Body)
+    $script:invalidBypassTransportCalled = $true
+    [pscustomobject]@{ StatusCode = 204; Content = '' }
+}
+try {
+    $invalidBypass = ConvertTo-SecureString "bad`r`nheader" -AsPlainText -Force
+    Get-SidequestOffer -BaseUri $baseUri -Credential $credential -ProtectionBypassSecret $invalidBypass -Transport $invalidBypassTransport | Out-Null
+    throw 'An invalid protection bypass reached transport.'
+} catch {
+    Assert-Contains -Actual $_.Exception.Message -Expected 'protection_bypass_invalid' -Because 'Protection bypass values must reject header injection before transport.'
+}
+Assert-Equal -Actual $script:invalidBypassTransportCalled -Expected $false -Because 'An invalid protection bypass must never reach network transport.'
 
 $resultTransport = {
     param($Method, $Uri, $Headers, $Body)
