@@ -84,6 +84,8 @@ a.sq-link { color: inherit; text-decoration: underline; text-underline-offset: 2
 .sq-detail dt { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-bottom: 2px; }
 .sq-detail dd { margin: 0; font-size: var(--cds-font-size-body); overflow-wrap: anywhere; }
 .sq-detail .block { white-space: pre-wrap; font-size: var(--cds-font-size-body); background: var(--color-bg); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-md); margin: 0; }
+.sq-go { display: inline-block; font-size: var(--cds-font-size-body); font-weight: var(--cds-font-weight-medium); padding: 8px 14px; border-radius: var(--cds-radius); background: var(--color-fg); color: var(--color-bg); text-decoration: none; white-space: nowrap; }
+.sq-go:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 2px; }
 .sq-x { all: unset; cursor: pointer; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); padding: 4px 8px; border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); }
 
 /* Table */
@@ -149,6 +151,7 @@ a.sq-link { color: inherit; text-decoration: underline; text-underline-offset: 2
       <h1>Sidequest Command Center</h1>
       <p id="takeaway" class="dash-skeleton">—</p>
     </div>
+    <a class="sq-go" id="desk-link" href="https://claude.ai/artifact/My8ufd1itRBDSTHAK9VJ5E" target="_blank" rel="noopener">Open Lead Desk</a>
   </header>
 
   <nav class="sq-tabs" role="tablist" aria-label="Sections">
@@ -191,7 +194,7 @@ a.sq-link { color: inherit; text-decoration: underline; text-underline-offset: 2
   <section class="sq-page" id="pipeline" role="tabpanel" aria-labelledby="tab-pipeline" hidden>
     <div>
       <h2 class="sq-h2">Pipeline board</h2>
-      <p class="sq-note">Every open lead by stage, best score first. Chips show how you can reach them. Click a card for the pitch, call script and links.</p>
+      <p class="sq-note">Every open lead by stage, best score first. Chips show how you can reach them. Click a card for the pitch, call script, contact history and links. To mark someone contacted or send them to the Mockup Builder, use Update this lead.</p>
       <div class="sq-board" id="board" data-source="leads"></div>
     </div>
 
@@ -442,6 +445,8 @@ dash.calc('stages', {
     const c = el('div', 'sq-chips');
     [['email', 'Email'], ['phone', 'Phone'], ['facebook', 'Facebook']].forEach(([f, lbl]) => c.append(el('span', 'sq-chip' + (r[f] ? '' : ' off'), lbl)));
     if (r.mockup_url) c.append(el('span', 'sq-chip', 'Mockup'));
+    else if (r.mockup_requested) c.append(el('span', 'sq-chip', 'Mockup requested'));
+    if (+r.touches > 0) c.append(el('span', 'sq-chip', r.touches + (+r.touches === 1 ? ' touch' : ' touches')));
     return c;
   };
   const select = (id) => { selected = selected === id ? null : id; drawBoard(); drawDetail(); if (selected) document.getElementById('detail').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); };
@@ -482,7 +487,10 @@ dash.calc('stages', {
     const sub = el('div', 'sq-sub'); sub.append(mark(el('span', 'sq-heat ' + r.heat, r.heat), 'leads', 'heat', w), document.createTextNode(' · score ' + fmt(+r.score) + ' · ' + r.stage));
     ttl.append(sub);
     const x = el('button', 'sq-x', 'Close'); x.type = 'button'; x.addEventListener('click', () => select(r.id));
-    top.append(ttl, x);
+    const btns = el('div'); btns.style.display = 'flex'; btns.style.gap = '8px'; btns.style.alignItems = 'center';
+    const go = el('a', 'sq-go', 'Update this lead'); go.href = 'https://claude.ai/artifact/My8ufd1itRBDSTHAK9VJ5E#' + (/^L\d{1,5}$/.test(r.id) ? r.id : ''); go.target = '_blank'; go.rel = 'noopener';
+    btns.append(go, x);
+    top.append(ttl, btns);
     const dl = el('dl');
     const item = (label, field, node) => { const d = el('div'); d.append(el('dt', '', label)); const dd = el('dd'); if (node instanceof Node) dd.append(node); else { dd.textContent = node || '—'; if (node && node === r[field]) mark(dd, 'leads', field, w); } d.append(dd); dl.append(d); };
     item('Niche and area', 'niche', [r.niche, r.area].filter(Boolean).join(', '));
@@ -492,6 +500,9 @@ dash.calc('stages', {
     item('Phone', 'phone', r.phone ? link('tel:' + r.phone.replace(/[^\d+]/g, ''), r.phone) : '');
     item('Facebook', 'facebook', safeUrl(r.facebook) ? link(safeUrl(r.facebook), 'Open page') : r.facebook);
     item('Mockup', 'mockup_url', safeUrl(r.mockup_url) ? link(safeUrl(r.mockup_url), 'Open mockup') : '');
+    if (+r.touches > 0) item('Contact history', null, `${r.touches} touch${+r.touches === 1 ? '' : 'es'}, first ${String(r.first_contact || '').slice(0, 10)}, last ${String(r.last_contact || '').slice(0, 10)}`);
+    if (r.next_followup) item('Follow-up due', 'next_followup', r.next_followup);
+    if (r.mockup_requested && !r.mockup_url) item('Mockup', null, 'Requested, coming next Tue or Thu');
     item('Next step', 'next_step', r.next_step);
     if (r.you_action) item('Waiting on you', 'you_action', r.you_action);
     const blocks = [['Pitch hook', 'hook'], ['Call script', 'call_script'], ['Facebook message', 'dm_text']].filter(([, f]) => r[f]);

@@ -6,9 +6,10 @@
       "tool": "execute_sql",
       "args": {
         "project_id": "taskvfzqgpqxpdifmxru",
-        "query": "select id, business, niche, area, rating, website, email, phone, facebook, contact, score, heat, stage, hook, next_step, you_action, mockup_url, call_script, dm_text, deal_value from ops.leads where stage <> 'Opted out' order by score desc, id"
+        "query": "select id, business, niche, area, rating, website, email, phone, facebook, contact, score, heat, stage, hook, next_step, you_action, mockup_url, mockup_requested, call_script, dm_text, deal_value, first_contact, last_contact, touches, next_followup from ops.leads where stage not in ('Opted out', 'Lost') order by score desc, id"
       }
-    }
+    },
+    "description": "Every open lead (not lost or opted out) with website check, contact info, contact history, pitch hook, stage and deal value. Reads ops.leads in the Side Quest Client Portal database."
   },
   "agents": {
     "source": {

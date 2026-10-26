@@ -24,7 +24,8 @@ All data lives in Supabase project taskvfzqgpqxpdifmxru, schema ops. Use the too
 - Tables:
   - ops.leads: id, business, niche, area, found_on, profile_url, rating, website, email, phone, facebook, contact, score, heat, stage, hook, next_step, you_action, mockup_url, call_script, dm_text, draft_id, proposal_draft_id, invoice_id, package, deal_value, first_contact, last_contact, touches, next_followup, created_at, updated_at.
   - ops.agents: id (scout, planner, finder, sales, builder, content), name, status, schedule, next_run, last_run, last_result.
-  - ops.activity: agent, action (at fills itself).
+  - ops.activity: agent, action (at fills itself). Rows with agent 'you' are what Thomas did in Lead Desk.
+  - Lead Desk: Thomas marks leads emailed, called, messaged, replied, won, lost or opted out, and asks for mockups, through select ops.lead_action(id, action). Treat what it set as true; don't undo it.
   - ops.posts: id, date, platforms, pillar, format, hook, idea, caption, cta, asset, status.
   - ops.todos: rebuilt by select ops.build_todos(); do not write it directly.
   - ops.settings: key, value (mailing_address, dashboard_url).
@@ -76,7 +77,7 @@ A. Replies first. For every lead with an email and stage in ('Contacted','Replie
 - Not now: gracious short reply, door left open. Stop or unsubscribe: stage 'Opted out', you_action '', no reply.
 - Paid or confirmed: stage 'Won', you_action '<business> is a go: start the build'.
 
-B. Sent mail sync. For leads with an email in stage Audited, Mockup ready or Contacted: search in:sent to:<email>. If Thomas sent since last_contact: stage 'Contacted' (if earlier), first_contact if blank, last_contact, touches + 1, next_followup = send date + 3 days (touch 1), + 4 (touch 2), + 7 (touch 3), you_action ''.
+B. Sent mail sync. For leads with an email in stage Audited, Mockup ready or Contacted: search in:sent to:<email>. If Thomas sent after last_contact (a send on the same day as last_contact was already logged by Lead Desk, so skip it): stage 'Contacted' (if earlier), first_contact if blank, last_contact, touches + 1, next_followup = send date + 3 days (touch 1), + 4 (touch 2), + 7 (touch 3), you_action ''.
 
 C. Follow-ups. Leads in stage Contacted with next_followup <= current_date and touches < 4: draft a short follow-up in the same thread. Touch 2: friendly nudge with one new reason. Touch 3: offer the mockup link or a 2-minute walkthrough. Touch 4: polite last note. you_action 'Review and send the follow-up to <business>'.
 
@@ -94,14 +95,14 @@ F. Finish: run select ops.build_todos(); then read select type, who, item from o
 
 ## 3. Mockup Builder (Tue and Thu)
 
-Do the Site Builder section (7) first if any ops.builds row needs work. Then build up to 3 mockups. Pick, with no mockup_url: stage 'Replied' first; then stage 'Contacted' with heat Hot or Warm; then stage 'Audited' with heat Hot or Warm and an email, phone or Facebook, highest score first. Skip leads whose website is solid (next_step 'Skip for now'). If none qualify, build nothing and say so.
+Do the Site Builder section (7) first if any ops.builds row needs work. Then build up to 3 mockups. Pick, with no mockup_url: leads where mockup_requested = true first (Thomas asked for these in Lead Desk, any stage except Lost or Opted out); then stage 'Replied'; then stage 'Contacted' with heat Hot or Warm; then stage 'Audited' with heat Hot or Warm and an email, phone or Facebook, highest score first. Skip leads whose website is solid (next_step 'Skip for now'). If none qualify, build nothing and say so.
 
 - One self-contained index.html, static HTML/CSS/a little JS, Google Fonts allowed. Mobile-first, distinctive, fitted to their niche, never the same template twice in a row.
 - Yellow ribbon at the top: "Concept homepage designed for <business> by Sidequest Creative. Photos and details are placeholders."
 - Hero with headline and call or quote button, services, a before/after slider for cleaning, lawn, detailing, tint or roofing, reviews with placeholder cards (never invented text; real rating and count are fine), a quote form that shows "This is a mockup, nothing was sent" on submit, footer credit to Sidequest Creative.
 - Deploy with Vercel create_deployment: teamId team_JpoOV9VCUX3FeIX8tsXZRIkv, name 'mockup-<business-slug>', target 'production', projectSettings framework, buildCommand, outputDirectory, installCommand all null, skipAutoDetectionConfirmation '1', files [{file:'index.html', encoding:'utf-8', data:<html>}].
 - Vercel exception (approved by Thomas on 2026-10-23): update_project idOrName 'mockup-<slug>', requestBody {"ssoProtection": null}, only for projects named mockup-. Never touch any other project.
-- Confirm https://mockup-<slug>-teddster.vercel.app loads with WebFetch, then set mockup_url and stage 'Mockup ready' (keep 'Replied' if it was, and set you_action 'Mockup for <business> is ready to send: <url>').
+- Confirm https://mockup-<slug>-teddster.vercel.app loads with WebFetch, then set mockup_url, mockup_requested = false, and stage 'Mockup ready' only if the lead was New or Audited (keep any later stage), and set you_action 'Mockup for <business> is ready to send: <url>'.
 
 ## 7. Site Builder (Tue and Thu, inside the Mockup Builder run)
 

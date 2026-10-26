@@ -1,0 +1,334 @@
+<title>Sidequest Lead Desk</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one working column. Lane tabs on top, a list of lead rows that open in place with the actions under them. */
+:root {
+  --bg: #f6f7f5;
+  --panel: #ffffff;
+  --ink: #18201d;
+  --muted: #5d6963;
+  --line: #dde2de;
+  --accent: #1d6b57;
+  --accent-ink: #ffffff;
+  --hot: #b4361f;
+  --warm: #9a6400;
+  --ok: #217a3c;
+  --chip: #e9eeea;
+  --display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111614; --panel: #18201c; --ink: #e6ece8; --muted: #9aa8a1; --line: #2b3631;
+    --accent: #4fb596; --accent-ink: #0d1411; --hot: #f0846c; --warm: #e0b04f; --ok: #6fcf8a; --chip: #232d28;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111614; --panel: #18201c; --ink: #e6ece8; --muted: #9aa8a1; --line: #2b3631;
+  --accent: #4fb596; --accent-ink: #0d1411; --hot: #f0846c; --warm: #e0b04f; --ok: #6fcf8a; --chip: #232d28;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.45; }
+.wrap { max-width: 60rem; margin-inline: auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 64px; display: grid; gap: 18px; }
+header.top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px; }
+h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size: 2rem; letter-spacing: -0.01em; margin: 0; line-height: 1; text-wrap: balance; }
+.sub { color: var(--muted); margin: 6px 0 0; max-width: 40rem; }
+.status { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.status button, .btn { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 8px; padding: 8px 12px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
+.btn:hover, .status button:hover { border-color: var(--muted); }
+.btn:focus-visible, .lane:focus-visible, .row-head:focus-visible, input:focus-visible, .status button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.danger { color: var(--hot); }
+.btn[disabled] { opacity: .5; cursor: progress; }
+
+.lanes { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.lane { font: inherit; cursor: pointer; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 999px; padding: 7px 14px; white-space: nowrap; display: flex; gap: 8px; align-items: baseline; }
+.lane .n { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.lane[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.lane[aria-pressed="true"] .n { color: var(--bg); opacity: .75; }
+.lane-note { color: var(--muted); font-size: 13px; margin: -6px 0 0; }
+
+.search { display: flex; gap: 8px; }
+.search input { flex: 1; min-width: 0; font: inherit; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
+
+.list { display: grid; gap: 8px; }
+.lead { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
+.lead.open { border-color: var(--muted); }
+.row-head { all: unset; box-sizing: border-box; cursor: pointer; width: 100%; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 12px 14px; }
+.nm { font-family: var(--display); font-stretch: 90%; font-weight: 700; font-size: 1.08rem; line-height: 1.2; }
+.meta { color: var(--muted); font-size: 13px; }
+.right { text-align: right; display: grid; justify-items: end; gap: 4px; }
+.score { font-family: var(--mono); font-size: 13px; }
+.heat { font-weight: 600; font-size: 13px; }
+.heat.Hot { color: var(--hot); } .heat.Warm { color: var(--warm); } .heat.Cold { color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; grid-column: 1 / -1; }
+.chip { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--chip); }
+.chip.off { background: transparent; border: 1px dashed var(--line); color: var(--muted); }
+.chip.stage { background: transparent; border: 1px solid var(--line); }
+.chip.due { background: transparent; border: 1px solid var(--warm); color: var(--warm); }
+
+.body { border-top: 1px solid var(--line); padding: 14px; display: grid; gap: 14px; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: 10px 16px; margin: 0; }
+.facts dt { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.facts dd { margin: 2px 0 0; overflow-wrap: anywhere; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.copy { font: inherit; font-size: 12px; padding: 2px 8px; border-radius: 6px; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; }
+.quote { margin: 0; padding: 10px 12px; border-left: 3px solid var(--accent); background: var(--bg); white-space: pre-wrap; border-radius: 0 8px 8px 0; }
+.qlabel { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+.actions { display: grid; gap: 10px; }
+.act-group { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.act-group .lbl { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; width: 100%; }
+.confirm { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); }
+.empty, .notice { color: var(--muted); padding: 24px 16px; text-align: center; background: var(--panel); border: 1px dashed var(--line); border-radius: 10px; }
+.notice.bad { color: var(--ink); border-style: solid; border-color: var(--hot); text-align: left; }
+.notice b { display: block; margin-bottom: 4px; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 8px; font-size: 14px; max-width: calc(100% - 32px); z-index: 20; }
+.skeleton { height: 64px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); }
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton { animation: pulse 1.2s ease-in-out infinite alternate; }
+  @keyframes pulse { from { opacity: .55; } to { opacity: 1; } }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Lead Desk</h1>
+      <p class="sub">Mark who you've emailed, called or messaged, and send leads to the Mockup Builder. Every click updates the command center, and the agents pick it up on their next run.</p>
+    </div>
+    <div class="status"><span id="updated">Loading leads</span><button id="refresh" type="button">Refresh</button></div>
+  </header>
+
+  <nav class="lanes" id="lanes" aria-label="Lead groups"></nav>
+  <p class="lane-note" id="lane-note"></p>
+  <div class="search"><input id="q" type="search" placeholder="Search by business, town or niche" aria-label="Search leads"></div>
+  <div class="list" id="list" aria-live="polite">
+    <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script>
+(() => {
+  const SERVER = 'Supabase';
+  const PROJECT = 'taskvfzqgpqxpdifmxru';
+  const COLS = 'id, business, niche, area, rating, website, email, phone, facebook, score, heat, stage, hook, next_step, you_action, mockup_url, mockup_requested, call_script, dm_text, first_contact, last_contact, touches, next_followup';
+  const LIST_SQL = `select ${COLS} from ops.leads where stage <> 'Opted out' order by score desc, id`;
+  const LANES = [
+    { id: 'ready', label: 'Ready to contact', note: 'Researched and not contacted yet. Reach out, then mark how.', test: (l) => ['New', 'Audited', 'Mockup ready'].includes(l.stage) },
+    { id: 'contacted', label: 'Contacted', note: 'You reached out. Follow-ups due today or earlier are flagged.', test: (l) => l.stage === 'Contacted' },
+    { id: 'talking', label: 'Talking', note: 'They replied or have a proposal.', test: (l) => ['Replied', 'Proposal sent'].includes(l.stage) },
+    { id: 'won', label: 'Won', note: 'The Site Builder is on these.', test: (l) => l.stage === 'Won' },
+    { id: 'lost', label: 'Not interested', note: 'Reopen one if they come back around.', test: (l) => l.stage === 'Lost' },
+    { id: 'all', label: 'Everyone', note: 'Every lead except anyone who opted out.', test: () => true },
+  ];
+
+  let mcp = null, leads = [], lane = 'ready', openId = null, confirmFor = null, busy = false, loadedAt = null, problem = null;
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+  const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chicago' }).format(new Date());
+  const shortDate = (d) => d ? new Date(String(d).slice(0, 10) + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+  const safeUrl = (u) => (typeof u === 'string' && /^https?:\/\//.test(u.trim()) ? u.trim() : '');
+
+  try { const saved = localStorage.getItem('leaddesk-lane'); if (LANES.some((l) => l.id === saved)) lane = saved; } catch (e) {}
+  const hash = location.hash.slice(1);
+  if (/^L\d{1,5}$/.test(hash)) { openId = hash; lane = 'all'; }
+
+  let toastTimer;
+  const toast = (msg) => { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 3200); };
+
+  // Supabase wraps rows in a short note; pull the JSON array out of it.
+  const rowsFrom = (payload) => {
+    let txt = payload;
+    if (txt && typeof txt === 'object') txt = typeof txt.result === 'string' ? txt.result : JSON.stringify(txt);
+    if (typeof txt !== 'string') throw { code: 'tool_error', message: 'Supabase sent back something unexpected.' };
+    const m = txt.match(/<(untrusted-data-[\w-]+)>\s*(\[[\s\S]*\])\s*<\/\1>/);
+    if (!m) throw { code: 'tool_error', message: txt.slice(0, 240) };
+    return JSON.parse(m[2]);
+  };
+
+  const explain = (err) => {
+    const code = err && err.code;
+    if (code === 'server_not_connected' || code === 'selection_required' || code === 'server_not_found') return ['Supabase isn’t connected for you', 'Add or pick the Supabase connector in claude.ai Settings, Connectors, then refresh.'];
+    if (code === 'needs_reauth') return ['Supabase needs you to sign in again', 'Reconnect Supabase in claude.ai Settings, Connectors, then refresh.'];
+    if (code === 'not_in_manifest' || code === 'not_granted' || code === 'consent_required') return ['Supabase is turned off for this page', 'Allow Supabase from this page’s Permissions menu, then refresh.'];
+    if (code === 'blocked_by_policy' || code === 'approval_required') return ['Your organization blocks this', 'An admin has to allow Supabase database calls for artifacts.'];
+    if (code === 'server_unavailable' || code === 'rate_limited') return ['Supabase didn’t answer', 'Wait a few seconds and press Refresh.'];
+    if (code === 'tool_error') return ['Supabase refused that', String(err.message || '').slice(0, 240)];
+    return ['Something went wrong talking to Supabase', String((err && err.message) || '').slice(0, 240) || 'Press Refresh to try again.'];
+  };
+
+  const sql = (query) => mcp.callTool(SERVER, 'execute_sql', { project_id: PROJECT, query }, { cache: false }).then((r) => rowsFrom(r.payload));
+
+  async function load() {
+    if (!mcp) return;
+    $('updated').textContent = 'Loading leads';
+    try {
+      leads = await sql(LIST_SQL);
+      loadedAt = new Date();
+      problem = null;
+    } catch (err) {
+      problem = explain(err);
+      if (['needs_reauth', 'server_not_connected', 'not_in_manifest', 'blocked_by_policy', 'approval_required', 'not_granted'].includes(err && err.code)) leads = [];
+    }
+    render();
+  }
+
+  async function act(lead, action, pkg) {
+    if (busy) return;
+    if (!/^L\d{1,5}$/.test(lead.id)) return;
+    const allowed = ['mockup', 'emailed', 'called', 'messaged', 'replied', 'won', 'lost', 'optout', 'reopen'];
+    if (!allowed.includes(action)) return;
+    if (action === 'won' && !['Starter', 'Full'].includes(pkg)) return;
+    busy = true; confirmFor = null; render();
+    const q = `select ops.lead_action('${lead.id}', '${action}', ${pkg ? `'${pkg}'` : 'null'}) as done`;
+    try {
+      await sql(q);
+      const words = { mockup: 'Sent to the Mockup Builder', emailed: 'Marked emailed', called: 'Marked called', messaged: 'Marked messaged', replied: 'Marked replied', won: 'Marked won', lost: 'Marked not interested', optout: 'Marked opted out', reopen: 'Reopened' };
+      toast(words[action] + ': ' + lead.business);
+    } catch (err) {
+      const [t, d] = explain(err);
+      toast(t + '. ' + (err && err.code === 'server_unavailable' ? 'It may or may not have saved, so refresh before trying again.' : d));
+    }
+    busy = false;
+    await load();
+  }
+
+  function laneCounts() {
+    const c = {}; LANES.forEach((l) => { c[l.id] = leads.filter(l.test).length; }); return c;
+  }
+
+  function renderLanes() {
+    const counts = laneCounts();
+    $('lanes').replaceChildren(...LANES.map((l) => {
+      const b = el('button', 'lane'); b.type = 'button'; b.setAttribute('aria-pressed', String(l.id === lane));
+      b.append(el('span', '', l.label), el('span', 'n', String(counts[l.id] ?? 0)));
+      b.addEventListener('click', () => { lane = l.id; confirmFor = null; try { localStorage.setItem('leaddesk-lane', lane); } catch (e) {} render(); });
+      return b;
+    }));
+    $('lane-note').textContent = (LANES.find((l) => l.id === lane) || {}).note || '';
+  }
+
+  function copyBtn(text) {
+    const b = el('button', 'copy', 'Copy'); b.type = 'button';
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      Promise.resolve().then(() => navigator.clipboard.writeText(text)).then(() => { b.textContent = 'Copied'; setTimeout(() => { b.textContent = 'Copy'; }, 1500); }).catch(() => {
+        const r = document.createRange(); r.selectNodeContents(b.previousSibling); const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      });
+    });
+    return b;
+  }
+
+  function actionBtn(label, cls, onClick) {
+    const b = el('button', 'btn' + (cls ? ' ' + cls : ''), label); b.type = 'button'; b.disabled = busy;
+    b.addEventListener('click', (e) => { e.stopPropagation(); onClick(); });
+    return b;
+  }
+
+  function leadBody(l) {
+    const body = el('div', 'body');
+    const dl = el('dl', 'facts');
+    const fact = (label, value, withCopy) => {
+      if (!value) return;
+      const d = el('div'); d.append(el('dt', '', label));
+      const dd = el('dd'); const span = el('span', '', value); dd.append(span);
+      if (withCopy) dd.append(copyBtn(value));
+      d.append(dd); dl.append(d);
+    };
+    fact('Phone', l.phone, true);
+    fact('Email', l.email, true);
+    if (safeUrl(l.facebook)) { const d = el('div'); d.append(el('dt', '', 'Facebook')); const dd = el('dd'); const a = el('a', '', 'Open page'); a.href = safeUrl(l.facebook); a.target = '_blank'; a.rel = 'noopener'; dd.append(a); d.append(dd); dl.append(d); }
+    else fact('Facebook', l.facebook, false);
+    fact('Website', l.website, false);
+    if (safeUrl(l.mockup_url)) { const d = el('div'); d.append(el('dt', '', 'Mockup')); const dd = el('dd'); const a = el('a', '', 'Open mockup'); a.href = safeUrl(l.mockup_url); a.target = '_blank'; a.rel = 'noopener'; dd.append(a, el('span', 'meta', safeUrl(l.mockup_url)), copyBtn(safeUrl(l.mockup_url))); d.append(dd); dl.append(d); }
+    fact('Rating', l.rating, false);
+    if (l.touches > 0) fact('Contact history', `${l.touches} touch${l.touches == 1 ? '' : 'es'}, first ${shortDate(l.first_contact)}, last ${shortDate(l.last_contact)}`, false);
+    if (l.next_followup) fact('Follow-up due', shortDate(l.next_followup), false);
+    fact('Next step', l.next_step, false);
+    body.append(dl);
+
+    [['Pitch hook', l.hook], ['Call script', l.call_script], ['Facebook message', l.dm_text]].forEach(([label, text]) => {
+      if (!text) return;
+      const wrap = el('div'); wrap.append(el('div', 'qlabel', label), el('p', 'quote', text)); body.append(wrap);
+    });
+
+    const actions = el('div', 'actions');
+    if (confirmFor && confirmFor.id === l.id) {
+      const c = el('div', 'confirm');
+      if (confirmFor.action === 'won') {
+        c.append(el('span', '', 'Which package did they pick?'), actionBtn('Starter, $600', 'primary', () => act(l, 'won', 'Starter')), actionBtn('Full, $800', 'primary', () => act(l, 'won', 'Full')), actionBtn('Cancel', '', () => { confirmFor = null; render(); }));
+      } else {
+        const msg = confirmFor.action === 'optout' ? 'They asked not to be contacted. No agent will ever reach out again. This can’t be undone here.' : 'Move them to Not interested and stop follow-ups?';
+        c.append(el('span', '', msg), actionBtn(confirmFor.action === 'optout' ? 'Yes, opt them out' : 'Yes, mark not interested', 'danger', () => act(l, confirmFor.action)), actionBtn('Cancel', '', () => { confirmFor = null; render(); }));
+      }
+      actions.append(c);
+    } else if (l.stage === 'Lost') {
+      const g = el('div', 'act-group'); g.append(el('span', 'lbl', 'They came back?'), actionBtn('Reopen', 'primary', () => act(l, 'reopen'))); actions.append(g);
+    } else if (l.stage === 'Won') {
+      const g = el('div', 'act-group'); g.append(el('span', 'meta', 'Won. The Site Builder builds their site on its next Tuesday or Thursday run; check the Websites tab on the dashboard.')); actions.append(g);
+    } else {
+      const reach = el('div', 'act-group'); reach.append(el('span', 'lbl', 'I reached out'));
+      reach.append(actionBtn('I emailed them', 'primary', () => act(l, 'emailed')), actionBtn('I called them', 'primary', () => act(l, 'called')), actionBtn('I messaged on Facebook', 'primary', () => act(l, 'messaged')));
+      const next = el('div', 'act-group'); next.append(el('span', 'lbl', 'Move it along'));
+      if (!l.mockup_url && !l.mockup_requested) next.append(actionBtn('Make a mockup', '', () => act(l, 'mockup')));
+      if (l.mockup_requested && !l.mockup_url) next.append(el('span', 'chip', 'Mockup requested'));
+      if (!['Replied', 'Proposal sent', 'Won'].includes(l.stage)) next.append(actionBtn('They replied', '', () => act(l, 'replied')));
+      next.append(actionBtn('We won it', '', () => { confirmFor = { id: l.id, action: 'won' }; render(); }));
+      next.append(actionBtn('Not interested', 'danger', () => { confirmFor = { id: l.id, action: 'lost' }; render(); }), actionBtn('Opted out', 'danger', () => { confirmFor = { id: l.id, action: 'optout' }; render(); }));
+      actions.append(reach, next);
+    }
+    body.append(actions);
+    return body;
+  }
+
+  function render() {
+    renderLanes();
+    $('updated').textContent = loadedAt ? 'Updated ' + loadedAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : (mcp ? 'Loading leads' : '');
+    $('refresh').disabled = !mcp || busy;
+    const list = $('list');
+    const items = [];
+    if (problem) { const n = el('div', 'notice bad'); n.append(el('b', '', problem[0]), el('span', '', problem[1])); items.push(n); }
+    const laneDef = LANES.find((x) => x.id === lane) || LANES[0];
+    const term = $('q').value.trim().toLowerCase();
+    const due = today();
+    const shown = leads.filter(laneDef.test).filter((l) => !term || [l.business, l.area, l.niche, l.id].join(' ').toLowerCase().includes(term));
+    if (lane === 'contacted') shown.sort((a, b) => String(a.next_followup || '9999').localeCompare(String(b.next_followup || '9999')));
+    if (!shown.length && !problem && loadedAt) items.push(el('div', 'empty', term ? 'No leads match that search.' : 'Nobody here right now.'));
+    shown.forEach((l) => {
+      const card = el('article', 'lead' + (openId === l.id ? ' open' : '')); card.id = l.id;
+      const head = el('button', 'row-head'); head.type = 'button'; head.setAttribute('aria-expanded', String(openId === l.id));
+      const left = el('div'); left.append(el('div', 'nm', l.business), el('div', 'meta', [l.niche, l.area].filter(Boolean).join(' · ')));
+      const right = el('div', 'right'); right.append(el('span', 'heat ' + l.heat, l.heat), el('span', 'score', String(l.score)));
+      const chips = el('div', 'chips');
+      chips.append(el('span', 'chip stage', l.stage));
+      [['email', 'Email'], ['phone', 'Phone'], ['facebook', 'Facebook']].forEach(([f, label]) => chips.append(el('span', 'chip' + (l[f] ? '' : ' off'), label)));
+      if (l.mockup_url) chips.append(el('span', 'chip', 'Mockup'));
+      else if (l.mockup_requested) chips.append(el('span', 'chip', 'Mockup requested'));
+      if (l.touches > 0) chips.append(el('span', 'chip', `${l.touches} touch${l.touches == 1 ? '' : 'es'}`));
+      if (l.stage === 'Contacted' && l.next_followup && String(l.next_followup).slice(0, 10) <= due) chips.append(el('span', 'chip due', 'Follow-up due'));
+      head.append(left, right, chips);
+      head.addEventListener('click', () => { openId = openId === l.id ? null : l.id; confirmFor = null; render(); });
+      card.append(head);
+      if (openId === l.id) card.append(leadBody(l));
+      items.push(card);
+    });
+    if (!mcp && !problem) { const n = el('div', 'notice'); n.textContent = 'Open this page in claude.ai, signed in with your Supabase connector, to see and update leads.'; items.push(n); }
+    if (!loadedAt && mcp && !problem) items.push(el('div', 'skeleton'), el('div', 'skeleton'), el('div', 'skeleton'));
+    list.replaceChildren(...items);
+  }
+
+  $('q').addEventListener('input', render);
+  $('refresh').addEventListener('click', () => load());
+
+  claude.use('mcp').then((m) => {
+    mcp = m;
+    if (!mcp) { problem = null; render(); return; }
+    load().then(() => { if (openId) { const e = document.getElementById(openId); if (e) e.scrollIntoView({ block: 'center' }); } });
+  }, () => { mcp = null; render(); });
+  render();
+})();
+</script>

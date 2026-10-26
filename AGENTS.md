@@ -18,7 +18,8 @@ The crew finds local businesses with weak or missing websites, finds their conta
 | Sales Agent (+ Contact Finder on Mon/Wed/Fri) | Claude scheduled task, weekdays 9:17 AM CT (Sonnet), cloud. On Mon/Wed/Fri it runs the playbook's Contact Finder section first with WebSearch/WebFetch | Claude |
 | Mockup + Site Builder | Claude scheduled task, Tue/Thu 8:33 AM CT (Sonnet). Builds the next won client's site (`site-*` Vercel project, login wall stays on), then up to 3 prospect mockups (`mockup-*`, public) | Claude |
 | Content Agent | Claude scheduled task, Sunday 5:43 PM CT (Sonnet) | Claude |
-| Dashboard | Claude Dashboard artifact https://claude.ai/artifact/LjDPvPRUYEfi4DPcsrtYmN, reads Supabase live | claude.ai |
+| Dashboard | Claude Dashboard artifact https://claude.ai/artifact/LjDPvPRUYEfi4DPcsrtYmN, reads Supabase live (read only) | claude.ai |
+| Lead Desk | Artifact https://claude.ai/artifact/My8ufd1itRBDSTHAK9VJ5E (`lead-desk/index.html`). Thomas's buttons: emailed, called, messaged, replied, won, lost, opted out, make a mockup. Calls `ops.lead_action(id, action, package)` through his Supabase connector | claude.ai |
 
 Agent prompts are short: each one reads the playbook, then does only its own section. The **playbook is the real logic**.
 
@@ -32,6 +33,7 @@ agents/*.md                 the scheduled-task prompts (for reference; live copi
 supabase/migrations/        ops schema, functions (scout + planner), seed data and cron jobs
 dashboard/index.html        dashboard page (live copy: files/index.html in the dashboard artifact)
 dashboard/datasets.json     the 7 live SQL queries the dashboard runs
+lead-desk/index.html        Lead Desk page (republish with the Artifact tool, same URL)
 mockups/<slug>/index.html   mockup sites deployed as Vercel projects named mockup-<slug>
 ```
 
