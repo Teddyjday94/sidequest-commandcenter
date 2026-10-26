@@ -12,6 +12,7 @@ The crew: Lead Scout and Daily Planner run free inside the database (no AI). The
 4. Only record contact details a business published itself. Never record a personal home street address; use the town.
 5. Never invent reviews, quotes, numbers or facts. Unknown stays blank.
 6. Anyone with stage "Opted out" is never contacted again.
+7. Legacy Claude agents must exclude every lead whose automation_owner is `codex-pilot`. Those rows belong only to the guarded Codex canary until Thomas changes their owner.
 7. Copy: no em dashes, no AI-sounding phrasing. Slightly laid back but professional.
 8. If something blocks you, log it in ops.activity in plain words and finish the rest.
 
@@ -53,7 +54,7 @@ Load these with the Skill tool when listed; skip any that are missing.
 
 Goal: for leads the Lead Scout added, find a way to reach them, confirm whether they really have a website, and write the pitch hook.
 
-- Pick up to 20: select id, business, area, niche, rating, website, contact from ops.leads where stage in ('New','Audited') and (website like 'Not confirmed%' or website = 'Not checked' or contact in ('','Not found yet')) order by score desc limit 20.
+- Pick up to 20: select id, business, area, niche, rating, website, contact from ops.leads where coalesce(automation_owner, 'legacy') <> 'codex-pilot' and stage in ('New','Audited') and (website like 'Not confirmed%' or website = 'Not checked' or contact in ('','Not found yet')) order by score desc limit 20.
 - Use the browser or web-search tools available to the current agent. In the legacy Claude task, load the built-in-browser skill and its browser tools. If no browser or web-search tool can be reached, log "Contact Finder: computer offline" and stop.
 - For each: navigate to https://www.google.com/search?q=<business>+<town>+LA and get_page_text (max_chars 2500). Use browser_batch to do several in one call.
 - Take only details clearly tied to the same business: phone, website, Facebook or Instagram, Google rating and review count. If unsure, add "(possible match, confirm on the call)".
@@ -63,7 +64,7 @@ Goal: for leads the Lead Scout added, find a way to reach them, confirm whether 
 
 ## 4. Sales Agent (weekdays, mid-morning)
 
-One run covers outreach, replies and the morning brief. Gmail is thomasdbiz26@gmail.com.
+One run covers outreach, replies and the morning brief. Gmail is thomasdbiz26@gmail.com. Every lead query in steps A through E must include `coalesce(automation_owner, 'legacy') <> 'codex-pilot'`.
 
 A. Replies first. For every lead with an email and stage in ('Contacted','Replied','Proposal sent'): search_threads from:<email> newer than last_contact. Read new replies with get_thread.
 - Curious or asking price: draft a reply in the thread (replyToMessageId = their latest message). Answer directly, give the package that fits with its price, one line on the other, link the mockup if any, suggest a quick 10-minute call. Stage 'Replied'.
@@ -90,7 +91,7 @@ F. Finish: run select ops.build_todos(); then read select type, who, item from o
 
 ## 3. Mockup Builder (Tue and Thu)
 
-Build up to 2 mockups. Pick: stage 'Replied' with no mockup_url first, then heat 'Hot' in stage 'Audited' with an email or phone and no mockup_url, highest score first. If none qualify, build nothing and say so.
+Build up to 2 mockups. Exclude every row whose automation_owner is `codex-pilot`. From the remaining leads, pick: stage 'Replied' with no mockup_url first, then heat 'Hot' in stage 'Audited' with an email or phone and no mockup_url, highest score first. If none qualify, build nothing and say so.
 
 - One self-contained index.html, static HTML/CSS/a little JS, Google Fonts allowed. Mobile-first, distinctive, fitted to their niche, never the same template twice in a row.
 - Yellow ribbon at the top: "Concept homepage designed for <business> by Sidequest Creative. Photos and details are placeholders."

@@ -212,6 +212,11 @@ select lives_ok(
     values ('L-DISPATCH', 'Dispatch Fixture Business', 'New', 'codex-pilot')$$,
   'a canary lead fixture can be created'
 );
+select lives_ok(
+  $$insert into ops.settings (key, value) values ('automation_agent_crew_enabled', 'true')
+    on conflict (key) do update set value = excluded.value$$,
+  'the legacy dispatcher fixture explicitly enables the disabled-by-default crew'
+);
 
 select lives_ok($$select ops.dispatch_work()$$, 'dispatcher accepts an eligible canary lead');
 select lives_ok($$select ops.dispatch_work()$$, 'dispatcher can be repeated safely');
@@ -231,7 +236,7 @@ select is(
   (
     select count(*)::bigint
     from ops.jobs
-    where idempotency_key = 'dispatch:lead:L-DISPATCH:contact_verification:v1'
+    where idempotency_key = 'dispatch:lead:L-DISPATCH:contact_verification:v2'
   ),
   1::bigint,
   'dispatcher creates one idempotent contact-verification job'
