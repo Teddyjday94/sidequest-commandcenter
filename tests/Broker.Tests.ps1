@@ -68,6 +68,26 @@ $baseUri = 'https://studio.example.test'
 $jobId = '21000000-0000-4000-8000-000000000001'
 Assert-Contains -Actual $moduleSource -Expected 'MaximumRedirection = 0' -Because 'The default broker transport must not forward the worker authorization header through redirects.'
 
+$brokerModule = Get-Module SidequestBroker
+$unicodePayload = ('{{"summary":"Cypress Forge Construction{0}s public listing"}}' -f [char] 0x2019)
+$defaultTransportResult = & $brokerModule {
+    param($payload)
+    function Invoke-WebRequest {
+        param($Method, $Uri, $Headers, $ErrorAction, $MaximumRedirection, $ContentType, $Body, $UseBasicParsing)
+        if ($Body -isnot [byte[]]) { throw 'default_transport_body_not_bytes' }
+        $decoded = [Text.Encoding]::UTF8.GetString($Body)
+        if ($decoded -ne $payload) { throw 'default_transport_body_not_utf8' }
+        if ($ContentType -ne 'application/json; charset=utf-8') { throw 'default_transport_charset_missing' }
+        [pscustomobject]@{ StatusCode = 200; Content = '{}' }
+    }
+    try {
+        Invoke-DefaultSidequestTransport 'POST' 'https://studio.example.test/api/test' @{} $payload
+    } finally {
+        Remove-Item Function:\Invoke-WebRequest -ErrorAction SilentlyContinue
+    }
+} $unicodePayload
+Assert-Equal -Actual $defaultTransportResult.StatusCode -Expected 200 -Because 'The default transport must preserve non-ASCII result text as explicit UTF-8 bytes.'
+
 $script:insecureTransportCalled = $false
 $insecureTransport = {
     param($Method, $Uri, $Headers, $Body)

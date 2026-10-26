@@ -140,8 +140,10 @@ function Invoke-DefaultSidequestTransport {
         MaximumRedirection = 0
     }
     if ($null -ne $Body) {
-        $parameters.ContentType = 'application/json'
-        $parameters.Body = $Body
+        # Windows PowerShell 5.1 otherwise sends a string request body using its
+        # legacy encoding, corrupting non-ASCII model output before validation.
+        $parameters.ContentType = 'application/json; charset=utf-8'
+        $parameters.Body = [Text.Encoding]::UTF8.GetBytes([string] $Body)
     }
     if ($PSVersionTable.PSVersion.Major -le 5) {
         $parameters.UseBasicParsing = $true
