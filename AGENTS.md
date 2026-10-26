@@ -45,7 +45,7 @@ This repo is a mirror and a workbench. Nothing deploys from git automatically.
 - **Playbook**: edit `playbook/PLAYBOOK.md`, then ask Claude to "sync the playbook to the artifact store" (it writes the file into the dashboard artifact's `ops/playbook` doc, which the agents read each run). Keep the existing section headings; old agent prompts look them up by name.
 - **Dashboard**: edit `dashboard/index.html`, then ask Claude to republish it to the dashboard artifact. The page uses the Claude Dashboard runtime (`dash.loader`, `dash.calc`, `dash.onData`), so it will not run as a plain local HTML file.
 - **Agent prompts**: edit `agents/*.md`, then ask Claude to update the matching scheduled task.
-- **Mockups**: edit `mockups/<slug>/index.html` and redeploy to the Vercel project `mockup-<slug>` (team `team_JpoOV9VCUX3FeIX8tsXZRIkv`).
+- **Mockups**: edit `mockups/<slug>/index.html` and redeploy to the Vercel project `mockup-<slug>` (team `team_JpoOV9VCUX3FeIX8tsXZRIkv`). The eight from 2026-10-26 (`mockups/gen_mockups.py` + `mockups/mockups.json`) were deployed from this repo with each project's root directory set to `mockups/<slug>`, so pushing to `main` redeploys them.
 
 ## Hard rules (do not break these)
 
