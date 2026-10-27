@@ -228,7 +228,14 @@ Goal: a short case file on each lead before it gets a mockup, a pitch or a site,
   - sources: every URL used. confidence: 'High', 'Medium' or 'Low' with a few words on why.
 - Hard limits for the Detective: business facts only. Never record a home street address, a personal phone or email the business did not publish, family members, age, a personal social profile, court or arrest records, or anything about the owner's private life. Don't use people-search or background-check sites. Never contact anyone. If a fact looks like it came from a personal account rather than the business, leave it out.
 - Save with insert into ops.dossiers (...) values (...) on conflict (lead_id) do update set ..., researched_at = now(), using dollar quoting for text and '[...]'::jsonb for photos and sources. If you found a phone, email, Facebook page or website the lead row is missing, update ops.leads too (only from the business's own listing).
-- Update ops.agents row id 'detective' (last_run, status 'Live', last_result like "Case files on 4 leads: found 3 owner names and photos for 2.", next_run 'next Tue or Thu 8:33 AM') and add an ops.activity row with agent 'detective'.
+- Contact hunt, after the case files: most leads have no email, and email is what the Sales Agent can draft. Every weekday the database already checks each lead's own website for an email and tap-to-call number (contact_source says where it came from), so spend this step on the web. Pick up to 15 leads: select l.id, l.business, l.area, l.niche, l.phone, l.facebook, l.website, l.profile_url from ops.leads l where l.stage not in ('Won','Lost','Opted out') and l.email = '' order by ops.lead_priority(l) desc limit 15. For each, stop at the first real hit:
+  1. WebSearch "<business>" <town> LA email
+  2. WebSearch "<business>" "@gmail.com" OR "@yahoo.com" OR "@outlook.com" OR "@icloud.com" (Facebook About sections and directory listings often show up in these snippets)
+  3. WebSearch "<business>" <town> with allowed_domains ["facebook.com"], then ["bbb.org", "manta.com", "chamberofcommerce.com", "ascensionchamber.com", "nextdoor.com", "yelp.com", "angi.com", "thumbtack.com", "buildzoom.com", "porch.com"]. WebFetch a BBB, Manta, chamber or Angi profile when the snippet suggests contact details are on it.
+  - Keep an address only if it appears right next to this business's name, town or phone in the same snippet or page. Never guess one from a pattern (info@<their domain>), never take a personal address from a review or a post by someone else, and skip people-search sites.
+  - Also fill a missing phone, Facebook page or website the same way.
+  - Save to ops.leads: email, phone, facebook as found; contact gets ", email" added; contact_source = the URL it came from; if touches = 0 and draft_id = '', next_step 'Ready for Sales Agent'.
+- Update ops.agents row id 'detective' (last_run, status 'Live', last_result like "Case files on 4 leads, and found emails for 6 of 15 leads that had none.", next_run 'next Tue or Thu 8:33 AM') and add an ops.activity row with agent 'detective' naming how many emails and phones the contact hunt found.
 
 ## 6. Content Agent (Sundays)
 
