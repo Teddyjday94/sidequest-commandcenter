@@ -1,117 +1,151 @@
 <title>Sidequest HQ</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=Work+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Pixelify+Sans:wght@500;700&display=swap">
 <style>
-/* One visual world: a cozy isometric office at night. Mission board left, building right, ledger panels below. */
+/* A night office seen from above: summary numbers, then the office with its mission board, then the ledger cards.
+   One committed dark look. Pixel type is kept for the wordmark and levels only. */
 :root {
   color-scheme: dark;
-  --ink: #f3ead6; --muted: #a9a3c2; --bg: #0d1022; --panel: #171a33; --panel-2: #222648; --line: #343a68;
-  --gold: #ffcf4a; --green: #63d98a; --red: #ff5f72; --blue: #4fc3ff; --orange: #f5a742;
-  --pixel: "Pixelify Sans", "Courier New", monospace; --body: "Work Sans", system-ui, sans-serif;
+  --bg: #0d0f1e; --surface: #14172a; --surface-2: #1b1f35; --sunk: #101326; --line: #252a45; --line-2: #313757;
+  --ink: #ecebf4; --muted: #9c9eb9; --faint: #6d708f;
+  --gold: #f2c14e; --blue: #5cc2f2; --amber: #f0a84a; --rose: #f06a7d; --green: #5fd39a;
+  --display: "Pixelify Sans", "Courier New", monospace; --ui: "Figtree", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+  --r: 14px;
 }
-body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.45; }
-.wrap { max-width: 1320px; margin-inline: auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 18px 48px; display: grid; gap: 16px; }
-header.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
-h1 { font-family: var(--pixel); font-weight: 700; font-size: 2rem; margin: 0; letter-spacing: .06em; text-transform: uppercase; color: var(--ink); text-shadow: 3px 3px 0 #000; display: flex; gap: 10px; align-items: center; }
-h1 i { width: 26px; height: 26px; background: var(--orange); clip-path: polygon(50% 0, 100% 45%, 86% 45%, 86% 100%, 14% 100%, 14% 45%, 0 45%); flex: none; }
-.sub { margin: 2px 0 0; color: var(--muted); }
+body { background: var(--bg); color: var(--ink); font-family: var(--ui); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1320px; margin-inline: auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 22px 56px; display: grid; gap: 18px; }
+a, button { -webkit-tap-highlight-color: transparent; }
+a:focus-visible, button:focus-visible, canvas:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+/* header */
+header.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 20px; }
+.brand { display: flex; gap: 12px; align-items: center; min-width: 0; }
+.logo { width: 38px; height: 38px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line-2); display: grid; place-items: center; flex: none; }
+.logo::before { content: ""; width: 18px; height: 18px; background: var(--gold); clip-path: polygon(50% 0, 100% 45%, 84% 45%, 84% 100%, 16% 100%, 16% 45%, 0 45%); }
+h1 { font-family: var(--display); font-weight: 700; font-size: 1.6rem; line-height: 1; margin: 0; letter-spacing: .04em; }
+.sub { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
 .tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.tools a, .tools button { font-family: var(--pixel); font-size: 15px; color: var(--ink); background: var(--panel-2); border: 2px solid var(--line); border-bottom-width: 4px; padding: 6px 12px; text-decoration: none; cursor: pointer; border-radius: 3px; }
-.tools a:hover, .tools button:hover { border-color: var(--gold); }
-a:focus-visible, button:focus-visible, canvas:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
-.clock { font-family: var(--pixel); color: var(--muted); font-size: 15px; }
-.box { background: var(--panel); border: 2px solid var(--line); box-shadow: 0 4px 0 #05060f; border-radius: 6px; min-width: 0; }
-.box h2 { font-family: var(--pixel); font-weight: 600; font-size: 17px; margin: 0; padding: 10px 14px; border-bottom: 2px solid var(--line); display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
-.box h2 small { font-family: var(--body); font-weight: 500; font-size: 12px; color: var(--muted); }
-.box .in { padding: 12px 14px; display: grid; gap: 10px; }
+.tools a, .tools button { font: 600 14px var(--ui); color: var(--ink); background: var(--surface); border: 1px solid var(--line-2); padding: 7px 14px; border-radius: 999px; text-decoration: none; cursor: pointer; }
+.tools a:hover, .tools button:hover { background: var(--surface-2); border-color: var(--faint); }
+.live { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--muted); padding-right: 6px; }
+.live i { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+.live.on i { background: var(--green); box-shadow: 0 0 0 3px rgba(95, 211, 154, .18); }
+.clock { font: 500 12px var(--mono); color: var(--faint); padding-right: 6px; }
 
-/* world */
-.world { overflow: hidden; }
-.world-in { display: grid; grid-template-columns: 228px minmax(0, 1fr); }
-@media (max-width: 760px) { .world-in { grid-template-columns: 1fr; } .mboard { order: 2; border-right: 0 !important; border-top: 2px solid var(--line); } }
-.mboard { background: #10132a; border-right: 2px solid var(--line); padding: 12px; display: grid; gap: 12px; align-content: start; }
-.mboard h3 { font-family: var(--pixel); font-size: 16px; letter-spacing: .08em; text-transform: uppercase; margin: 0; padding: 8px 10px; background: #1b1f3c; border: 2px solid var(--line); border-radius: 4px; text-align: center; }
-.mcol { background: #161a35; border: 2px solid var(--line); border-radius: 4px; padding: 8px; display: grid; gap: 6px; }
-.mcol h4 { margin: 0 0 2px; font-family: var(--pixel); font-size: 14px; letter-spacing: .06em; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
-.mcol h4 b { margin-left: auto; font-weight: 400; color: var(--muted); font-size: 13px; }
-.dot { width: 12px; height: 12px; border-radius: 50%; flex: none; box-shadow: 0 0 8px currentColor; background: currentColor; }
-.q { color: var(--orange); } .w { color: var(--blue); } .r { color: var(--red); }
-.mcard { all: unset; box-sizing: border-box; cursor: pointer; display: grid; grid-template-columns: 10px 12px 1fr; gap: 7px; align-items: center; padding: 6px 7px; background: #1e2246; border: 2px solid #2c3160; border-radius: 4px; font-size: 12px; line-height: 1.25; color: var(--ink); }
-.mcard:hover, .mcard:focus-visible { border-color: currentColor; }
-.mcard .d { width: 9px; height: 9px; border-radius: 50%; background: currentColor; box-shadow: 0 0 6px currentColor; }
-.mcard .doc { width: 10px; height: 12px; background: #c9cfe6; clip-path: polygon(0 0, 70% 0, 100% 28%, 100% 100%, 0 100%); }
-.mcard span:last-child { color: var(--ink); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.mcard.on { border-color: currentColor; background: #262b58; }
-.mempty { font-size: 12px; color: var(--muted); padding: 2px 4px; }
+/* summary */
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 760px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.kpi span { font-size: 12px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.kpi b { font: 700 1.9rem/1.15 var(--ui); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.kpi small { font-size: 13px; line-height: 1.35; color: var(--faint); }
+.kpi.you b { color: var(--rose); } .kpi.you.clear b { color: var(--ink); }
+.kpi.gold b { color: var(--gold); }
 
-.stage { position: relative; background: #0b0f22; height: 100%; display: flex; flex-direction: column; justify-content: center; }
-.scene { position: relative; aspect-ratio: 16 / 9; width: 100%; overflow: hidden; --u: 2px; }
-canvas#map { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; cursor: pointer; display: block; }
-.sign { position: absolute; transform: translate(-50%, -50%) skewY(26.565deg); font-family: var(--pixel); font-size: clamp(8px, calc(var(--u) * 6.2), 16px); line-height: 1.05; color: #f3ead6; background: #1a1d36; border: max(1px, calc(var(--u) * .9)) solid #6b5233; box-shadow: 0 calc(var(--u) * 1) 0 rgba(0,0,0,.45); padding: calc(var(--u) * 1.4) calc(var(--u) * 3) calc(var(--u) * 1.2); border-radius: 2px; white-space: nowrap; pointer-events: none; text-transform: uppercase; letter-spacing: .05em; text-align: center; }
-.sign.two { white-space: pre-line; }
-.scene.small .sign { display: none; }
-.sign.x { transform: translate(-50%, -50%) skewY(-26.565deg); }
-.sign small { display: block; font-size: .78em; color: var(--gold); letter-spacing: .1em; }
-.sign.sel { border-color: var(--gold); background: #3a2f10; }
-.sign.late small { color: var(--red); }
-.inspect { position: absolute; right: 10px; bottom: 10px; width: min(300px, 40%); z-index: 2; font-size: 13px; background: rgba(16, 19, 42, .94); border: 2px solid var(--gold); border-radius: 6px; padding: 10px 12px; display: none; gap: 8px; box-shadow: 0 6px 0 rgba(0,0,0,.4); }
+/* the office */
+.world { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.world-in { display: grid; grid-template-columns: 250px minmax(0, 1fr); }
+.mboard { position: relative; background: var(--sunk); border-right: 1px solid var(--line); }
+.mscroll { position: absolute; inset: 0; overflow: auto; padding: 16px 14px; display: grid; gap: 18px; align-content: start; }
+@media (max-width: 860px) { .world-in { grid-template-columns: 1fr; } .mboard { order: 2; border-right: 0; border-top: 1px solid var(--line); } .mscroll { position: static; } }
+.label { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+.mgroup { display: grid; gap: 8px; }
+.mgroup h3 { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
+.mgroup h3 b { margin-left: auto; font: 500 12px var(--mono); color: var(--muted); background: var(--surface-2); border-radius: 999px; padding: 1px 8px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex: none; }
+.q { color: var(--amber); } .w { color: var(--blue); } .r { color: var(--rose); }
+.mgroup h3 .dot { box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); }
+.mgroup h3 span { color: var(--ink); }
+.mlist { display: grid; gap: 6px; }
+.mcard { all: unset; box-sizing: border-box; cursor: pointer; display: grid; gap: 1px; padding: 8px 10px 8px 12px; border-radius: 9px; background: var(--surface); border: 1px solid var(--line); position: relative; font-size: 13px; line-height: 1.35; color: var(--ink); }
+.mcard::before { content: ""; position: absolute; left: 0; top: 9px; bottom: 9px; width: 2px; border-radius: 2px; background: currentColor; }
+.mcard:hover, .mcard.on { background: var(--surface-2); border-color: var(--line-2); }
+.mcard:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+.mcard small { font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--faint); }
+.mcard span { color: var(--ink); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.mempty { font-size: 13px; color: var(--faint); padding: 0 2px; }
+
+.stage { position: relative; background: #0a0d20; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+.scene { position: relative; aspect-ratio: 16 / 9; width: 100%; max-width: 100%; overflow: hidden; --u: 2px; }
+canvas#map { position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer; display: block; }
+.nm { position: absolute; transform: translate(-50%, -100%); display: inline-flex; align-items: center; gap: 6px; font: 600 clamp(10px, calc(var(--u) * 5.2), 13px)/1 var(--ui); color: var(--ink); background: rgba(13, 15, 30, .84); border: 1px solid rgba(255, 255, 255, .09); padding: .42em .75em; border-radius: 999px; white-space: nowrap; pointer-events: none; box-shadow: 0 4px 14px rgba(0, 0, 0, .35); }
+.nm .dot { width: .6em; height: .6em; }
+.nm em { font: 700 .95em/1 var(--display); font-style: normal; color: var(--gold); }
+.nm.sel { border-color: var(--gold); }
+.nm.work .dot { color: var(--blue); } .nm.sleep .dot { color: var(--faint); } .nm.late .dot { color: var(--rose); }
+.nm.late em { color: var(--rose); }
+.scene.small .nm { display: none; }
+.inspect { position: absolute; right: 14px; bottom: 14px; width: min(310px, 42%); z-index: 2; font-size: 13px; background: rgba(16, 19, 38, .92); border: 1px solid var(--line-2); border-radius: 12px; padding: 14px; display: none; gap: 10px; box-shadow: 0 12px 32px rgba(0, 0, 0, .45); backdrop-filter: blur(6px); }
 .inspect.open { display: grid; }
-.inspect .x { position: absolute; top: 4px; right: 6px; all: unset; cursor: pointer; font-family: var(--pixel); color: var(--muted); padding: 2px 6px; }
-.inspect .x { position: absolute; top: 4px; right: 6px; }
-@media (max-width: 900px) { .inspect { position: static; width: auto; border-width: 0 0 2px; border-radius: 0; box-shadow: none; } }
-.hint { font-size: 12px; color: var(--muted); padding: 8px 14px; border-top: 2px solid var(--line); display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; }
-.hint span { display: inline-flex; gap: 6px; align-items: center; }
-.hint .dot { width: 9px; height: 9px; }
+.inspect .x { all: unset; position: absolute; top: 8px; right: 8px; cursor: pointer; color: var(--muted); width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; font-size: 18px; }
+.inspect .x:hover { background: var(--surface-2); color: var(--ink); }
+.inspect .x:focus-visible { outline: 2px solid var(--gold); }
+@media (max-width: 860px) { .inspect { position: static; width: auto; border-width: 1px 0 0; border-radius: 0; box-shadow: none; backdrop-filter: none; } }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 10px 16px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+.legend span { display: inline-flex; gap: 7px; align-items: center; }
 
-/* panels */
-.panels { columns: 3 320px; column-gap: 16px; }
-.panels > .box { break-inside: avoid; margin-bottom: 16px; display: block; }
-.ticker { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 16rem; overflow: auto; font-size: 13px; }
-.ticker li { display: grid; grid-template-columns: 3.6rem 1fr; gap: 8px; }
-.ticker time { font-family: var(--pixel); color: var(--muted); }
+/* ledger cards */
+.panels { columns: 3 320px; column-gap: 18px; }
+.panels > .box { break-inside: avoid; margin-bottom: 18px; display: block; }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); min-width: 0; }
+.box h2 { margin: 0; padding: 14px 16px 0; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 12px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+.box h2 small { font-size: 12px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--faint); }
+.box .in { padding: 12px 16px 16px; display: grid; gap: 12px; }
+.ticker { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; max-height: 17rem; overflow: auto; font-size: 13px; }
+.ticker li { display: grid; grid-template-columns: 4.2rem 1fr; gap: 10px; }
+.ticker time { font: 500 12px var(--mono); color: var(--faint); padding-top: 1px; }
 .ticker b { font-weight: 600; }
-.card-top { display: flex; gap: 12px; align-items: center; }
-.avatar { width: 48px; height: 48px; image-rendering: pixelated; background: var(--panel-2); border: 2px solid var(--line); border-radius: 3px; flex: none; }
-.name { font-family: var(--pixel); font-size: 20px; line-height: 1.1; }
+.card-top { display: flex; gap: 12px; align-items: center; min-width: 0; }
+.avatar { width: 44px; height: 44px; image-rendering: pixelated; background: var(--surface-2); border-radius: 10px; flex: none; }
+.name { font-size: 17px; font-weight: 700; line-height: 1.2; }
 .cls { color: var(--muted); font-size: 13px; }
-.lv { font-family: var(--pixel); color: var(--gold); font-size: 15px; }
-.bar { height: 12px; background: #0b0d1e; border: 2px solid var(--line); border-radius: 3px; position: relative; overflow: hidden; }
-.bar i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(180deg, #ffe17a, #e0a92a); }
-.bar.g i { background: linear-gradient(180deg, #9af0b4, #34b065); }
-.barlbl { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); font-family: var(--pixel); }
-.quote { margin: 0; padding: 8px 10px; background: #f6efd9; color: #2a2318; border: 2px solid #b79a5a; border-radius: 3px; font-size: 13px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; }
-dl.kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; font-size: 13px; }
-dl.kv dt { color: var(--muted); } dl.kv dd { margin: 0; }
-.state { font-family: var(--pixel); font-size: 13px; padding: 1px 8px; border-radius: 3px; border: 2px solid currentColor; justify-self: start; }
-.state.work { color: var(--blue); } .state.sleep { color: var(--orange); } .state.late { color: var(--red); }
-.quests { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.quests li { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: start; font-size: 13px; padding-bottom: 8px; border-bottom: 1px dashed var(--line); }
+.lv { font: 700 14px var(--display); color: var(--gold); }
+.bar { height: 6px; background: var(--sunk); border-radius: 999px; position: relative; overflow: hidden; }
+.bar i { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: var(--gold); }
+.bar.g i { background: var(--green); }
+.barlbl { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.quote { margin: 0; padding: 9px 11px; background: var(--sunk); border: 1px solid var(--line); color: var(--ink); border-radius: 9px; font-size: 13px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; }
+dl.kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0; font-size: 13px; }
+dl.kv dt { color: var(--muted); } dl.kv dd { margin: 0; font-variant-numeric: tabular-nums; text-align: right; }
+.state { font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 999px; justify-self: start; display: inline-flex; gap: 6px; align-items: center; background: var(--surface-2); }
+.state::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.state.work { color: var(--blue); } .state.sleep { color: var(--muted); } .state.late { color: var(--rose); }
+.quests { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.quests li { display: grid; grid-template-columns: 4.6rem 1fr auto; gap: 10px; align-items: start; font-size: 13px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
 .quests li:last-child { border-bottom: 0; padding-bottom: 0; }
-.tag { font-family: var(--pixel); font-size: 12px; padding: 0 6px; border-radius: 3px; color: #1a1300; }
-.tag.p1 { background: var(--red); } .tag.p2 { background: var(--gold); } .tag.p3 { background: var(--muted); }
-.reward { font-family: var(--pixel); color: var(--gold); font-size: 13px; white-space: nowrap; }
+.tag { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 2px 0; border-radius: 6px; text-align: center; }
+.tag.p1 { color: var(--rose); background: rgba(240, 106, 125, .13); } .tag.p2 { color: var(--amber); background: rgba(240, 168, 74, .13); } .tag.p3 { color: var(--muted); background: var(--surface-2); }
+.reward { font: 500 12px var(--mono); color: var(--gold); white-space: nowrap; }
 .who { font-weight: 600; }
-.crew { display: grid; gap: 8px; }
-.crew button { all: unset; cursor: pointer; display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; border-radius: 3px; }
-.crew button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
-.crew .avatar { width: 30px; height: 30px; }
-.badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 8px; }
-.badge { text-align: center; font-size: 11px; color: var(--muted); display: grid; gap: 4px; justify-items: center; }
-.badge .ic { width: 40px; height: 40px; display: grid; place-items: center; font-family: var(--pixel); font-size: 18px; border: 2px solid var(--line); background: #0b0d1e; border-radius: 3px; filter: grayscale(1); opacity: .45; }
-.badge.on { color: var(--ink); } .badge.on .ic { filter: none; opacity: 1; border-color: var(--gold); background: #3a2f10; color: var(--gold); }
-.notice { padding: 12px 14px; border: 2px solid var(--red); background: #3a1a26; border-radius: 4px; }
-.notice b { font-family: var(--pixel); display: block; }
-.empty { color: var(--muted); font-size: 13px; margin: 0; }
+.crew { display: grid; gap: 4px; }
+.crew button { all: unset; cursor: pointer; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; border-radius: 10px; padding: 6px 8px; margin-inline: -8px; }
+.crew button:hover, .crew button.on { background: var(--surface-2); }
+.crew button:focus-visible { outline: 2px solid var(--gold); }
+.crew .avatar { width: 34px; height: 34px; border-radius: 9px; }
+.crew .who { font-size: 14px; display: flex; gap: 6px; align-items: baseline; margin-bottom: 5px; }
+.crew .who small { font-weight: 500; color: var(--faint); font-size: 12px; }
+.badges { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 8px; }
+.badge { text-align: center; font-size: 11px; line-height: 1.3; color: var(--faint); display: grid; gap: 5px; justify-items: center; }
+.badge .ic { width: 40px; height: 40px; display: grid; place-items: center; font: 700 14px var(--display); border-radius: 12px; background: var(--sunk); border: 1px solid var(--line); color: var(--faint); }
+.badge b { font-weight: 600; color: var(--muted); }
+.badge.on b { color: var(--ink); } .badge.on .ic { background: rgba(242, 193, 78, .12); border-color: rgba(242, 193, 78, .45); color: var(--gold); }
+.notice { padding: 12px 16px; border: 1px solid rgba(240, 106, 125, .5); background: rgba(240, 106, 125, .1); border-radius: 12px; display: grid; gap: 2px; }
+.notice b { font-weight: 700; }
+.empty { color: var(--faint); font-size: 13px; margin: 0; }
 </style>
 
 <div class="wrap">
   <header class="top">
-    <div>
-      <h1><i aria-hidden="true"></i>Sidequest HQ</h1>
-      <p class="sub">Your crew at work, live from the command center. Tap a room to check on that agent.</p>
+    <div class="brand">
+      <span class="logo" aria-hidden="true"></span>
+      <div>
+        <h1>Sidequest HQ</h1>
+        <p class="sub">Your crew at work. Tap a room to check on an agent.</p>
+      </div>
     </div>
     <div class="tools">
+      <span class="live" id="live"><i></i><span id="updated">Connecting</span></span>
       <span class="clock" id="clock"></span>
       <a href="https://claude.ai/artifact/My8ufd1itRBDSTHAK9VJ5E" target="_blank" rel="noopener">Lead Desk</a>
       <a href="https://claude.ai/artifact/LjDPvPRUYEfi4DPcsrtYmN" target="_blank" rel="noopener">Dashboard</a>
@@ -121,33 +155,40 @@ dl.kv dt { color: var(--muted); } dl.kv dd { margin: 0; }
 
   <div id="problem"></div>
 
-  <section class="box world">
+  <section class="kpis" aria-label="At a glance">
+    <div class="kpi"><span>Leads in play</span><b id="k-leads">–</b><small id="k-leads-s">&nbsp;</small></div>
+    <div class="kpi"><span>Emails ready</span><b id="k-mail">–</b><small id="k-mail-s">&nbsp;</small></div>
+    <div class="kpi you" id="k-you-box"><span>Waiting on you</span><b id="k-you">–</b><small id="k-you-s">&nbsp;</small></div>
+    <div class="kpi gold"><span>Gold won</span><b id="k-gold">–</b><small id="k-gold-s">&nbsp;</small></div>
+  </section>
+
+  <section class="world" aria-label="The office">
     <div class="world-in">
       <aside class="mboard" aria-label="Mission board">
-        <h3>Mission board</h3>
-        <div class="mcol q"><h4><span class="dot"></span>Queued <b id="n-q"></b></h4><div id="m-q" style="display:grid;gap:6px"></div></div>
-        <div class="mcol w"><h4><span class="dot"></span>Working <b id="n-w"></b></h4><div id="m-w" style="display:grid;gap:6px"></div></div>
-        <div class="mcol r"><h4><span class="dot"></span>Review <b id="n-r"></b></h4><div id="m-r" style="display:grid;gap:6px"></div></div>
+        <div class="mscroll">
+          <h2 class="label">Mission board</h2>
+          <div class="mgroup q"><h3><i class="dot"></i><span>Queued</span><b id="n-q">0</b></h3><div class="mlist" id="m-q"></div></div>
+          <div class="mgroup w"><h3><i class="dot"></i><span>Working</span><b id="n-w">0</b></h3><div class="mlist" id="m-w"></div></div>
+          <div class="mgroup r"><h3><i class="dot"></i><span>Review</span><b id="n-r">0</b></h3><div class="mlist" id="m-r"></div></div>
+        </div>
       </aside>
-      <div style="min-width:0">
-        <div class="stage" id="stage"><div class="scene" id="scene"><canvas id="map" width="480" height="270" tabindex="0" aria-label="Isometric office. Each room is one agent's workspace; arrow keys move between rooms."></canvas></div><div class="inspect" id="inspect" aria-live="polite"></div></div>
-      </div>
+      <div class="stage" id="stage"><div class="scene" id="scene"><canvas id="map" width="960" height="540" tabindex="0" aria-label="Isometric office. Each room is one agent's workspace; arrow keys move between rooms."></canvas></div><div class="inspect" id="inspect" aria-live="polite"></div></div>
     </div>
-    <div class="hint">
-      <span><i class="dot w"></i>Blue: work moving now</span>
-      <span><i class="dot q"></i>Orange: waiting for the next shift</span>
-      <span><i class="dot r"></i>Red: needs you, or a missed run</span>
-      <span>Zzz: off duty until the next run</span>
+    <div class="legend">
+      <span><i class="dot w"></i>Working now</span>
+      <span><i class="dot q"></i>Waiting for the next shift</span>
+      <span><i class="dot r"></i>Needs you, or missed a run</span>
+      <span>Zzz means off duty</span>
     </div>
   </section>
 
   <div class="panels">
     <section class="box"><h2>Guild master</h2><div class="in" id="player"></div></section>
-    <section class="box"><h2>The crew <small>tap a room or a name</small></h2><div class="in"><div class="crew" id="crew"></div></div></section>
+    <section class="box"><h2>The crew <small>tap to inspect</small></h2><div class="in"><div class="crew" id="crew"></div></div></section>
     <section class="box"><h2>Weekly raid <small id="week-lbl"></small></h2><div class="in" id="raid"></div></section>
     <section class="box"><h2>Quest log <small>do these in Lead Desk</small></h2><div class="in"><ul class="quests" id="quests"></ul></div></section>
     <section class="box"><h2>Achievements</h2><div class="in"><div class="badges" id="badges"></div></div></section>
-    <section class="box"><h2>Office log <small id="updated">loading</small></h2><div class="in"><ul class="ticker" id="ticker"><li class="empty">Waiting for the crew to report in.</li></ul></div></section>
+    <section class="box"><h2>Office log</h2><div class="in"><ul class="ticker" id="ticker"><li class="empty">Waiting for the crew to report in.</li></ul></div></section>
   </div>
 </div>
 
@@ -178,6 +219,10 @@ dl.kv dt { color: var(--muted); } dl.kv dd { margin: 0; }
     'queued_n', (select n from qn),
     'review', (select json_agg(x) from (select agent, item from r order by ord, score limit 6) x),
     'review_n', (select count(*) from r),
+    'open_leads', (select count(*) from ops.leads where stage not in ('Won','Lost','Opted out')),
+    'hot_leads', (select count(*) from ops.leads where stage not in ('Won','Lost','Opted out') and heat = 'Hot'),
+    'emails_ready', (select count(*) from ops.leads where email_text <> '' and touches = 0 and stage not in ('Won','Lost','Opted out')),
+    'drafts_waiting', (select count(*) from ops.leads where draft_id <> '' and touches = 0 and stage not in ('Won','Lost','Opted out')),
     'leads', (select count(*) from ops.leads),
     'with_phone', (select count(*) from ops.leads where phone <> ''),
     'with_email', (select count(*) from ops.leads where email <> ''),
@@ -268,14 +313,14 @@ dl.kv dt { color: var(--muted); } dl.kv dd { margin: 0; }
 
   async function load() {
     if (!mcp) return;
-    $('updated').textContent = 'loading';
+    $('updated').textContent = loadedAt ? $('updated').textContent : 'Loading';
     try {
       const r = await mcp.callTool(SERVER, 'execute_sql', { project_id: PROJECT, query: SQL }, { cache: false });
       const row = rowsFrom(r.payload)[0];
       const d = row.hq || row;
       d._acts = {};
       (d.acts || []).forEach((x) => { const id = ALIAS[x.agent] || x.agent; const cur = d._acts[id] || { n: 0, last_at: null }; cur.n += Number(x.n) || 0; if (!cur.last_at || new Date(x.last_at) > new Date(cur.last_at)) cur.last_at = x.last_at; d._acts[id] = cur; });
-      ['leads', 'with_phone', 'with_email', 'contacted', 'replied', 'won', 'won_value', 'drafts', 'scripts', 'mockups_ever', 'events', 'dossiers', 'posts', 'builds', 'notes', 'todo_count', 'queued_n', 'review_n'].forEach((k) => { d[k] = Number(d[k]) || 0; });
+      ['leads', 'with_phone', 'with_email', 'contacted', 'replied', 'won', 'won_value', 'drafts', 'scripts', 'mockups_ever', 'events', 'dossiers', 'posts', 'builds', 'notes', 'todo_count', 'queued_n', 'review_n', 'open_leads', 'hot_leads', 'emails_ready', 'drafts_waiting'].forEach((k) => { d[k] = Number(d[k]) || 0; });
       data = d; problem = null; loadedAt = new Date();
     } catch (err) { problem = explain(err); }
     renderSide();
@@ -285,7 +330,9 @@ dl.kv dt { color: var(--muted); } dl.kv dd { margin: 0; }
   const W = 480, H = 270, S = 7, N = 21, OX = 240, OY = 48, WALL = 46;
   const iso = (x, y, z = 0) => [OX + (x - y) * 10, OY + (x + y) * 5 - z];
   const cv = $('map'), ctx = cv.getContext('2d');
-  const mk = () => { const c = document.createElement('canvas'); c.width = W; c.height = H; return c; };
+  ctx.setTransform(2, 0, 0, 2, 0, 0);
+  // Everything is drawn at twice the logical size so shapes stay crisp; pixel sprites land on whole 2x2 blocks.
+  const mk = () => { const c = document.createElement('canvas'); c.width = W * 2; c.height = H * 2; c.getContext('2d').setTransform(2, 0, 0, 2, 0, 0); return c; };
   const tone = (hex, f) => {
     const n = parseInt(hex.slice(1), 16), m = f < 0 ? 0 : 255, k = Math.abs(f);
     const ch = (v) => Math.round(v + (m - v) * k);
@@ -314,7 +361,7 @@ dl.kv dt { color: var(--muted); } dl.kv dd { margin: 0; }
     else if (phase === 'dusk') { sky.addColorStop(0, '#2b2a5c'); sky.addColorStop(.6, '#a8506a'); sky.addColorStop(1, '#f2a160'); }
     else { sky.addColorStop(0, '#6fb2e6'); sky.addColorStop(1, '#cfe7f5'); }
     g.fillStyle = sky; g.fillRect(0, 0, W, H);
-    if (phase === 'night') { for (let k = 0; k < 40; k++) px(g, (k * 97) % W, (k * 53) % 90, 1, 1, 'rgba(255,255,255,.6)'); px(g, 440, 14, 12, 12, '#f6f0c8'); px(g, 444, 12, 10, 10, '#0b0f26'); }
+    if (phase === 'night') { for (let k = 0; k < 40; k++) px(g, (k * 97) % W, (k * 53) % 90, 1, 1, 'rgba(255,255,255,.6)'); g.fillStyle = '#f3eccb'; g.beginPath(); g.arc(446, 22, 7, 0, 7); g.fill(); g.fillStyle = '#080b1e'; g.beginPath(); g.arc(449.5, 19.5, 6, 0, 7); g.fill(); }
     city.forEach((b) => {
       const top = H - b.h - (b.far ? 30 : 0);
       const col = phase === 'night' ? (b.far ? '#1a2046' : '#121634') : phase === 'dusk' ? (b.far ? '#4a3a66' : '#2e2848') : (b.far ? '#9fb3c6' : '#7f93a8');
@@ -329,7 +376,7 @@ dl.kv dt { color: var(--muted); } dl.kv dd { margin: 0; }
 
   /* walls, floors and hallways: painted once */
   const shell = mk();
-  const WOODS = ['#94603a', '#8a5833', '#9d6a41', '#83532f', '#90603c'];
+  const WOODS = ['#8f5d39', '#8a5935', '#93613c', '#875733', '#8d5b37'];
   const FLOOR_TINT = { owner: '#7e4f33', planner: '#8f5f39' };
   (() => {
     const g = shell.getContext('2d');
@@ -354,8 +401,8 @@ dl.kv dt { color: var(--muted); } dl.kv dd { margin: 0; }
     FLOWS.forEach(([a, b]) => {
       const A = iso(...center(ROOMS.find((r) => r.id === a))), B = iso(...center(ROOMS.find((r) => r.id === b)));
       g.lineCap = 'round';
-      g.strokeStyle = 'rgba(20,12,6,.45)'; g.lineWidth = 4; g.beginPath(); g.moveTo(...A); g.lineTo(...B); g.stroke();
-      g.strokeStyle = 'rgba(120,200,255,.16)'; g.lineWidth = 1; g.beginPath(); g.moveTo(...A); g.lineTo(...B); g.stroke();
+      g.strokeStyle = 'rgba(20,12,6,.3)'; g.lineWidth = 3; g.beginPath(); g.moveTo(...A); g.lineTo(...B); g.stroke();
+      g.strokeStyle = 'rgba(120,200,255,.1)'; g.lineWidth = .6; g.beginPath(); g.moveTo(...A); g.lineTo(...B); g.stroke();
     });
     ROOMS.forEach((r) => { const [cx, cy] = iso(...center(r)); g.fillStyle = 'rgba(20,12,6,.5)'; g.beginPath(); g.ellipse(cx, cy, 6, 3, 0, 0, 7); g.fill(); });
 
@@ -368,7 +415,7 @@ dl.kv dt { color: var(--muted); } dl.kv dd { margin: 0; }
     poly(g, qX(0, 0, N, 0, WALL), '#7a3a2a');
     for (let z = 0, row = 0; z < WALL; z += 3, row++) for (let y = (row % 2) * .6 - .6; y < N; y += 1.2) {
       const y0 = Math.max(0, y + .05), y1 = Math.min(N, y + 1.15);
-      if (y1 > y0) poly(g, qX(0, y0, y1, z + .4, z + 3), ['#8c4632', '#7f3d2b', '#965038', '#86412e'][Math.floor(rnd() * 4)]);
+      if (y1 > y0) poly(g, qX(0, y0, y1, z + .4, z + 3), ['#81412f', '#7c3e2d', '#854431', '#7f402e'][Math.floor(rnd() * 4)]);
     }
     poly(g, qX(0, 0, N, 0, 3), '#3b2216');
     // tops and ends of the outer walls
@@ -548,7 +595,7 @@ dl.kv dt { color: var(--muted); } dl.kv dd { margin: 0; }
   const glow = mk();
   (() => {
     const g = glow.getContext('2d');
-    lights.forEach(([x, y, r, rgb]) => { const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(${rgb},.38)`); gr.addColorStop(1, `rgba(${rgb},0)`); g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2); });
+    lights.forEach(([x, y, r, rgb]) => { const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(${rgb},.3)`); gr.addColorStop(1, `rgba(${rgb},0)`); g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2); });
   })();
 
   const rain = Array.from({ length: 140 }, () => [rnd() * W, rnd() * H, 2 + rnd() * 2]);
@@ -561,13 +608,13 @@ dl.kv dt { color: var(--muted); } dl.kv dd { margin: 0; }
     const phase = hour >= 19 || hour < 6 ? 'night' : hour >= 17 ? 'dusk' : 'day';
     if (phase !== bgPhase) { paintBg(phase); bgPhase = phase; }
     ctx.globalCompositeOperation = 'source-over';
-    ctx.drawImage(bg, 0, 0);
+    ctx.drawImage(bg, 0, 0, W, H);
     if (phase === 'night' && !reduce) {
-      ctx.strokeStyle = 'rgba(170,195,255,.35)'; ctx.lineWidth = 1; ctx.beginPath();
+      ctx.strokeStyle = 'rgba(170,195,255,.22)'; ctx.lineWidth = .6; ctx.beginPath();
       rain.forEach((d) => { const y = (d[1] + t * .12 * d[2]) % H, x = (d[0] - y * .25 + W) % W; ctx.moveTo(x, y); ctx.lineTo(x - 1.2, y + d[2] * 1.6); });
       ctx.stroke();
     }
-    ctx.drawImage(shell, 0, 0);
+    ctx.drawImage(shell, 0, 0, W, H);
     // work moving between rooms
     flows.forEach((f, k) => {
       const st = f.to.id === 'owner' ? (data && data.review_n ? 'late' : state(f.from)) : state(f.from);
@@ -576,15 +623,14 @@ dl.kv dt { color: var(--muted); } dl.kv dd { margin: 0; }
       for (let n = 0; n < 3; n++) {
         const p = reduce ? (n + .5) / 3 : ((t * speed + n / 3 + k * .13) % 1);
         const x = A[0] + (Bp[0] - A[0]) * p, y = A[1] + (Bp[1] - A[1]) * p;
-        ctx.fillStyle = `rgba(${rgb},.25)`; ctx.fillRect(Math.round(x) - 4, Math.round(y) - 2, 8, 4);
-        ctx.fillStyle = `rgb(${rgb})`; ctx.fillRect(Math.round(x) - 2, Math.round(y) - 1, 5, 2);
-        ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillRect(Math.round(x) - 1, Math.round(y) - 1, 2, 1);
+        ctx.fillStyle = `rgba(${rgb},.18)`; ctx.beginPath(); ctx.ellipse(x, y, 4.5, 2.2, 0, 0, 7); ctx.fill();
+        ctx.fillStyle = `rgb(${rgb})`; ctx.beginPath(); ctx.ellipse(x, y, 2, 1, 0, 0, 7); ctx.fill();
       }
     });
     // selected room outline
     if (selected) {
       const r = ROOMS.find((x) => x.id === selected);
-      ctx.strokeStyle = `rgba(255,207,74,${reduce ? .9 : .55 + .35 * Math.sin(t / 250)})`; ctx.lineWidth = 1.5;
+      ctx.strokeStyle = `rgba(242,193,78,${reduce ? .9 : .6 + .3 * Math.sin(t / 300)})`; ctx.lineWidth = 1;
       const p = qF(r.i * S + .15, r.j * S + .15, r.i * S + S - .15, r.j * S + S - .15, 0);
       ctx.beginPath(); ctx.moveTo(...p[0]); p.slice(1).forEach((q) => ctx.lineTo(...q)); ctx.closePath(); ctx.stroke();
     }
@@ -595,32 +641,30 @@ dl.kv dt { color: var(--muted); } dl.kv dd { margin: 0; }
       if (r.id === 'owner') { if (st === 'late') { const b = reduce ? 0 : Math.round(Math.sin(t / 220) * 1.5); px(ctx, sx + 6, top + b, 9, 10, '#ff5f72'); px(ctx, sx + 10, top + 2 + b, 2, 4, '#fff'); px(ctx, sx + 10, top + 7 + b, 2, 1, '#fff'); } return; }
       if (st === 'late') { const b = reduce ? 0 : Math.round(Math.sin(t / 200) * 1.5); px(ctx, sx + 6, top + b, 9, 10, '#ff5f72'); px(ctx, sx + 10, top + 2 + b, 2, 4, '#fff'); px(ctx, sx + 10, top + 7 + b, 2, 1, '#fff'); }
       else if (st === 'sleep') { const k = reduce ? 0 : ((t / 1400 + r.i * .3 + r.j * .5) % 1); ctx.globalAlpha = 1 - k; const zx = sx + 7 + k * 5, zy = top + 6 - k * 8; px(ctx, zx, zy, 4, 1, '#dfe6ff'); px(ctx, zx + 2, zy + 1, 1, 1, '#dfe6ff'); px(ctx, zx + 1, zy + 2, 1, 1, '#dfe6ff'); px(ctx, zx, zy + 3, 4, 1, '#dfe6ff'); ctx.globalAlpha = 1; }
-      else { const k = reduce ? 0 : Math.floor(t / 300) % 3; for (let n = 0; n < 3; n++) px(ctx, sx + 7 + n * 3, top + 6, 2, 2, n === k ? '#7ff6ff' : '#2f6f8a'); }
     });
     ctx.globalCompositeOperation = 'lighter';
-    ctx.globalAlpha = phase === 'day' ? .3 : .7; ctx.drawImage(glow, 0, 0); ctx.globalAlpha = 1;
+    ctx.globalAlpha = phase === 'day' ? .25 : .55; ctx.drawImage(glow, 0, 0, W, H); ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
     if (phase === 'night') { ctx.fillStyle = 'rgba(10,14,40,.12)'; ctx.fillRect(0, 0, W, H); }
   }
   function loop(t) { if (t - lastT > 33) { draw(t); lastT = t; } requestAnimationFrame(loop); }
 
-  // Room signs as crisp HTML over the pixels.
+  // Name tags float over each desk as crisp HTML.
   const stage = $('scene');
-  const signs = ROOMS.map((r) => {
-    const inner = r.j > 0 && r.wall === 'y';
-    const s = el('div', 'sign' + (r.wall === 'x' ? ' x' : '') + (inner ? ' two' : ''));
-    s.append(document.createTextNode(inner ? r.room.replace(' ', '\n') : r.room), el('small', '', r.id === 'owner' ? 'Thomas' : 'Lv 1'));
-    const p = r.wall === 'x' ? iso(0, r.j * S + 3.5, 41) : r.j === 0 ? iso(r.i * S + 3.5, 0, 41) : iso(r.i * S + 1.5, r.j * S + .2, 16);
-    s.style.left = (p[0] / W * 100) + '%'; s.style.top = (p[1] / H * 100) + '%';
-    stage.append(s); return s;
+  const tags = ROOMS.map((r) => {
+    const t = el('div', 'nm');
+    t.append(el('i', 'dot'), el('span', '', r.id === 'owner' ? 'You' : r.room), el('em', '', ''));
+    const p = iso(r.i * S + 5.1, r.j * S + 1.1, 33);
+    t.style.left = (p[0] / W * 100) + '%'; t.style.top = (p[1] / H * 100) + '%';
+    stage.append(t); return t;
   });
   new ResizeObserver(() => { stage.style.setProperty('--u', (stage.clientWidth / W) + 'px'); stage.classList.toggle('small', stage.clientWidth < 560); }).observe(stage);
   function updateSigns() {
     ROOMS.forEach((r, k) => {
-      const s = signs[k]; s.classList.toggle('sel', selected === r.id);
-      if (r.id === 'owner') { s.lastChild.textContent = data && data.review_n ? `${data.review_n} for you` : 'Thomas'; s.classList.toggle('late', !!(data && data.review_n)); return; }
-      const st = state(r); s.classList.toggle('late', st === 'late');
-      s.lastChild.textContent = data ? `Lv ${level(r.xp(data)).lv}${st === 'late' ? ' · missed run' : ''}` : 'Lv 1';
+      const t = tags[k], st = state(r);
+      t.className = 'nm ' + st + (selected === r.id ? ' sel' : '');
+      if (r.id === 'owner') { t.lastChild.textContent = data && data.review_n ? `${data.review_n} for you` : ''; return; }
+      t.lastChild.textContent = data ? (st === 'late' ? 'missed run' : `Lv ${level(r.xp(data)).lv}`) : '';
     });
   }
 
@@ -701,31 +745,43 @@ dl.kv dt { color: var(--muted); } dl.kv dd { margin: 0; }
     AGENTS.forEach((ag) => {
       const L = level(ag.xp(data)); const st = state(ag);
       const row = el('button'); row.type = 'button';
-      const mid = el('div'); mid.append(el('div', 'who', `${ag.room} · ${ag.cls}`), bar(L.pct));
+      const who = el('div', 'who'); who.append(document.createTextNode(ag.room), el('small', '', ag.cls));
+      const mid = el('div'); mid.append(who, bar(L.pct));
       row.append(avatarCanvas(ag.body), mid, el('span', 'lv', 'Lv ' + L.lv));
       row.setAttribute('aria-label', `${ag.room}, level ${L.lv}, ${stateWord(st).toLowerCase()}`);
-      if (selected === ag.id) row.style.color = 'var(--gold)';
+      if (selected === ag.id) row.classList.add('on');
       row.addEventListener('click', () => { selected = null; select(ag.id); $('stage').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' }); });
       box.append(row);
     });
   }
 
-  function missionCard(agentId, text, cls) {
+  function missionCard(agentId, label, text, cls) {
     const b = el('button', 'mcard ' + cls + (selected === agentId ? ' on' : '')); b.type = 'button';
-    b.append(el('span', 'd'), el('span', 'doc'), el('span', '', text));
+    b.append(el('small', '', label), el('span', '', text));
     b.addEventListener('click', () => { if (agentId === 'owner') { window.open('https://claude.ai/artifact/My8ufd1itRBDSTHAK9VJ5E', '_blank', 'noopener'); return; } selected = null; select(agentId); });
     return b;
   }
   function renderMission() {
-    const fill = (id, items, n, empty) => { const box = $('m-' + id); box.replaceChildren(); $('n-' + id).textContent = data ? n : ''; if (!items.length) box.append(el('div', 'mempty', data ? empty : 'Loading.')); items.forEach((x) => box.append(x)); if (data && n > items.length) box.append(el('div', 'mempty', `+ ${n - items.length} more`)); };
+    const fill = (id, items, n, empty) => { const box = $('m-' + id); box.replaceChildren(); $('n-' + id).textContent = data ? n : ''; if (!items.length) box.append(el('div', 'mempty', data ? empty : 'Loading.')); items.forEach((x) => box.append(x)); if (data && n > items.length) box.append(el('div', 'mempty', `and ${n - items.length} more`)); };
     const d = data || {};
     const room = (id) => (AGENTS.find((a) => a.id === id) || {}).room || id;
-    fill('q', (d.queued || []).slice(0, 2).map((x) => missionCard(x.agent, `${room(x.agent)}: ${x.item}`, 'q')), d.queued_n || 0, 'Nothing waiting.');
+    fill('q', (d.queued || []).slice(0, 2).map((x) => missionCard(x.agent, room(x.agent), x.item, 'q')), d.queued_n || 0, 'Nothing waiting.');
     const working = AGENTS.filter((a) => state(a) === 'work');
-    fill('w', working.slice(0, 2).map((a) => missionCard(a.id, `${a.room}: ${a.stat(d)}`, 'w')), working.length, 'Everyone is between shifts.');
+    fill('w', working.slice(0, 2).map((a) => missionCard(a.id, a.room, a.stat(d), 'w')), working.length, 'Everyone is between shifts.');
     const late = AGENTS.filter((a) => state(a) === 'late');
-    const rev = [...late.map((a) => missionCard(a.id, `${a.room} missed a run`, 'r')), ...(d.review || []).slice(0, 3 - Math.min(3, late.length)).map((x) => missionCard('owner', x.item, 'r'))];
+    const rev = [...late.map((a) => missionCard(a.id, a.room, 'Missed its last run', 'r')), ...(d.review || []).slice(0, 3 - Math.min(3, late.length)).map((x) => missionCard('owner', 'For you', x.item, 'r'))];
     fill('r', rev, (d.review_n || 0) + late.length, 'Nothing needs you.');
+  }
+
+  function renderKpis() {
+    const d = data;
+    const set = (id, v) => { $(id).textContent = v; };
+    if (!d) return;
+    set('k-leads', fmt(d.open_leads)); set('k-leads-s', `${fmt(d.hot_leads)} hot`);
+    set('k-mail', fmt(d.emails_ready)); set('k-mail-s', d.drafts_waiting ? `${fmt(d.drafts_waiting)} already in Gmail drafts` : 'none in Gmail drafts yet');
+    set('k-you', fmt(d.review_n)); set('k-you-s', d.review_n ? 'open Lead Desk to clear them' : 'all clear');
+    $('k-you-box').classList.toggle('clear', !d.review_n);
+    set('k-gold', '$' + fmt(d.won_value)); set('k-gold-s', `${fmt(d.won)} deal${d.won === 1 ? '' : 's'} won`);
   }
 
   function renderRaid() {
@@ -769,7 +825,7 @@ dl.kv dt { color: var(--muted); } dl.kv dd { margin: 0; }
       ['On air', '12 posts planned', d.posts >= 12, 'TV'],
     ].forEach(([name, how, on, icon]) => {
       const b = el('div', 'badge' + (on ? ' on' : '')); b.title = how;
-      b.append(el('div', 'ic', icon), el('div', '', name), el('div', '', on ? 'Unlocked' : how));
+      b.append(el('div', 'ic', icon), el('b', '', name), el('div', '', on ? 'Unlocked' : how));
       box.append(b);
     });
   }
@@ -792,8 +848,9 @@ dl.kv dt { color: var(--muted); } dl.kv dd { margin: 0; }
   function renderSide() {
     const p = $('problem'); p.replaceChildren();
     if (problem) { const n = el('div', 'notice'); n.append(el('b', '', problem[0]), el('span', '', problem[1])); p.append(n); }
-    $('updated').textContent = loadedAt ? 'updated ' + loadedAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : (mcp ? 'loading' : '');
-    renderPlayer(); renderInspect(); renderCrew(); renderMission(); renderRaid(); renderQuests(); renderBadges(); renderTicker(); updateSigns();
+    $('updated').textContent = loadedAt ? 'Live · ' + loadedAt.toLocaleTimeString('en-US', { timeZone: 'America/Chicago', hour: 'numeric', minute: '2-digit' }) : (mcp ? 'Loading' : 'Connecting');
+    $('live').classList.toggle('on', !!loadedAt && !problem);
+    renderKpis(); renderPlayer(); renderInspect(); renderCrew(); renderMission(); renderRaid(); renderQuests(); renderBadges(); renderTicker(); updateSigns();
     if (reduce) draw(performance.now());
   }
 
