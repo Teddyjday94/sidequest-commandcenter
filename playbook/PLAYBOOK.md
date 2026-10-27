@@ -2,7 +2,7 @@
 
 Owner: Thomas, founder of Sidequest Creative, a web design shop in Gonzales, Louisiana. Business email thomasdbiz26@gmail.com. Packages: Starter $600, Full $800. Dashboard: https://claude.ai/artifact/LjDPvPRUYEfi4DPcsrtYmN
 
-The crew: Lead Scout and Daily Planner run free inside the database (no Claude). The Claude agents are the Contact Finder, Sales Agent, Mockup Builder and Content Agent. Each Claude run starts fresh: read this playbook, then do only your own section. Keep runs short. Only query the rows and columns you need.
+The crew: Lead Scout and Daily Planner run free inside the database (no Claude). The Claude agents are the Contact Finder, Directory Scout, Sales Agent, Reply Watcher, Detective, Mockup Builder, Site Builder, Content Agent and Strategist. Each Claude run starts fresh: read this playbook, then do only your own section. Keep runs short. Only query the rows and columns you need.
 
 ## Hard rules
 
@@ -22,7 +22,7 @@ All data lives in Supabase project taskvfzqgpqxpdifmxru, schema ops. Use the too
 - Only read and write tables in the ops schema. Never touch the public schema (that is Thomas's client portal) or any other schema. Never DROP, ALTER, TRUNCATE or DELETE anything, except where a section below says so.
 - Escape text with dollar quoting when writing, for example update ops.leads set hook = $q$...$q$ where id = 'L12'.
 - Tables:
-  - ops.leads: id, business, niche, area, found_on, profile_url, rating, website, email, phone, facebook, contact, score, heat, stage, hook, next_step, you_action, mockup_url, call_script, dm_text, email_subject, email_text, draft_id, proposal_draft_id, invoice_id, package, deal_value, first_contact, last_contact, touches, next_followup, mockup_requested, my_notes, created_at, updated_at.
+  - ops.leads: id, business, niche, area, found_on, profile_url, rating, website, email, phone, facebook, contact, score, heat, stage, hook, next_step, you_action, mockup_url, call_script, dm_text, email_subject, email_text, draft_id, proposal_draft_id, invoice_id, package, deal_value, first_contact, last_contact, touches, next_followup, mockup_requested, my_notes, pitch_angle, created_at, updated_at.
   - my_notes is what Thomas typed himself in Lead Desk (an owner name, a phone, photo links, what he saw on their Facebook or Google page). Treat it as true and more current than anything you found, and use it. Never overwrite it.
   - ops.agents: id (scout, planner, finder, sales, builder, content), name, status, schedule, next_run, last_run, last_result.
   - ops.activity: agent, action (at fills itself). Rows with agent 'you' are what Thomas did in Lead Desk.
@@ -36,6 +36,10 @@ All data lives in Supabase project taskvfzqgpqxpdifmxru, schema ops. Use the too
   - ops.dossiers: the Detective's case file per lead (lead_id, owner_name, owner_source, founded, services, service_area, hours, story, credentials, brand_colors, logo_url, photos as a JSON array of {url, what, source}, reviews, social, booking, competitors, pitch_angles, sources as a JSON array of URLs, confidence, researched_at). Everyone reads it; only the Detective writes it.
   - ops.lead_photos: photos Thomas uploaded in Lead Desk for a lead's mockup (asset_id, lead_id, file_name, caption, content_type). The files live in the Lead Desk artifact's asset store. Read only for agents.
   - ops.weekly_stats: a view of the last 8 weeks (week, found, contacted, mockups, replied, won, won_value). Read only.
+  - pitch_angle on a lead: the one angle its outreach led with, so results can be compared. Use exactly one of: no-site, weak-site, lead-fees (they pay HomeAdvisor, Angi or Thumbtack per lead), reviews (their reviews deserve a home), mockup (lead with the mockup link), competitors (rivals nearby have sites), local (a Gonzales neighbor who builds sites), other.
+  - ops.scorecard: a view of results grouped by dimension (niche, town, source, angle, heat) and value, with leads, contacted, replied, won, reply_rate_pct. ops.lead_outcomes has the same per lead. Read only.
+  - Lessons: select value from ops.settings where key = 'lessons'. The Strategist's "What's working" notes, rewritten every Sunday from real results. The Sales Agent, Detective, Contact Finder and Directory Scout read them at the start of every run and lean on them (which angle to lead with, which niches and towns to favor), unless they conflict with a hard rule, Thomas's my_notes, or the facts in a case file. If the value is blank, there aren't enough results yet; carry on as written.
+  - Next best move: select ops.lead_priority(l), ops.lead_next_move(l) from ops.leads l. A live 0 to 150 score per open lead (heat, stage, reachability, a draft ready, follow-up due, and how similar leads replied) and the one thing to do next. Lead Desk and HQ sort by it. When you pick leads to work and nothing below says otherwise, take them in this order.
 - New leads get ids from select ops.next_lead_id(). The heat for a score comes from ops.heat_for(score).
 - At the end of every run: update ops.agents set last_run = current_date, status = 'Live', last_result = $q$<one or two plain sentences>$q$, next_run = '<next run>' where id = '<your id>'; and insert 1 to 4 rows into ops.activity.
 
@@ -74,7 +78,7 @@ Goal: for leads the Lead Scout added, find a way to reach them, confirm whether 
 
 Goal: find local service businesses that live on free directories and social pages instead of their own website. They are the best leads: real customers, no site.
 
-- Pick 3 town and niche pairs: select id, city, niche from ops.maps_targets where enabled order by fb_last_run nulls first, near desc, id limit 3. After each search: update ops.maps_targets set fb_last_run = now() where id = <id>.
+- Read the lessons first. Pick 3 town and niche pairs: select id, city, niche from ops.maps_targets where enabled order by fb_last_run nulls first, near desc, id limit 3. If the lessons favor a niche or town, make at least 2 of the 3 pairs match it. After each search: update ops.maps_targets set fb_last_run = now() where id = <id>.
 - Run one WebSearch per pair, mode "standard", query "<niche in lowercase> <city> Louisiana", rotating the sources: the first with allowed_domains ["facebook.com"], the second with ["yelp.com", "nextdoor.com"], the third with ["bbb.org", "thumbtack.com", "angi.com", "yellowpages.com"]. The site: operator does not work in this search tool. Read titles and snippets only; do not WebFetch facebook.com or nextdoor.com (they need a login).
 - Keep only business listings (a Facebook business page, a Yelp /biz/ page, a Nextdoor /pages/ page, a BBB profile and so on), never a personal profile, group, post, Marketplace listing or "best 10" roundup page. The business must clearly serve that town.
 - Record only the town. Many of these listings show the owner's home street address: never store it.
@@ -98,7 +102,7 @@ B. Sent mail sync. For leads with an email in stage Audited, Mockup ready or Con
 
 C. Follow-ups. Leads in stage Contacted with next_followup <= current_date and touches < 4: draft a short follow-up in the same thread. Touch 2: friendly nudge with one new reason. Touch 3: offer the mockup link or a 2-minute walkthrough. Touch 4: polite last note. you_action 'Review and send the follow-up to <business>'.
 
-Before writing any email, call script or message, read the lead's my_notes and its ops.dossiers row if there is one: greet the owner by first name when owner_name is set ("Hi Mike,"), and build the compliment and hook from pitch_angles, founded, reviews and competitors. Never mention how you found the owner's name.
+Before writing any email, call script or message, read the lessons (see Data) once per run, then the lead's my_notes and its ops.dossiers row if there is one: greet the owner by first name when owner_name is set ("Hi Mike,"), and build the compliment and hook from pitch_angles, founded, reviews and competitors. Never mention how you found the owner's name.
 
 D. First emails. Up to 10 per run: stage in ('Audited','Mockup ready'), email <> '', draft_id = '', touches = 0, heat <> 'Cold', order by stage = 'Mockup ready' desc, score desc. Draft with create_draft:
 - Who Thomas is (Sidequest Creative, small web design shop in Gonzales). One specific, genuine compliment. The hook. If mockup_url: "I went ahead and put together a quick mockup of what your homepage could look like:" plus the link and one line on what's in it. If not: "I'd be glad to put together a free mockup of your homepage, so you can see what it could look like before spending anything." Never ask "want me to send one?"
@@ -107,13 +111,33 @@ D. First emails. Up to 10 per run: stage in ('Audited','Mockup ready'), email <>
 - Sign off: Thomas / Sidequest Creative / thomasdbiz26@gmail.com, blank line, the mailing_address from ops.settings, then "P.S. Not the right time? No worries, just let me know and I won't keep bugging you."
 - Only claim they have no website if website = 'None found'.
 - If email_subject and email_text are already written (step E), use them as the draft, updated for anything new such as a mockup_url.
-- Save draft_id, email_subject and email_text (the exact subject and body you drafted), next_step 'Draft waiting in Gmail', you_action 'Review and send the draft to <business> in Gmail'.
+- Save draft_id, email_subject, email_text (the exact subject and body you drafted) and pitch_angle, next_step 'Draft waiting in Gmail', you_action 'Review and send the draft to <business> in Gmail'.
 
-E. A ready email for every lead. Up to 15 per run: stage in ('Audited','Mockup ready'), touches = 0, heat <> 'Cold', email_text = '', order by score desc. Write email_subject (short, plain, about them, no clickbait) and email_text (the full plain-text body by the rules in D, including the sign-off, mailing address and P.S.), even when the lead has no email address yet. Thomas reads it on a call, sends it once he gets their address, or adds the address in Lead Desk and turns it into a Gmail draft with one click. Save both with dollar quoting.
+E. A ready email for every lead. Up to 15 per run: stage in ('Audited','Mockup ready'), touches = 0, heat <> 'Cold', email_text = '', order by score desc. Write email_subject (short, plain, about them, no clickbait) and email_text (the full plain-text body by the rules in D, including the sign-off, mailing address and P.S.), even when the lead has no email address yet. Thomas reads it on a call, sends it once he gets their address, or adds the address in Lead Desk and turns it into a Gmail draft with one click. Pick the angle from the lessons when they name one that fits this lead; otherwise the angle that best fits the case file. Save email_subject, email_text and pitch_angle with dollar quoting.
 
 Calls and Facebook. For leads with a phone but no email and an empty call_script (up to 10): write call_script (5 to 7 short lines: who Thomas is, the compliment, the hook, the free mockup offer, ask for the best email or number to text the link; if asked about price, "it depends on what you need, most land in the $600 to $800 range"). you_action 'Call <business>: script on the board'. Facebook only: dm_text (3 to 5 sentences), you_action 'Message <business> on Facebook: text on the board'.
 
 F. Finish: run select ops.build_todos(); then read select type, who, item from ops.todos order by priority limit 12. Your final message is Thomas's morning brief (it reaches his phone and email): 3 to 6 short plain lines on replies, drafts waiting, calls to make, and anything broken, ending with the dashboard link. On Fridays add one line with this week's numbers from select * from ops.weekly_stats order by week desc limit 1: new leads, emails sent, mockups, replies, won.
+
+## 4b. Reply Watcher (weekdays, 1:17 PM, the Sales Agent's afternoon run)
+
+A short run so replies get answered the same day. Do only this, then stop.
+
+- Read the lessons once. Then do Sales Agent steps A (replies) and B (sent mail sync) exactly as written, nothing else: no first emails, no follow-ups, no scripts.
+- Update ops.agents row id 'replies' (last_run, status 'Live', last_result, next_run 'next weekday 1:17 PM'). Add an ops.activity row with agent 'Reply Watcher' only if something changed.
+- Then run select ops.build_todos().
+- Final message: if a reply came in, one or two plain lines naming who replied and that a draft answer is waiting in Gmail. If nothing came in, reply with exactly: No new replies.
+
+## 9. Strategist (Sundays, after the Content Agent in the same run)
+
+Goal: turn the week's results (Monday to Saturday) into short, specific advice the other agents follow. Do not contact anyone, write outreach, or change any lead.
+
+1. Read select * from ops.scorecard order by dimension, contacted desc; select * from ops.weekly_stats order by week desc limit 4; and the current lessons. For leads that replied, read their business, niche, area, pitch_angle, email_subject and touches from ops.lead_outcomes joined to ops.leads, to see what the replies have in common. Compare with leads contacted 7 or more days ago that never replied.
+2. Write new lessons: 4 to 8 plain lines, each one specific and backed by numbers, like "Pressure washing replies 3 of 8 (38%) vs lawn care 0 of 9: favor pressure washing leads first." Cover what to lead with (angles and subject lines that got replies), who to favor (niche, town, source, heat), and timing (which follow-up number replies tend to come on). Treat anything under 5 contacted in a group as a hunch and say so. With fewer than 10 contacted overall, write 2 or 3 lines saying results are still thin and suggest one clean test for next week (for example: alternate lead-fees and reviews angles on Hot pressure washing leads).
+3. Keep what still holds from last week's lessons, drop what the numbers no longer support. Never put a hard rule, a price, or anything about a specific person in the lessons.
+4. Save: update ops.settings set value = $q$<lines>$q$ where key = 'lessons'; update ops.settings set value = '<today>' where key = 'lessons_updated'.
+5. Update ops.agents row id 'strategist' (last_run, status 'Live', last_result one sentence, next_run 'next Sun 5:43 PM'). Add one ops.activity row with agent 'Strategist'.
+6. Final message, sent to Thomas: this week's numbers in one line, then the new lessons, then one line on what the crew will do differently next week.
 
 ## 3. Mockup Builder (Tue and Thu)
 
@@ -147,7 +171,7 @@ Goal: turn a won client into a finished website Thomas can show them and launch.
 
 ## 8. Detective (Tue and Thu, first thing in the Mockup Builder run)
 
-Goal: a short case file on each lead before it gets a mockup, a pitch or a site, so everything Sidequest sends feels like it was made for them.
+Goal: a short case file on each lead before it gets a mockup, a pitch or a site, so everything Sidequest sends feels like it was made for them. Read the lessons first (see Data); when they say an angle works, make sure each case file gathers what that angle needs.
 
 - Pick up to 5 leads with no ops.dossiers row (or one older than 60 days), in this order: any ops.builds client still being built; leads the Mockup Builder will pick today (mockup_requested first, then Replied, Contacted Hot or Warm, Audited Hot or Warm with a contact route); then the highest scored Audited leads. Skip Lost and Opted out.
 - Search with WebSearch (mode "standard"): the business name with the town; then the same with allowed_domains ["facebook.com", "instagram.com"], ["yelp.com", "nextdoor.com", "bbb.org"] and ["opencorporates.com", "bizapedia.com", "sos.la.gov"]. WebFetch their own website when they have one, plus Yelp and BBB pages. Do not WebFetch facebook.com, instagram.com or nextdoor.com (they need a login); use what the search snippets show.

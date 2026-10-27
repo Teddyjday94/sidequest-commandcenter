@@ -65,6 +65,8 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
 .score { font-family: var(--mono); font-size: 13px; }
 .heat { font-weight: 600; font-size: 13px; }
 .heat.Hot { color: var(--hot); } .heat.Warm { color: var(--warm); } .heat.Cold { color: var(--muted); }
+.next { font-size: 13px; font-weight: 600; color: var(--accent); margin-top: 2px; }
+.next b { font-weight: 700; color: var(--muted); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; margin-right: 6px; }
 .chips { display: flex; flex-wrap: wrap; gap: 4px; grid-column: 1 / -1; }
 .chip { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--chip); }
 .chip.off { background: transparent; border: 1px dashed var(--line); color: var(--muted); }
@@ -130,9 +132,9 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
   const SERVER = 'Supabase';
   const PROJECT = 'taskvfzqgpqxpdifmxru';
   const COLS = 'id, business, niche, area, rating, website, email, phone, facebook, score, heat, stage, hook, next_step, you_action, mockup_url, mockup_requested, call_script, dm_text, email_subject, email_text, draft_id, first_contact, last_contact, touches, next_followup, my_notes';
-  const LIST_SQL = `select ${COLS}, coalesce(d.owner_name, '') as owner_name, coalesce(d.pitch_angles, '') as pitch_angles, (d.lead_id is not null) as has_case from ops.leads l left join ops.dossiers d on d.lead_id = l.id where l.stage <> 'Opted out' order by l.score desc, l.id`;
+  const LIST_SQL = `select ${COLS}, coalesce(d.owner_name, '') as owner_name, coalesce(d.pitch_angles, '') as pitch_angles, (d.lead_id is not null) as has_case, ops.lead_priority(l) as priority, ops.lead_next_move(l) as next_move from ops.leads l left join ops.dossiers d on d.lead_id = l.id where l.stage <> 'Opted out' order by ops.lead_priority(l) desc, l.score desc, l.id`;
   const LANES = [
-    { id: 'ready', label: 'Ready to contact', note: 'Researched and not contacted yet. Reach out, then mark how.', test: (l) => ['New', 'Audited', 'Mockup ready'].includes(l.stage) },
+    { id: 'ready', label: 'Ready to contact', note: 'Researched and not contacted yet, best move first. Reach out, then mark how.', test: (l) => ['New', 'Audited', 'Mockup ready'].includes(l.stage) },
     { id: 'contacted', label: 'Contacted', note: 'You reached out. Follow-ups due today or earlier are flagged.', test: (l) => l.stage === 'Contacted' },
     { id: 'talking', label: 'Talking', note: 'They replied or have a proposal.', test: (l) => ['Replied', 'Proposal sent'].includes(l.stage) },
     { id: 'won', label: 'Won', note: 'The Site Builder is on these.', test: (l) => l.stage === 'Won' },
@@ -484,12 +486,16 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
     const term = $('q').value.trim().toLowerCase();
     const due = today();
     const shown = leads.filter(laneDef.test).filter((l) => !term || [l.business, l.area, l.niche, l.id].join(' ').toLowerCase().includes(term));
+    // The top 5 open leads by next-best-move score get a rank, wherever they show up.
+    const rankOf = {};
+    leads.filter((l) => l.priority >= 0).slice(0, 5).forEach((l, i) => { rankOf[l.id] = i + 1; });
     if (lane === 'contacted') shown.sort((a, b) => String(a.next_followup || '9999').localeCompare(String(b.next_followup || '9999')));
     if (!shown.length && !problem && loadedAt) items.push(el('div', 'empty', term ? 'No leads match that search.' : 'Nobody here right now.'));
     shown.forEach((l) => {
       const card = el('article', 'lead' + (openId === l.id ? ' open' : '')); card.id = l.id;
       const head = el('button', 'row-head'); head.type = 'button'; head.setAttribute('aria-expanded', String(openId === l.id));
       const left = el('div'); left.append(el('div', 'nm', l.business), el('div', 'meta', [l.niche, l.area].filter(Boolean).join(' · ')));
+      if (l.next_move) { const nx = el('div', 'next'); nx.append(el('b', '', rankOf[l.id] ? `#${rankOf[l.id]} move` : 'Next'), document.createTextNode(l.next_move)); left.append(nx); }
       const right = el('div', 'right'); right.append(el('span', 'heat ' + l.heat, l.heat), el('span', 'score', String(l.score)));
       const chips = el('div', 'chips');
       chips.append(el('span', 'chip stage', l.stage));

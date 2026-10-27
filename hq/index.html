@@ -167,6 +167,13 @@ h1 { margin: 0; font-family: var(--title); font-weight: 800; font-size: clamp(1.
 .quests .p1 { border-color: rgba(255, 95, 134, .55); }
 .reward { font: 800 12px var(--ui); color: var(--gold-hi); white-space: nowrap; display: inline-flex; gap: 4px; align-items: center; }
 .reward::before { content: "XP"; font-size: 9px; padding: 1px 4px; border-radius: 4px; background: #1f5fd6; color: #fff; }
+.moves { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; counter-reset: mv; }
+.moves li { counter-increment: mv; display: grid; grid-template-columns: 30px 1fr auto; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 9px; background: rgba(5, 10, 34, .55); border: 1px solid rgba(110, 140, 220, .18); font-size: 13px; }
+.moves li::before { content: counter(mv); width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; font: 800 13px var(--title); color: #2a1a00; background: linear-gradient(180deg, #ffe07a, #e9a92a); border: 1px solid var(--gold-hi); }
+.moves .who { font-weight: 700; } .moves .mv { color: var(--muted); }
+.moves .pt { font: 800 12px var(--ui); color: var(--gold-hi); font-variant-numeric: tabular-nums; }
+.lessons { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; font-size: 13px; }
+.lessons li { padding: 8px 10px 8px 12px; border-left: 3px solid var(--violet); background: rgba(5, 10, 34, .55); border-radius: 0 9px 9px 0; }
 .badges { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 6px; }
 .badge { display: grid; justify-items: center; gap: 4px; text-align: center; font-size: 11px; line-height: 1.25; color: var(--faint); }
 .badge img { width: 54px; height: 54px; object-fit: contain; filter: grayscale(1) brightness(.55); }
@@ -194,6 +201,7 @@ h1 { margin: 0; font-family: var(--title); font-weight: 800; font-size: clamp(1.
 .paths .flow.talk { stroke: #c9f0ff; stroke-width: 3.4; animation-duration: .8s; }
 .chat { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; max-height: 21rem; overflow: auto; }
 .chat li { display: grid; grid-template-columns: 38px 1fr; gap: 10px; align-items: start; font-size: 13px; }
+.chat li.empty { display: block; }
 .chat .av { width: 38px; height: 38px; background-size: 600% 300%; background-position: 0 0; border-radius: 10px; background-color: rgba(5, 10, 34, .55); border: 1px solid rgba(110, 140, 220, .25); }
 .chat .av.nx { background-size: cover; background-position: center; }
 .chat .hd { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--gold-hi); }
@@ -266,6 +274,8 @@ h1 { margin: 0; font-family: var(--title); font-weight: 800; font-size: clamp(1.
   <div class="cards">
     <section class="frame gem card"><h2>Crew Chatter</h2><div class="in"><ul class="chat" id="chat"><li class="empty">The crew talks here as work changes hands.</li></ul></div></section>
     <section class="frame gem card"><h2>Weekly Raid</h2><div class="in" id="raid"></div></section>
+    <section class="frame gem card"><h2>Best Moves Today</h2><div class="in"><ol class="moves" id="moves"></ol></div></section>
+    <section class="frame gem card"><h2>Strategist’s Notes</h2><div class="in" id="lessons"></div></section>
     <section class="frame gem card"><h2>Quest Log</h2><div class="in"><ul class="quests" id="quests"></ul></div></section>
     <section class="frame gem card"><h2>The Crew</h2><div class="in"><div class="crew" id="crew"></div></div></section>
     <section class="frame gem card"><h2>Achievements</h2><div class="in"><div class="badges" id="badges"></div></div></section>
@@ -300,6 +310,9 @@ h1 { margin: 0; font-family: var(--title); font-weight: 800; font-size: clamp(1.
     'queued_n', (select n from qn),
     'review', (select json_agg(x) from (select agent, item from r order by ord, score limit 6) x),
     'review_n', (select count(*) from r),
+    'moves', (select json_agg(x) from (select l.business, ops.lead_next_move(l) as move, ops.lead_priority(l) as p from ops.leads l where ops.lead_priority(l) >= 0 order by 3 desc, l.score desc limit 5) x),
+    'lessons', (select value from ops.settings where key = 'lessons'),
+    'lessons_updated', (select value from ops.settings where key = 'lessons_updated'),
     'open_leads', (select count(*) from ops.leads where stage not in ('Won','Lost','Opted out')),
     'hot_leads', (select count(*) from ops.leads where stage not in ('Won','Lost','Opted out') and heat = 'Hot'),
     'emails_ready', (select count(*) from ops.leads where email_text <> '' and touches = 0 and stage not in ('Won','Lost','Opted out')),
@@ -567,6 +580,22 @@ h1 { margin: 0; font-family: var(--title); font-weight: 800; font-size: clamp(1.
     });
   }
 
+  function renderMoves() {
+    const ol = $('moves'); ol.replaceChildren();
+    const m = (data && data.moves) || [];
+    if (!m.length) { ol.append(el('li', 'empty', data ? 'No open leads right now.' : 'Loading.')); return; }
+    m.forEach((x) => { const li = el('li'); const mid = el('div'); mid.append(el('div', 'who', x.business), el('div', 'mv', x.move)); li.append(mid, el('span', 'pt', x.p + ' pts')); ol.append(li); });
+  }
+  function renderLessons() {
+    const box = $('lessons'); box.replaceChildren();
+    const t = String((data && data.lessons) || '').trim();
+    if (!t) { box.append(el('p', 'empty', data ? 'The Strategist writes its first notes on Sunday evening from real results: who replied, by niche, town and pitch. Every agent reads them before it works.' : 'Loading.')); return; }
+    const ul = el('ul', 'lessons');
+    t.split('\n').map((x) => x.replace(/^\s*(?:[-*•]|\d+[.)])\s+/, '').trim()).filter(Boolean).slice(0, 8).forEach((x) => ul.append(el('li', '', x)));
+    box.append(ul);
+    if (data.lessons_updated) box.append(el('p', 'empty', 'Updated ' + data.lessons_updated));
+  }
+
   function renderCrew() {
     const box = $('crew'); box.replaceChildren();
     AGENTS.forEach((a) => {
@@ -692,7 +721,7 @@ h1 { margin: 0; font-family: var(--title); font-weight: 800; font-size: clamp(1.
   function render() {
     const p = $('problem'); p.replaceChildren();
     if (problem) { const n = el('div', 'notice'); n.append(el('b', '', problem[0]), el('span', '', problem[1])); p.append(n); }
-    renderTop(); paintMap(); renderInspect(); renderMission(); renderRaid(); renderQuests(); renderCrew(); renderBadges(); renderTicker();
+    renderTop(); paintMap(); renderInspect(); renderMission(); renderRaid(); renderMoves(); renderLessons(); renderQuests(); renderCrew(); renderBadges(); renderTicker();
     const first = !script.length; script = buildScript();
     if (first && script.length) chatTimer = setTimeout(talk, 3000);
   }
