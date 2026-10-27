@@ -2,7 +2,7 @@
 
 Owner: Thomas, founder of Sidequest Creative, a web design shop in Gonzales, Louisiana. Business email thomasdbiz26@gmail.com. Packages: Starter $600, Full $800. Dashboard: https://claude.ai/artifact/LjDPvPRUYEfi4DPcsrtYmN
 
-The crew: Lead Scout and Daily Planner run free inside the database (no Claude). The Claude agents are the Contact Finder, Directory Scout, Sales Agent, Reply Watcher, Detective, Mockup Builder, Site Builder, Content Agent and Strategist. Each Claude run starts fresh: read this playbook, then do only your own section. Keep runs short. Only query the rows and columns you need.
+The crew: Lead Scout and Daily Planner run free inside the database (no Claude). Two more free jobs run in the database every weekday: a Yellow Pages scout (adds nearby businesses with no website or only a Yellow Pages template site) and the Site Auditor. The Claude agents are the Contact Finder, Directory Scout, Sales Agent, Reply Watcher, Bookkeeper, Detective, Mockup Builder, Site Builder, Content Agent, Strategist and Client Care. Each Claude run starts fresh: read this playbook, then do only your own section. Keep runs short. Only query the rows and columns you need.
 
 ## Hard rules
 
@@ -35,6 +35,10 @@ All data lives in Supabase project taskvfzqgpqxpdifmxru, schema ops. Use the too
   - ops.lead_events: stage history, written by the database. Read only.
   - ops.dossiers: the Detective's case file per lead (lead_id, owner_name, owner_source, founded, services, service_area, hours, story, credentials, brand_colors, logo_url, photos as a JSON array of {url, what, source}, reviews, social, booking, competitors, pitch_angles, sources as a JSON array of URLs, confidence, researched_at). Everyone reads it; only the Detective writes it.
   - ops.lead_photos: photos Thomas uploaded in Lead Desk for a lead's mockup (asset_id, lead_id, file_name, caption, content_type). The files live in the Lead Desk artifact's asset store. Read only for agents.
+  - ops.site_audits: the Site Auditor's check of a lead's own website (lead_id, url, checked_at, http_status, load_ms, https, mobile_ready, tap_to_call, has_form, has_description, copyright_year, builder, issues, score 0 to 100). issues is plain lines like "Not set up for phones, so it shows up tiny and zoomed out." Score under 70 means a weak site. A line that says "confirm before mentioning it" must not be used in outreach until Thomas confirms. Read only.
+  - ops.ledger: one row per Stripe invoice (invoice_id, lead_id, business, kind deposit or balance, amount in dollars, status, due_date, paid_at, reminder_draft_id). Only the Bookkeeper writes it.
+  - ops.builds also has launched_at, site_ok and site_checked_at (the database checks every launched site daily), checkin_draft_id, review_draft_id and care_notes. Client Care writes those last four.
+  - ops.settings keys google_review_link (the link clients use to review Sidequest on Google) and care_plan_offer (what Thomas offers for ongoing updates, with his price). Blank means Thomas has not set it; never make one up.
   - ops.weekly_stats: a view of the last 8 weeks (week, found, contacted, mockups, replied, won, won_value). Read only.
   - pitch_angle on a lead: the one angle its outreach led with, so results can be compared. Use exactly one of: no-site, weak-site, lead-fees (they pay HomeAdvisor, Angi or Thumbtack per lead), reviews (their reviews deserve a home), mockup (lead with the mockup link), competitors (rivals nearby have sites), local (a Gonzales neighbor who builds sites), other.
   - ops.scorecard: a view of results grouped by dimension (niche, town, source, angle, heat) and value, with leads, contacted, replied, won, reply_rate_pct. ops.lead_outcomes has the same per lead. Read only.
@@ -78,13 +82,21 @@ Goal: for leads the Lead Scout added, find a way to reach them, confirm whether 
 
 Goal: find local service businesses that live on free directories and social pages instead of their own website. They are the best leads: real customers, no site.
 
-- Read the lessons first. Pick 3 town and niche pairs: select id, city, niche from ops.maps_targets where enabled order by fb_last_run nulls first, near desc, id limit 3. If the lessons favor a niche or town, make at least 2 of the 3 pairs match it. After each search: update ops.maps_targets set fb_last_run = now() where id = <id>.
-- Run one WebSearch per pair, mode "standard", query "<niche in lowercase> <city> Louisiana", rotating the sources: the first with allowed_domains ["facebook.com"], the second with ["yelp.com", "nextdoor.com"], the third with ["bbb.org", "thumbtack.com", "angi.com", "yellowpages.com"]. The site: operator does not work in this search tool. Read titles and snippets only; do not WebFetch facebook.com or nextdoor.com (they need a login).
+- Yellow Pages is already searched every weekday by the database scout, so spend these searches on the other free sources.
+- Read the lessons first. Pick 5 town and niche pairs: select id, city, niche from ops.maps_targets where enabled order by fb_last_run nulls first, near desc, id limit 5. If the lessons favor a niche or town, make at least 3 of the 5 pairs match it. After each search: update ops.maps_targets set fb_last_run = now() where id = <id>.
+- Run one WebSearch per pair, mode "standard", query "<niche in lowercase> <city> Louisiana", rotating through these sources in order, picking up where the last run left off (read the source of the newest Directory Scout lead to know where that was):
+  1. Google, plain search with no allowed_domains. Look for local businesses whose result is only a Google Business listing, a Facebook page or a directory page, not their own site.
+  2. allowed_domains ["facebook.com"]
+  3. allowed_domains ["yelp.com", "nextdoor.com"]
+  4. allowed_domains ["bbb.org", "manta.com", "chamberofcommerce.com", "ascensionchamber.com"]
+  5. allowed_domains ["thumbtack.com", "angi.com", "homeadvisor.com", "porch.com", "houzz.com"]
+  6. New businesses: query "<niche> LLC <city> Louisiana" with allowed_domains ["opencorporates.com", "bizapedia.com"]. Brand new companies rarely have a site yet. Only keep ones registered in the last 2 years.
+- The site: operator does not work in this search tool. Read titles and snippets only; do not WebFetch facebook.com or nextdoor.com (they need a login). Never pay for a list, never sign up for anything, never solve a CAPTCHA.
 - Keep only business listings (a Facebook business page, a Yelp /biz/ page, a Nextdoor /pages/ page, a BBB profile and so on), never a personal profile, group, post, Marketplace listing or "best 10" roundup page. The business must clearly serve that town.
 - Record only the town. Many of these listings show the owner's home street address: never store it.
 - Skip it if the name is already a lead or a client: select id from ops.leads where ops.norm_name(business) = ops.norm_name($q$<name>$q$) union all select name from ops.clients where ops.norm_name(name) = ops.norm_name($q$<name>$q$).
 - One more WebSearch for "<name>" <city> LA to check for a website. A real site found: skip it unless it is clearly weak. Nothing found: website 'None found (<source> listing only)'.
-- Add up to 8 new leads per run: id from select ops.next_lead_id(), found_on the source ('Facebook', 'Yelp', 'Nextdoor', 'BBB', 'Thumbtack', 'Angi' or 'Yellow Pages'), profile_url the listing URL, facebook the page URL when the source is Facebook, area the town, niche, rating and phone only if the snippet shows them, contact the phone if any else '<source> page'. Score with the rules under The lead record (count the missing website and the reviews), heat from ops.heat_for(score), stage 'Audited', a hook about what a website would fix for them, and next_step 'Call them (script on board)' with a phone, 'Send a Facebook message (text on board)' for a Facebook page with no phone, else 'Find a way to reach them'. The Sales Agent's step E then writes the call script or message.
+- Add up to 8 new leads per run: id from select ops.next_lead_id(), found_on the source ('Google', 'Facebook', 'Yelp', 'Nextdoor', 'BBB', 'Manta', 'Chamber', 'Thumbtack', 'Angi', 'Porch', 'Houzz' or 'New LLC'), profile_url the listing URL, facebook the page URL when the source is Facebook, area the town, niche, rating and phone only if the snippet shows them, contact the phone if any else '<source> page'. Score with the rules under The lead record (count the missing website and the reviews), heat from ops.heat_for(score), stage 'Audited', a hook about what a website would fix for them, and next_step 'Call them (script on board)' with a phone, 'Send a Facebook message (text on board)' for a Facebook page with no phone, else 'Find a way to reach them'. The Sales Agent's step E then writes the call script or message.
 - Add one ops.activity row with agent 'Lead Scout' naming how many directory leads were added and from where.
 
 ## 4. Sales Agent (weekdays, mid-morning)
@@ -102,7 +114,7 @@ B. Sent mail sync. For leads with an email in stage Audited, Mockup ready or Con
 
 C. Follow-ups. Leads in stage Contacted with next_followup <= current_date and touches < 4: draft a short follow-up in the same thread. Touch 2: friendly nudge with one new reason. Touch 3: offer the mockup link or a 2-minute walkthrough. Touch 4: polite last note. you_action 'Review and send the follow-up to <business>'.
 
-Before writing any email, call script or message, read the lessons (see Data) once per run, then the lead's my_notes and its ops.dossiers row if there is one: greet the owner by first name when owner_name is set ("Hi Mike,"), and build the compliment and hook from pitch_angles, founded, reviews and competitors. Never mention how you found the owner's name.
+Before writing any email, call script or message, read the lessons (see Data) once per run, then the lead's my_notes and its ops.dossiers row if there is one: greet the owner by first name when owner_name is set ("Hi Mike,"), and build the compliment and hook from pitch_angles, founded, reviews and competitors. If the lead has an ops.site_audits row with issues, name 2 or 3 of them in plain words as the hook ("I pulled up your site on my phone and it shows up tiny, and there's no way to tap to call you"), and use pitch_angle weak-site. Never mention how you found the owner's name.
 
 D. First emails. Up to 10 per run: stage in ('Audited','Mockup ready'), email <> '', draft_id = '', touches = 0, heat <> 'Cold', order by stage = 'Mockup ready' desc, score desc. Draft with create_draft:
 - Who Thomas is (Sidequest Creative, small web design shop in Gonzales). One specific, genuine compliment. The hook. If mockup_url: "I went ahead and put together a quick mockup of what your homepage could look like:" plus the link and one line on what's in it. If not: "I'd be glad to put together a free mockup of your homepage, so you can see what it could look like before spending anything." Never ask "want me to send one?"
@@ -138,6 +150,29 @@ Goal: turn the week's results (Monday to Saturday) into short, specific advice t
 4. Save: update ops.settings set value = $q$<lines>$q$ where key = 'lessons'; update ops.settings set value = '<today>' where key = 'lessons_updated'.
 5. Update ops.agents row id 'strategist' (last_run, status 'Live', last_result one sentence, next_run 'next Sun 5:43 PM'). Add one ops.activity row with agent 'Strategist'.
 6. Final message, sent to Thomas: this week's numbers in one line, then the new lessons, then one line on what the crew will do differently next week.
+
+## 11. Bookkeeper (Fridays, first thing in the Sales Agent's morning run)
+
+Goal: know where every dollar stands, and make getting paid easy for Thomas. Stripe: read, create customers and DRAFT invoices only.
+
+1. Find the money: leads with an invoice_id, plus every lead in Proposal sent or Won. For each, read its invoices in Stripe (stripe_api_read, by invoice id or by the customer's invoices). Upsert each into ops.ledger: invoice_id, lead_id, business, kind ('deposit' for the first, 'balance' for the one after launch), amount in dollars, status, due_date, paid_at, updated_at now().
+2. Balance due at launch: for each ops.builds row with status 'Launched' and no 'balance' row in ops.ledger for that lead, create a DRAFT invoice in Stripe for the other 50% (deal_value minus the paid deposit), one line item '<Package> website, final 50% at launch', collection_method send_invoice, days_until_due 7, on that client's existing Stripe customer. Add it to ops.ledger with status 'draft' and set the lead's you_action 'Review and send the final invoice for <business> in Stripe'. Never finalize or send it.
+3. Gentle reminders: for each ledger row with status 'open', due_date 3 or more days ago, and an empty reminder_draft_id: draft a short, friendly reminder in Gmail to the client's email (in the original invoice thread when there is one) with the amount and the Stripe hosted invoice link. Save reminder_draft_id, and set you_action 'Review and send the payment reminder to <business>'. One reminder per invoice; after that, leave it to Thomas.
+4. Never finalize, send, pay, void, refund or delete anything in Stripe. Never change a price.
+5. Update ops.agents row id 'bookkeeper' (last_run, status 'Live', last_result one sentence with this week's collected and open totals, next_run 'next Fri 9:17 AM') and add an ops.activity row with agent 'Bookkeeper'.
+6. Add one money line to the Friday brief: collected this week, open (sent, unpaid), and drafts waiting for Thomas. If there is no money yet, say "No invoices yet."
+
+## 10. Client Care (Sundays, after the Strategist in the Content Agent's run)
+
+Goal: keep launched clients happy, get reviews, and spot repeat work. Gmail drafts only.
+
+1. Pick: select b.*, l.email, l.business as lead_business, d.owner_name from ops.builds b join ops.leads l on l.id = b.lead_id left join ops.dossiers d on d.lead_id = l.id where b.status = 'Launched'. If none, update the 'care' agent row with "No launched clients yet." and stop.
+2. If launched_at is blank, set it to today (that is the first Sunday Client Care saw it launched).
+3. Site down: if site_ok is false, add care_notes "Site did not load on <site_checked_at date>" and set the build's you_action 'Check <business>'s site in Vercel, it did not load'. Do not touch Vercel.
+4. Review request: 14 or more days after launched_at with an empty review_draft_id: draft a short, warm email asking for a Google review of Sidequest Creative. Include google_review_link from ops.settings if it is set; if it is blank, skip the draft and add a you_action on the build 'Add your Google review link in ops.settings so Client Care can ask <business> for a review'. Save review_draft_id.
+5. Check-in: 30 or more days after launched_at with an empty checkin_draft_id: draft a friendly check-in (how the site is working for them, whether calls or form requests came in, anything to update for the season). Mention the care plan in one line only if care_plan_offer in ops.settings is set, using its exact wording and price. Save checkin_draft_id.
+6. Repeat work: if their emails since launch mention new services, a second location, seasonal promos or photos, note it in care_notes as an idea for Thomas.
+7. Update ops.agents row id 'care' (last_run, status 'Live', last_result, next_run 'next Sun 5:43 PM') and add an ops.activity row with agent 'Client Care' when anything was drafted. Add one line to the Sunday message on what was drafted.
 
 ## 3. Mockup Builder (Tue and Thu)
 
@@ -189,7 +224,7 @@ Goal: a short case file on each lead before it gets a mockup, a pitch or a site,
   - reviews: rating and count per site, two or three themes customers repeat, and at most 3 short quotes copied word for word with the site named.
   - social: their pages and roughly how active they are (last post month if a snippet shows it).
   - competitors: up to 3 nearby businesses in the same niche that do have a real website, with the URL. This is pitch material ("folks searching in Gonzales find X first").
-  - pitch_angles: 2 or 3 plain sentences on the strongest reasons this business needs a site, built only from the facts above.
+  - pitch_angles: 2 or 3 plain sentences on the strongest reasons this business needs a site, built only from the facts above and the lead's ops.site_audits issues when it has a site.
   - sources: every URL used. confidence: 'High', 'Medium' or 'Low' with a few words on why.
 - Hard limits for the Detective: business facts only. Never record a home street address, a personal phone or email the business did not publish, family members, age, a personal social profile, court or arrest records, or anything about the owner's private life. Don't use people-search or background-check sites. Never contact anyone. If a fact looks like it came from a personal account rather than the business, leave it out.
 - Save with insert into ops.dossiers (...) values (...) on conflict (lead_id) do update set ..., researched_at = now(), using dollar quoting for text and '[...]'::jsonb for photos and sources. If you found a phone, email, Facebook page or website the lead row is missing, update ops.leads too (only from the business's own listing).

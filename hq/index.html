@@ -301,7 +301,7 @@ h1 { margin: 0; font-family: var(--title); font-weight: 800; font-size: clamp(1.
     select 'owner' as agent, item, priority as ord, id as score from ops.todos where type in ('Reply','Send','Fix','Build') or priority = 1
   )
   select json_build_object(
-    'agents', (select json_agg(a) from (select id, name, role, status, schedule, next_run, last_run, last_result from ops.agents where id in ('scout','planner','finder','detective','sales','builder','site','content')) a),
+    'agents', (select json_agg(a) from (select id, name, role, status, schedule, next_run, last_run, last_result from ops.agents where id in ('scout','planner','finder','detective','sales','builder','site','content','auditor','care','bookkeeper')) a),
     'acts', (select json_agg(x) from (select lower(agent) as agent, count(*) as n, max(at) as last_at from ops.activity group by 1) x),
     'feed', (select json_agg(x) from (select agent, action, at from ops.activity order by at desc limit 14) x),
     'todos', (select json_agg(x) from (select type, who, item, priority from ops.todos order by priority, id limit 10) x),
@@ -312,6 +312,13 @@ h1 { margin: 0; font-family: var(--title); font-weight: 800; font-size: clamp(1.
     'review_n', (select count(*) from r),
     'moves', (select json_agg(x) from (select l.business, ops.lead_next_move(l) as move, ops.lead_priority(l) as p from ops.leads l where ops.lead_priority(l) >= 0 order by 3 desc, l.score desc limit 5) x),
     'lessons', (select value from ops.settings where key = 'lessons'),
+    'audits', (select count(*) from ops.site_audits),
+    'weak_sites', (select count(*) from ops.site_audits where score < 70),
+    'launched', (select count(*) from ops.builds where status = 'Launched'),
+    'sites_down', (select count(*) from ops.builds where status = 'Launched' and site_ok = false),
+    'invoices', (select count(*) from ops.ledger),
+    'paid', (select coalesce(sum(amount), 0) from ops.ledger where status = 'paid'),
+    'open_money', (select coalesce(sum(amount), 0) from ops.ledger where status = 'open'),
     'lessons_updated', (select value from ops.settings where key = 'lessons_updated'),
     'open_leads', (select count(*) from ops.leads where stage not in ('Won','Lost','Opted out')),
     'hot_leads', (select count(*) from ops.leads where stage not in ('Won','Lost','Opted out') and heat = 'Hot'),
@@ -338,29 +345,37 @@ h1 { margin: 0; font-family: var(--title); font-weight: 800; font-size: clamp(1.
   // Each agent's island, robot and spot on the map (x, y in percent; w is the island width in percent).
   const A = 'assets/';
   const AGENTS = [
-    { id: 'scout', room: 'Lead Scout', cls: 'Scout Drone', isle: 'observatory', place: 'Observatory Isle', bot: 'scout-drone', icon: 'explore', x: 21, y: 22, w: 15,
+    { id: 'scout', room: 'Lead Scout', cls: 'Scout Drone', isle: 'observatory', place: 'Observatory Isle', bot: 'scout-drone', icon: 'explore', x: 16, y: 20, w: 14,
       xp: (s) => s.leads * 10, stat: (s) => `${s.leads} leads found` },
-    { id: 'finder', room: 'Contact Finder', cls: 'Survey Drone', isle: 'analytics', place: 'Signal Isle', bot: 'survey-drone', icon: 'chat', x: 50, y: 18, w: 15,
+    { id: 'finder', room: 'Contact Finder', cls: 'Survey Drone', isle: 'analytics', place: 'Signal Isle', bot: 'survey-drone', icon: 'chat', x: 50, y: 17, w: 14,
       xp: (s) => s.with_phone * 8 + s.with_email * 15 + acts(s, 'finder').n * 10, stat: (s) => `${s.with_phone} phones, ${s.with_email} emails found` },
-    { id: 'detective', room: 'Detective', cls: 'Archivist Bot', isle: 'research', place: 'Archive Isle', bot: 'archivist-bot', icon: 'research', x: 79, y: 22, w: 15,
+    { id: 'detective', room: 'Detective', cls: 'Archivist Bot', isle: 'research', place: 'Archive Isle', bot: 'archivist-bot', icon: 'research', x: 84, y: 20, w: 14,
       xp: (s) => s.dossiers * 25, stat: (s) => `${s.dossiers} case files written` },
-    { id: 'planner', room: 'Daily Planner', cls: 'Planner Bot', isle: 'strategy', place: 'Strategy Isle', bot: 'planner-bot', icon: 'tasks', x: 11, y: 52, w: 14,
+    { id: 'planner', room: 'Daily Planner', cls: 'Planner Bot', isle: 'strategy', place: 'Strategy Isle', bot: 'planner-bot', icon: 'tasks', x: 10, y: 52, w: 13,
       xp: (s) => s.events * 3 + 50, stat: (s) => `${s.todo_count} quests on the board` },
-    { id: 'sales', room: 'Sales Agent', cls: 'Messenger Bot', isle: 'support', place: 'Harbor Isle', bot: 'messenger-bot', icon: 'chat', x: 89, y: 52, w: 14,
+    { id: 'sales', room: 'Sales Agent', cls: 'Messenger Bot', isle: 'support', place: 'Harbor Isle', bot: 'messenger-bot', icon: 'chat', x: 90, y: 52, w: 13,
       xp: (s) => s.drafts * 20 + s.scripts * 10 + s.contacted * 15 + s.replied * 40, stat: (s) => `${s.emails_ready} emails ready, ${s.scripts} call scripts` },
-    { id: 'content', room: 'Content Agent', cls: 'Support Bot', isle: 'memory', place: 'Heart Isle', bot: 'support-bot', icon: 'memory', x: 22, y: 80, w: 15,
+    { id: 'content', room: 'Content Agent', cls: 'Support Bot', isle: 'memory', place: 'Heart Isle', bot: 'support-bot', icon: 'memory', x: 14, y: 83, w: 14,
       xp: (s) => s.posts * 12, stat: (s) => `${s.posts} posts planned` },
-    { id: 'builder', room: 'Mockup Builder', cls: 'Builder Bot', isle: 'code', place: 'Forge Isle', bot: 'builder-bot', icon: 'code', x: 50, y: 83, w: 14,
+    { id: 'builder', room: 'Mockup Builder', cls: 'Builder Bot', isle: 'code', place: 'Forge Isle', bot: 'builder-bot', icon: 'code', x: 38, y: 85, w: 13,
       xp: (s) => s.mockups_ever * 40 + acts(s, 'builder').n * 10, stat: (s) => `${s.mockups_ever} mockups built` },
-    { id: 'site', room: 'Site Builder', cls: 'Repair Bot', isle: 'portal', place: 'Portal Isle', bot: 'repair-bot', icon: 'build', x: 78, y: 80, w: 10,
+    { id: 'site', room: 'Site Builder', cls: 'Repair Bot', isle: 'portal', place: 'Portal Isle', bot: 'repair-bot', icon: 'build', x: 62, y: 83, w: 9,
       xp: (s) => s.builds * 150 + 20, stat: (s) => `${s.builds} client sites` },
   ];
-  const NEXUS = { id: 'owner', room: 'Your Nexus', isle: 'central-nexus', icon: 'crystals', x: 50, y: 50, w: 21 };
-  const FLOWS = [['scout', 'finder'], ['finder', 'detective'], ['detective', 'sales'], ['sales', 'owner'], ['planner', 'owner'], ['builder', 'owner'], ['content', 'owner'], ['site', 'owner'], ['detective', 'builder']];
+  AGENTS.push(
+    { id: 'auditor', room: 'Site Auditor', cls: 'Analyst Bot', isle: 'dome', place: 'Lens Isle', bot: 'analyst-bot', icon: 'analytics', x: 72, y: 50, w: 9,
+      xp: (s) => s.audits * 8, stat: (s) => `${s.audits} sites checked, ${s.weak_sites} weak` },
+    { id: 'bookkeeper', room: 'Bookkeeper', cls: 'Cargo Drone', isle: 'spire', place: 'Vault Isle', bot: 'cargo-drone', icon: 'coins', x: 28, y: 50, w: 8,
+      xp: (s) => s.invoices * 25 + 20, stat: (s) => (s.invoices ? `$${fmt(s.paid)} collected, $${fmt(s.open_money)} open` : 'No invoices yet') },
+    { id: 'care', room: 'Client Care', cls: 'Guardian Bot', isle: 'dock', place: 'Harbor Dock', bot: 'guardian-bot', icon: 'security', x: 86, y: 84, w: 11,
+      xp: (s) => s.launched * 100 + 20, stat: (s) => (s.launched ? `${s.launched} live client site${s.launched === 1 ? '' : 's'}${s.sites_down ? `, ${s.sites_down} down` : ', all up'}` : 'No launched clients yet') },
+  );
+  const NEXUS = { id: 'owner', room: 'Your Nexus', isle: 'central-nexus', icon: 'crystals', x: 50, y: 51, w: 19 };
+  const FLOWS = [['scout', 'finder'], ['finder', 'detective'], ['detective', 'sales'], ['sales', 'owner'], ['planner', 'owner'], ['builder', 'owner'], ['content', 'owner'], ['site', 'owner'], ['detective', 'builder'], ['auditor', 'sales'], ['bookkeeper', 'owner'], ['care', 'owner']];
   const ALIAS = { 'lead scout': 'scout', scout: 'scout', 'directory scout': 'scout', 'daily planner': 'planner', planner: 'planner', 'chief of staff': 'planner', 'contact finder': 'finder', finder: 'finder',
-    'site auditor': 'finder', detective: 'detective', 'sales agent': 'sales', sales: 'sales', 'outreach agent': 'sales', closer: 'sales', 'mockup builder': 'builder', builder: 'builder',
+    'site auditor': 'auditor', auditor: 'auditor', 'client care': 'care', care: 'care', bookkeeper: 'bookkeeper', detective: 'detective', 'sales agent': 'sales', sales: 'sales', 'outreach agent': 'sales', closer: 'sales', 'mockup builder': 'builder', builder: 'builder',
     site: 'site', 'site builder': 'site', content: 'content', 'content agent': 'content', you: 'you' };
-  const STALE_DAYS = { scout: 3, planner: 3, finder: 4, detective: 5, sales: 3, builder: 5, site: 5, content: 8 };
+  const STALE_DAYS = { scout: 3, planner: 3, finder: 4, detective: 5, sales: 3, builder: 5, site: 5, content: 8, auditor: 3, care: 8, bookkeeper: 8 };
   const RAID = [['found', 'Leads found', 25, 'crystals'], ['contacted', 'Outreach sent', 10, 'chat'], ['mockups', 'Mockups', 3, 'code'], ['replied', 'Replies', 2, 'memory'], ['won', 'Deals won', 1, 'coins']];
   const QICON = { Reply: 'memory', Call: 'chat', Message: 'chat', Send: 'energy', Build: 'build', Fix: 'security', Post: 'explore' };
   const REWARD = { Reply: 60, Call: 30, Message: 25, Send: 30, Build: 100, Fix: 15, Post: 20 };
@@ -402,7 +417,7 @@ h1 { margin: 0; font-family: var(--title); font-weight: 800; font-size: clamp(1.
     if (ag.status === 'Live' && days > (STALE_DAYS[a.id] || 3)) return 'late';
     const la = acts(data, a.id).last_at;
     if (la && Date.now() - new Date(la).getTime() < 3 * 3600e3) return 'work';
-    if (ag.last_run && String(ag.last_run).slice(0, 10) === todayStr() && a.id !== 'planner' && a.id !== 'scout') return 'work';
+    if (ag.last_run && String(ag.last_run).slice(0, 10) === todayStr() && !['planner', 'scout', 'auditor'].includes(a.id)) return 'work';
     return 'sleep';
   }
   const stateWord = (st) => (st === 'work' ? 'Working' : st === 'late' ? 'Missed a run' : 'Off duty');
@@ -416,7 +431,7 @@ h1 { margin: 0; font-family: var(--title); font-weight: 800; font-size: clamp(1.
       const d = row.hq || row;
       d._acts = {};
       (d.acts || []).forEach((x) => { const id = ALIAS[x.agent] || x.agent; const cur = d._acts[id] || { n: 0, last_at: null }; cur.n += Number(x.n) || 0; if (!cur.last_at || new Date(x.last_at) > new Date(cur.last_at)) cur.last_at = x.last_at; d._acts[id] = cur; });
-      ['leads', 'with_phone', 'with_email', 'contacted', 'replied', 'won', 'won_value', 'drafts', 'scripts', 'mockups_ever', 'events', 'dossiers', 'posts', 'builds', 'notes', 'todo_count', 'queued_n', 'review_n', 'open_leads', 'hot_leads', 'emails_ready', 'drafts_waiting'].forEach((k) => { d[k] = Number(d[k]) || 0; });
+      ['leads', 'with_phone', 'with_email', 'contacted', 'replied', 'won', 'won_value', 'drafts', 'scripts', 'mockups_ever', 'events', 'dossiers', 'posts', 'builds', 'notes', 'todo_count', 'queued_n', 'review_n', 'open_leads', 'hot_leads', 'emails_ready', 'drafts_waiting', 'audits', 'weak_sites', 'launched', 'sites_down', 'invoices', 'paid', 'open_money'].forEach((k) => { d[k] = Number(d[k]) || 0; });
       data = d; problem = null; loadedAt = new Date();
     } catch (err) { problem = explain(err); }
     render();
@@ -664,6 +679,9 @@ h1 { margin: 0; font-family: var(--title); font-weight: 800; font-size: clamp(1.
     say('planner', 'owner', `${fmt(d.todo_count)} quests on your board today.`, '');
     say('content', 'owner', `${fmt(d.posts)} posts planned. Check the Content tab when you have a minute.`, '');
     say('site', 'owner', d.builds ? `${fmt(d.builds)} client site${d.builds === 1 ? '' : 's'} on my bench.` : 'Standing by. Win a deal and I start building the site.', '');
+    say('auditor', 'sales', `Checked ${fmt(d.audits)} lead websites. ${fmt(d.weak_sites)} have problems you can name in the pitch.`, 'Perfect. I’ll lead with the worst two.');
+    say('bookkeeper', 'owner', d.invoices ? `$${fmt(d.paid)} collected so far, $${fmt(d.open_money)} waiting to be paid.` : 'No invoices yet. I draft the final invoice the day a site launches.', '');
+    say('care', 'owner', d.launched ? (d.sites_down ? `${fmt(d.sites_down)} client site${d.sites_down === 1 ? ' is' : 's are'} down. Check Vercel.` : `All ${fmt(d.launched)} client site${d.launched === 1 ? '' : 's'} loaded this morning.`) : 'No launched clients yet. Once one goes live I check it every day.', '');
     AGENTS.filter((a) => state(a) === 'late').forEach((a) => say(a.id, 'owner', 'I missed my last run. Can you check my schedule?', ''));
     return out;
   }
