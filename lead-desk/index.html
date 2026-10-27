@@ -94,6 +94,8 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
 .notes textarea { font: inherit; min-height: 6rem; resize: vertical; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); width: 100%; box-sizing: border-box; }
 .notes .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .notes .hint { font-size: 12px; color: var(--muted); }
+.notes input[type=email] { font: inherit; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); min-width: 0; flex: 1 1 14rem; }
+.mail-subj { font-weight: 600; }
 .empty, .notice { color: var(--muted); padding: 24px 16px; text-align: center; background: var(--panel); border: 1px dashed var(--line); border-radius: 10px; }
 .notice.bad { color: var(--ink); border-style: solid; border-color: var(--hot); text-align: left; }
 .notice b { display: block; margin-bottom: 4px; }
@@ -127,7 +129,7 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
 (() => {
   const SERVER = 'Supabase';
   const PROJECT = 'taskvfzqgpqxpdifmxru';
-  const COLS = 'id, business, niche, area, rating, website, email, phone, facebook, score, heat, stage, hook, next_step, you_action, mockup_url, mockup_requested, call_script, dm_text, first_contact, last_contact, touches, next_followup, my_notes';
+  const COLS = 'id, business, niche, area, rating, website, email, phone, facebook, score, heat, stage, hook, next_step, you_action, mockup_url, mockup_requested, call_script, dm_text, email_subject, email_text, draft_id, first_contact, last_contact, touches, next_followup, my_notes';
   const LIST_SQL = `select ${COLS}, coalesce(d.owner_name, '') as owner_name, coalesce(d.pitch_angles, '') as pitch_angles, (d.lead_id is not null) as has_case from ops.leads l left join ops.dossiers d on d.lead_id = l.id where l.stage <> 'Opted out' order by l.score desc, l.id`;
   const LANES = [
     { id: 'ready', label: 'Ready to contact', note: 'Researched and not contacted yet. Reach out, then mark how.', test: (l) => ['New', 'Audited', 'Mockup ready'].includes(l.stage) },
@@ -339,6 +341,66 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
     return b;
   }
 
+  // Their email: the Sales Agent writes it for every lead; Thomas adds the address and makes the Gmail draft here.
+  const emailDrafts = {};
+  async function saveEmail(lead) {
+    const e = String(emailDrafts[lead.id] || '').trim().toLowerCase();
+    if (busy || !/^L\d{1,5}$/.test(lead.id)) return;
+    if (!/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(e) || e.length > 200) { toast('That doesn’t look like an email address.'); return; }
+    busy = true; render();
+    try { await sql(`select ops.lead_set_email('${lead.id}', ${q(e)}) as saved`); delete emailDrafts[lead.id]; toast('Email saved for ' + lead.business); }
+    catch (err) { const [t, d] = explain(err); toast(t + '. ' + d); }
+    busy = false;
+    await load();
+  }
+  async function makeDraft(lead) {
+    if (busy || !/^L\d{1,5}$/.test(lead.id) || !lead.email || !lead.email_text) return;
+    busy = true; render();
+    try {
+      const r = await mcp.callTool('Gmail', 'create_draft', { to: [lead.email], subject: lead.email_subject || ('Website for ' + lead.business), body: lead.email_text }, { cache: false });
+      const m = JSON.stringify(r && r.payload).match(/\\?"id\\?"\s*:\s*\\?"([A-Za-z0-9_-]{5,100})/);
+      if (!m) throw { code: 'tool_error', message: 'Gmail did not say whether the draft was made. Check your Drafts folder before trying again.' };
+      await sql(`select ops.lead_set_draft('${lead.id}', ${q(m[1])}) as saved`);
+      toast('Draft is in Gmail for ' + lead.business);
+    } catch (err) {
+      const code = err && err.code;
+      if (code === 'server_not_connected' || code === 'selection_required' || code === 'server_not_found') toast('Gmail isn’t connected. Add it in claude.ai Settings, Connectors, or copy the email instead.');
+      else if (code === 'not_in_manifest' || code === 'not_granted' || code === 'consent_required') toast('Gmail is turned off for this page. Allow it from the Permissions menu.');
+      else { const [t, d] = explain(err); toast(t.replace('Supabase', 'Gmail') + '. ' + d); }
+    }
+    busy = false;
+    await load();
+  }
+  function emailSection(l) {
+    const box = el('div', 'notes');
+    box.append(el('div', 'qlabel', 'Email'));
+    if (l.email_text) {
+      const subj = el('div'); const st = el('span', 'mail-subj', l.email_subject || ''); subj.append(el('span', 'meta', 'Subject: '), st, copyBtn(l.email_subject || ''));
+      const bodyTxt = el('p', 'quote', l.email_text); bodyTxt.style.whiteSpace = 'pre-line';
+      const cp = el('div', 'row'); cp.append(copyBtn(l.email_text), el('span', 'hint', 'Copies the whole email body.'));
+      box.append(subj, bodyTxt, cp);
+    } else {
+      box.append(el('span', 'hint', 'The Sales Agent writes this lead’s email on its next weekday morning run.'));
+    }
+    const row = el('div', 'row');
+    if (!l.email) {
+      const inp = el('input'); inp.type = 'email'; inp.placeholder = 'Got their email? Paste it here'; inp.value = emailDrafts[l.id] || ''; inp.maxLength = 200;
+      inp.addEventListener('input', () => { emailDrafts[l.id] = inp.value; });
+      inp.addEventListener('click', (e) => e.stopPropagation());
+      inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); saveEmail(l); } });
+      row.append(inp, actionBtn('Save email', '', () => saveEmail(l)));
+    } else if (l.draft_id) {
+      const a = el('a', '', 'Open Gmail drafts'); a.href = 'https://mail.google.com/mail/u/0/#drafts'; a.target = '_blank'; a.rel = 'noopener';
+      row.append(el('span', 'chip', 'Draft waiting in Gmail'), a);
+    } else if (l.email_text) {
+      row.append(actionBtn('Make Gmail draft to ' + l.email, 'primary', () => makeDraft(l)), el('span', 'hint', 'Lands in your Drafts. Nothing is sent.'));
+    } else {
+      row.append(el('span', 'hint', 'Email saved. A draft shows up after the Sales Agent’s next run.'));
+    }
+    box.append(row);
+    return box;
+  }
+
   function leadBody(l) {
     const body = el('div', 'body');
     const dl = el('dl', 'facts');
@@ -366,6 +428,8 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
       if (!text) return;
       const wrap = el('div'); wrap.append(el('div', 'qlabel', label), el('p', 'quote', text)); body.append(wrap);
     });
+
+    body.append(emailSection(l));
 
     const notes = el('div', 'notes');
     const ta = el('textarea'); ta.id = 'notes-' + l.id; ta.maxLength = 4000;

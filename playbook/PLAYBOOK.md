@@ -22,11 +22,11 @@ All data lives in Supabase project taskvfzqgpqxpdifmxru, schema ops. Use the too
 - Only read and write tables in the ops schema. Never touch the public schema (that is Thomas's client portal) or any other schema. Never DROP, ALTER, TRUNCATE or DELETE anything, except where a section below says so.
 - Escape text with dollar quoting when writing, for example update ops.leads set hook = $q$...$q$ where id = 'L12'.
 - Tables:
-  - ops.leads: id, business, niche, area, found_on, profile_url, rating, website, email, phone, facebook, contact, score, heat, stage, hook, next_step, you_action, mockup_url, call_script, dm_text, draft_id, proposal_draft_id, invoice_id, package, deal_value, first_contact, last_contact, touches, next_followup, mockup_requested, my_notes, created_at, updated_at.
+  - ops.leads: id, business, niche, area, found_on, profile_url, rating, website, email, phone, facebook, contact, score, heat, stage, hook, next_step, you_action, mockup_url, call_script, dm_text, email_subject, email_text, draft_id, proposal_draft_id, invoice_id, package, deal_value, first_contact, last_contact, touches, next_followup, mockup_requested, my_notes, created_at, updated_at.
   - my_notes is what Thomas typed himself in Lead Desk (an owner name, a phone, photo links, what he saw on their Facebook or Google page). Treat it as true and more current than anything you found, and use it. Never overwrite it.
   - ops.agents: id (scout, planner, finder, sales, builder, content), name, status, schedule, next_run, last_run, last_result.
   - ops.activity: agent, action (at fills itself). Rows with agent 'you' are what Thomas did in Lead Desk.
-  - Lead Desk: Thomas marks leads emailed, called, messaged, replied, won, lost or opted out, and asks for mockups, through select ops.lead_action(id, action). Treat what it set as true; don't undo it.
+  - Lead Desk: Thomas marks leads emailed, called, messaged, replied, won, lost or opted out, and asks for mockups, through select ops.lead_action(id, action). He can also add an email he found (ops.lead_set_email) and turn email_text into a Gmail draft himself (ops.lead_set_draft fills draft_id). Treat what it set as true; don't undo it.
   - ops.posts: id, date, platforms, pillar, format, hook, idea, caption, cta, asset, status.
   - ops.todos: rebuilt by select ops.build_todos(); do not write it directly.
   - ops.settings: key, value (mailing_address, dashboard_url).
@@ -106,9 +106,12 @@ D. First emails. Up to 10 per run: stage in ('Audited','Mockup ready'), email <>
 - Price: never a number in a first email. "Pricing depends on what you need, and I keep it reasonable for small businesses."
 - Sign off: Thomas / Sidequest Creative / thomasdbiz26@gmail.com, blank line, the mailing_address from ops.settings, then "P.S. Not the right time? No worries, just let me know and I won't keep bugging you."
 - Only claim they have no website if website = 'None found'.
-- Save draft_id, next_step 'Draft waiting in Gmail', you_action 'Review and send the draft to <business> in Gmail'.
+- If email_subject and email_text are already written (step E), use them as the draft, updated for anything new such as a mockup_url.
+- Save draft_id, email_subject and email_text (the exact subject and body you drafted), next_step 'Draft waiting in Gmail', you_action 'Review and send the draft to <business> in Gmail'.
 
-E. Calls and Facebook. For leads with a phone but no email and an empty call_script (up to 10): write call_script (5 to 7 short lines: who Thomas is, the compliment, the hook, the free mockup offer, ask for the best email or number to text the link; if asked about price, "it depends on what you need, most land in the $600 to $800 range"). you_action 'Call <business>: script on the board'. Facebook only: dm_text (3 to 5 sentences), you_action 'Message <business> on Facebook: text on the board'.
+E. A ready email for every lead. Up to 15 per run: stage in ('Audited','Mockup ready'), touches = 0, heat <> 'Cold', email_text = '', order by score desc. Write email_subject (short, plain, about them, no clickbait) and email_text (the full plain-text body by the rules in D, including the sign-off, mailing address and P.S.), even when the lead has no email address yet. Thomas reads it on a call, sends it once he gets their address, or adds the address in Lead Desk and turns it into a Gmail draft with one click. Save both with dollar quoting.
+
+Calls and Facebook. For leads with a phone but no email and an empty call_script (up to 10): write call_script (5 to 7 short lines: who Thomas is, the compliment, the hook, the free mockup offer, ask for the best email or number to text the link; if asked about price, "it depends on what you need, most land in the $600 to $800 range"). you_action 'Call <business>: script on the board'. Facebook only: dm_text (3 to 5 sentences), you_action 'Message <business> on Facebook: text on the board'.
 
 F. Finish: run select ops.build_todos(); then read select type, who, item from ops.todos order by priority limit 12. Your final message is Thomas's morning brief (it reaches his phone and email): 3 to 6 short plain lines on replies, drafts waiting, calls to make, and anything broken, ending with the dashboard link. On Fridays add one line with this week's numbers from select * from ops.weekly_stats order by week desc limit 1: new leads, emails sent, mockups, replies, won.
 
