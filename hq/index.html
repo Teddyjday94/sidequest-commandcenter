@@ -123,6 +123,9 @@ h1 { margin: 0; font-family: var(--title); font-weight: 800; font-size: clamp(1.
 .maplegend { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 8px 6px 2px; font-size: 12px; color: var(--muted); }
 .maplegend span { display: inline-flex; align-items: center; gap: 6px; }
 .maplegend i { width: 18px; height: 3px; border-radius: 2px; }
+.hush { all: unset; margin-left: auto; cursor: pointer; font: 700 12px var(--ui); color: var(--ink); padding: 3px 10px; border-radius: 999px; border: 1px solid var(--gold-2); background: rgba(5, 10, 34, .55); }
+.hush[aria-pressed="false"] { color: var(--muted); border-color: var(--line); }
+.hush:focus-visible { outline: 2px solid var(--gold-hi); }
 
 /* mission board */
 .board { padding: 16px 14px 14px; display: grid; gap: 14px; }
@@ -246,6 +249,7 @@ h1 { margin: 0; font-family: var(--title); font-weight: 800; font-size: clamp(1.
         <span><i style="background:var(--amber)"></i>Waiting for the next shift</span>
         <span><i style="background:var(--rose)"></i>Needs you, or a missed run</span>
         <span>Zz means off duty</span>
+        <button class="hush" id="hush" type="button" aria-pressed="true">Chatter: on</button>
       </div>
     </section>
     <div class="inspect frame gem" id="inspect" aria-live="polite"></div>
@@ -636,8 +640,20 @@ h1 { margin: 0; font-family: var(--title); font-weight: 800; font-size: clamp(1.
   }
   let script = [], turn = 0, chatTimer = null;
   const chatLog = [];
+  // One bubble at a time, one handoff about every 30 seconds, and none on small screens.
+  let chatterOn = true;
+  try { chatterOn = localStorage.getItem('hq-chatter') !== 'off'; } catch (e) {}
+  const hush = $('hush');
+  const paintHush = () => { hush.textContent = 'Chatter: ' + (chatterOn ? 'on' : 'off'); hush.setAttribute('aria-pressed', String(chatterOn)); };
+  paintHush();
+  hush.addEventListener('click', () => {
+    chatterOn = !chatterOn; paintHush();
+    try { localStorage.setItem('hq-chatter', chatterOn ? 'on' : 'off'); } catch (e) {}
+    if (!chatterOn) map.querySelectorAll('.bubble').forEach((b) => b.remove());
+  });
   function bubble(id, name, text, ms) {
-    const a = byId(id); if (!a || !text) return;
+    const a = byId(id); if (!a || !text || !chatterOn || map.classList.contains('small')) return;
+    map.querySelectorAll('.bubble').forEach((b) => b.remove());
     const bx = a.bot ? a.x + a.w * .46 : a.x, by = a.bot ? a.y - a.w * .62 : a.y - a.w * .35;
     const right = a.x <= 50;
     const b = el('div', 'bubble ' + (right ? 'r' : 'l')); b.append(el('b', '', name), document.createTextNode(text));
@@ -668,9 +684,9 @@ h1 { margin: 0; font-family: var(--title); font-weight: 800; font-size: clamp(1.
     if (document.hidden || !script.length) { chatTimer = setTimeout(talk, 4000); return; }
     const ex = script[turn++ % script.length];
     const from = byId(ex.from), to = byId(ex.to);
-    bubble(ex.from, from.room, ex.text, 3800); packet(ex.from, ex.to); logChat(ex.from, ex.to, ex.text);
-    if (ex.reply) setTimeout(() => { bubble(ex.to, to.room, ex.reply, 3200); logChat(ex.to, ex.from, ex.reply); }, 1700);
-    chatTimer = setTimeout(talk, ex.reply ? 6500 : 4800);
+    bubble(ex.from, from.room, ex.text, 4500); if (chatterOn) packet(ex.from, ex.to); logChat(ex.from, ex.to, ex.text);
+    if (ex.reply) setTimeout(() => { bubble(ex.to, to.room, ex.reply, 4000); logChat(ex.to, ex.from, ex.reply); }, 5000);
+    chatTimer = setTimeout(talk, 30000);
   }
 
   function render() {
@@ -678,7 +694,7 @@ h1 { margin: 0; font-family: var(--title); font-weight: 800; font-size: clamp(1.
     if (problem) { const n = el('div', 'notice'); n.append(el('b', '', problem[0]), el('span', '', problem[1])); p.append(n); }
     renderTop(); paintMap(); renderInspect(); renderMission(); renderRaid(); renderQuests(); renderCrew(); renderBadges(); renderTicker();
     const first = !script.length; script = buildScript();
-    if (first && script.length) chatTimer = setTimeout(talk, 900);
+    if (first && script.length) chatTimer = setTimeout(talk, 3000);
   }
 
   $('refresh').addEventListener('click', () => load());
