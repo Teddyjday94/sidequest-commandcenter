@@ -96,6 +96,26 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
 .notes textarea { font: inherit; min-height: 6rem; resize: vertical; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); width: 100%; box-sizing: border-box; }
 .notes .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .notes .hint { font-size: 12px; color: var(--muted); }
+[hidden] { display: none !important; }
+.cm { display: grid; gap: 12px; }
+.cm-top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.cm-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.cm-tabs button { font: inherit; cursor: pointer; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 999px; padding: 7px 14px; display: flex; gap: 8px; align-items: baseline; }
+.cm-tabs button .n { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.cm-tabs button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.cm-tabs button[aria-pressed="true"] .n { color: var(--bg); opacity: .75; }
+.cm-pos { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.cm-card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 14px; }
+.cm-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.cm-head .nm { font-size: 1.35rem; }
+.cm-num { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.cm-num .big { font-family: var(--mono); font-size: 1.6rem; font-weight: 500; letter-spacing: .02em; user-select: all; }
+.cm-num a { font-weight: 600; color: var(--accent); }
+.cm-results { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr)); gap: 8px; }
+.cm-results .btn { padding: 12px 10px; }
+.cm-card details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+.cm-card ul { margin: 0; padding-left: 18px; }
+.btn.good { background: var(--ok); color: var(--accent-ink); border-color: var(--ok); }
 .notes input[type=email] { font: inherit; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); min-width: 0; flex: 1 1 14rem; }
 .mail-subj { font-weight: 600; }
 .empty, .notice { color: var(--muted); padding: 24px 16px; text-align: center; background: var(--panel); border: 1px dashed var(--line); border-radius: 10px; }
@@ -115,11 +135,12 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
       <h1>Lead Desk</h1>
       <p class="sub">Mark who you've emailed, called or messaged, and send leads to the Mockup Builder. Every click updates the command center, and the agents pick it up on their next run.</p>
     </div>
-    <div class="status"><span id="updated">Loading leads</span><button id="refresh" type="button">Refresh</button></div>
+    <div class="status"><span id="updated">Loading leads</span><button id="refresh" type="button">Refresh</button><button id="callmode" class="btn primary" type="button" aria-pressed="false">Call Mode</button></div>
   </header>
 
   <nav class="lanes" id="lanes" aria-label="Lead groups"></nav>
   <p class="lane-note" id="lane-note"></p>
+  <section class="cm" id="cm" hidden aria-label="Call Mode"></section>
   <div class="search"><input id="q" type="search" placeholder="Search by business, town or niche" aria-label="Search leads"></div>
   <div class="list" id="list" aria-live="polite">
     <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
@@ -131,8 +152,8 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
 (() => {
   const SERVER = 'Supabase';
   const PROJECT = 'taskvfzqgpqxpdifmxru';
-  const COLS = 'id, business, niche, area, rating, website, email, phone, facebook, score, heat, stage, hook, next_step, you_action, mockup_url, mockup_requested, call_script, dm_text, email_subject, email_text, draft_id, first_contact, last_contact, touches, next_followup, my_notes';
-  const LIST_SQL = `select ${COLS}, coalesce(d.owner_name, '') as owner_name, coalesce(d.pitch_angles, '') as pitch_angles, (d.lead_id is not null) as has_case, ops.lead_priority(l) as priority, ops.lead_next_move(l) as next_move from ops.leads l left join ops.dossiers d on d.lead_id = l.id where l.stage <> 'Opted out' order by ops.lead_priority(l) desc, l.score desc, l.id`;
+  const COLS = 'id, business, niche, area, rating, website, email, phone, facebook, score, heat, stage, hook, next_step, you_action, mockup_url, mockup_requested, call_script, dm_text, sms_text, sms_followup, voicemail, next_channel, call_attempts, email_subject, email_text, draft_id, first_contact, last_contact, touches, next_followup, my_notes';
+  const LIST_SQL = `select ${COLS}, coalesce(d.owner_name, '') as owner_name, coalesce(d.pitch_angles, '') as pitch_angles, (d.lead_id is not null) as has_case, ops.lead_priority(l) as priority, ops.lead_next_move(l) as next_move, coalesce((select sa.issues from ops.site_audits sa where sa.lead_id = l.id), '') as site_issues from ops.leads l left join ops.dossiers d on d.lead_id = l.id where l.stage <> 'Opted out' order by ops.lead_priority(l) desc, l.score desc, l.id`;
   const LANES = [
     { id: 'ready', label: 'Ready to contact', note: 'Researched and not contacted yet, best move first. Reach out, then mark how.', test: (l) => ['New', 'Audited', 'Mockup ready'].includes(l.stage) },
     { id: 'contacted', label: 'Contacted', note: 'You reached out. Follow-ups due today or earlier are flagged.', test: (l) => l.stage === 'Contacted' },
@@ -475,7 +496,127 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
     return body;
   }
 
+  /* ---------- Call Mode: one lead at a time, in plan order ---------- */
+  let mode = 'list', cmTab = 'call', cmIdx = 0, cmInterested = null;
+  try { if (localStorage.getItem('leaddesk-mode') === 'call') mode = 'call'; } catch (e) {}
+  const CM_TABS = [['call', 'Calls'], ['text', 'Texts'], ['facebook', 'Facebook']];
+  const dueChannel = (l, due) => {
+    if (!['New', 'Audited', 'Mockup ready', 'Contacted'].includes(l.stage) || l.heat === 'Cold') return '';
+    if (l.next_followup && String(l.next_followup).slice(0, 10) > due) return '';
+    if (l.next_channel) return l.next_channel;
+    if (l.stage === 'Contacted') return '';
+    return l.phone ? 'call' : l.facebook ? 'facebook' : '';
+  };
+  const cmQueue = (ch) => { const due = today(); return leads.filter((l) => dueChannel(l, due) === ch); };
+  const fallbackScript = (l) => `Hi, is this the owner of ${l.business}? This is Thomas with Sidequest Creative here in Gonzales.${l.hook ? ' ' + l.hook : ''} I build websites for local service businesses, and I'd be glad to put together a free mockup of your homepage so you can see what it could look like. What's the best email or number to send it to?`;
+  const fallbackText = (l) => `Hi, this is Thomas with Sidequest Creative in Gonzales. I came across ${l.business} and I'd be glad to put together a free mockup of a homepage for you, no strings attached. Want me to send it over? No worries if now's not a good time.`;
+  const fallbackVoicemail = (l) => `Hi, this is Thomas with Sidequest Creative here in Gonzales. I build websites for local businesses and wanted to offer ${l.business} a free homepage mockup. I'll shoot you a text so you have my number. Thanks!`;
+  const textFor = (l) => (l.touches > 0 && l.sms_followup ? l.sms_followup : l.sms_text) || fallbackText(l);
+
+  async function touch(l, ch, result) {
+    if (busy || !/^L\d{1,5}$/.test(l.id)) return;
+    if (!['call', 'text', 'facebook'].includes(ch) || !['no_answer', 'voicemail', 'talked', 'interested', 'not_interested', 'wrong_number', 'sent'].includes(result)) return;
+    busy = true; render();
+    try {
+      await sql(`select ops.lead_touch('${l.id}', '${ch}', '${result}') as done`);
+      const words = { no_answer: 'No answer, back in your calls in 2 days', voicemail: 'Voicemail logged. Text them next', talked: 'Logged the call', interested: 'Interested! Mockup queued', not_interested: 'Closed out', wrong_number: 'Number cleared', sent: 'Logged' };
+      toast(words[result] + ': ' + l.business);
+      if (result === 'interested' && !l.email) cmInterested = l.id;
+    } catch (err) { const [t, d] = explain(err); toast(t + '. ' + d); }
+    busy = false;
+    await load();
+  }
+
+  function cmBlock(label, text, withCopy) {
+    const w = el('div'); w.append(el('div', 'qlabel', label));
+    const q = el('p', 'quote', text); w.append(q);
+    if (withCopy) { const r = el('div'); r.style.marginTop = '6px'; r.append(copyBtn(text)); w.append(r); }
+    return w;
+  }
+
+  function renderCall() {
+    const box = $('cm'); box.replaceChildren();
+    const top = el('div', 'cm-top'); const tabs = el('div', 'cm-tabs');
+    CM_TABS.forEach(([id, label]) => {
+      const b = el('button'); b.type = 'button'; b.setAttribute('aria-pressed', String(cmTab === id));
+      b.append(document.createTextNode(label), el('span', 'n', String(cmQueue(id).length)));
+      b.addEventListener('click', () => { cmTab = id; cmIdx = 0; cmInterested = null; render(); });
+      tabs.append(b);
+    });
+    const q = cmQueue(cmTab);
+    if (cmIdx >= q.length) cmIdx = Math.max(0, q.length - 1);
+    top.append(tabs, el('span', 'cm-pos', q.length ? `${cmIdx + 1} of ${q.length} due today` : ''));
+    box.append(top);
+
+    // Just marked interested and we still need their email.
+    const hot = cmInterested && leads.find((x) => x.id === cmInterested);
+    if (hot && !hot.email) {
+      const c = el('div', 'cm-card'); c.append(el('div', 'nm', hot.business), el('p', 'sub', 'Nice. Ask for the best email to send the mockup to. The mockup is queued for the next Tuesday or Thursday run.'));
+      const n = el('div', 'notes'); const row = el('div', 'row');
+      const inp = el('input'); inp.type = 'email'; inp.placeholder = 'Their email'; inp.value = emailDrafts[hot.id] || '';
+      inp.addEventListener('input', () => { emailDrafts[hot.id] = inp.value; });
+      inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); saveEmail(hot).then(() => { cmInterested = null; render(); }); } });
+      row.append(inp, actionBtn('Save email', 'primary', () => saveEmail(hot).then(() => { cmInterested = null; render(); })), actionBtn('Skip for now', '', () => { cmInterested = null; render(); }));
+      n.append(row); c.append(n); box.append(c); return;
+    }
+    if (problem) { const n = el('div', 'notice bad'); n.append(el('b', '', problem[0]), el('span', '', problem[1])); box.append(n); return; }
+    if (!mcp) { box.append(el('div', 'notice', 'Open this page in claude.ai, signed in with your Supabase connector, to work your calls.')); return; }
+    if (!loadedAt) { box.append(el('div', 'skeleton')); return; }
+    if (!q.length) { box.append(el('div', 'empty', cmTab === 'call' ? 'No calls due right now. Nice work.' : cmTab === 'text' ? 'No texts due right now.' : 'No Facebook messages due right now.')); return; }
+
+    const l = q[cmIdx];
+    const c = el('article', 'cm-card');
+    const head = el('div', 'cm-head'); const left = el('div');
+    left.append(el('div', 'nm', l.business), el('div', 'meta', [l.niche, l.area, l.touches ? `touch ${l.touches + 1}` : 'first touch', l.call_attempts ? `${l.call_attempts} missed call${l.call_attempts > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ')));
+    const right = el('div', 'right'); right.append(el('span', 'heat ' + l.heat, l.heat), el('span', 'score', String(l.priority) + ' pts'));
+    head.append(left, right); c.append(head);
+
+    if (cmTab === 'call' || cmTab === 'text') {
+      const num = el('div', 'cm-num'); num.append(el('span', 'big', l.phone || 'No phone'));
+      if (l.phone) { num.append(copyBtn(l.phone)); const a = el('a', '', cmTab === 'call' ? 'Call' : 'Text'); a.href = (cmTab === 'call' ? 'tel:' : 'sms:') + l.phone.replace(/[^0-9+]/g, ''); num.append(a); }
+      c.append(num);
+    }
+    if (cmTab === 'call') {
+      c.append(cmBlock('What to say', l.call_script || fallbackScript(l), false));
+      if (l.site_issues && !/confirm before/i.test(l.site_issues)) {
+        const w = el('div'); w.append(el('div', 'qlabel', 'What’s wrong with their site now')); const ul = el('ul');
+        l.site_issues.split('\n').filter(Boolean).slice(0, 4).forEach((x) => ul.append(el('li', '', x))); w.append(ul); c.append(w);
+      }
+      const vm = el('details'); vm.append(el('summary', '', 'Voicemail script (about 15 seconds)'), el('p', 'quote', l.voicemail || fallbackVoicemail(l))); c.append(vm);
+      const res = el('div', 'cm-results');
+      res.append(actionBtn('No answer', '', () => touch(l, 'call', 'no_answer')), actionBtn('Left voicemail', '', () => touch(l, 'call', 'voicemail')), actionBtn('Talked, follow up', '', () => touch(l, 'call', 'talked')),
+        actionBtn('Interested!', 'good', () => touch(l, 'call', 'interested')), actionBtn('Not interested', 'danger', () => touch(l, 'call', 'not_interested')), actionBtn('Wrong number', 'danger', () => touch(l, 'call', 'wrong_number')));
+      c.append(res);
+    } else if (cmTab === 'text') {
+      c.append(cmBlock('Text to send', textFor(l), true));
+      const res = el('div', 'cm-results'); res.append(actionBtn('I sent it', 'primary', () => touch(l, 'text', 'sent'))); c.append(res);
+    } else {
+      if (safeUrl(l.facebook)) { const a = el('a', '', 'Open their Facebook page'); a.href = safeUrl(l.facebook); a.target = '_blank'; a.rel = 'noopener'; c.append(a); }
+      c.append(cmBlock('Message to send', l.dm_text || fallbackText(l), true));
+      const res = el('div', 'cm-results'); res.append(actionBtn('I sent it', 'primary', () => touch(l, 'facebook', 'sent'))); c.append(res);
+    }
+    const nav = el('div', 'act-group');
+    if (cmIdx > 0) nav.append(actionBtn('Back', '', () => { cmIdx--; render(); }));
+    if (cmIdx < q.length - 1) nav.append(actionBtn('Skip', '', () => { cmIdx++; render(); }));
+    const open = el('a', '', 'Open full lead'); open.href = '#' + l.id; open.addEventListener('click', (e) => { e.preventDefault(); mode = 'list'; lane = 'all'; openId = l.id; render(); const t = document.getElementById(l.id); if (t) t.scrollIntoView({ block: 'center' }); });
+    nav.append(open);
+    c.append(nav);
+    box.append(c);
+  }
+
+  $('callmode').addEventListener('click', () => {
+    mode = mode === 'call' ? 'list' : 'call'; cmIdx = 0; cmInterested = null;
+    try { localStorage.setItem('leaddesk-mode', mode); } catch (e) {}
+    render();
+  });
+
   function render() {
+    const inCall = mode === 'call';
+    $('cm').hidden = !inCall; $('lanes').hidden = inCall; $('lane-note').hidden = inCall; $('list').hidden = inCall;
+    document.querySelector('.search').hidden = inCall;
+    $('callmode').textContent = inCall ? 'Back to all leads' : 'Call Mode';
+    $('callmode').setAttribute('aria-pressed', String(inCall));
+    if (inCall) { $('updated').textContent = loadedAt ? 'Updated ' + loadedAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : (mcp ? 'Loading leads' : ''); $('refresh').disabled = !mcp || busy; renderCall(); return; }
     renderLanes();
     $('updated').textContent = loadedAt ? 'Updated ' + loadedAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : (mcp ? 'Loading leads' : '');
     $('refresh').disabled = !mcp || busy;
