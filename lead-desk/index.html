@@ -151,6 +151,8 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
 <script>
 (() => {
   const SERVER = 'Supabase';
+  const BUILD_TRIGGER = 'trig_01H1NSncvgXqvU1uJeemCkhK'; // Tue/Thu Detective + Mockup Builder task
+  const BUILD_KEY = 'leaddesk-building';
   const PROJECT = 'taskvfzqgpqxpdifmxru';
   const COLS = 'id, business, niche, area, rating, website, email, phone, facebook, score, heat, stage, hook, next_step, you_action, mockup_url, mockup_requested, call_script, dm_text, sms_text, sms_followup, voicemail, next_channel, call_attempts, email_subject, email_text, draft_id, first_contact, last_contact, touches, next_followup, my_notes';
   const LIST_SQL = `select ${COLS}, coalesce(d.owner_name, '') as owner_name, coalesce(d.pitch_angles, '') as pitch_angles, (d.lead_id is not null) as has_case, ops.lead_priority(l) as priority, ops.lead_next_move(l) as next_move, coalesce((select sa.issues from ops.site_audits sa where sa.lead_id = l.id), '') as site_issues from ops.leads l left join ops.dossiers d on d.lead_id = l.id where l.stage <> 'Opted out' order by ops.lead_priority(l) desc, l.score desc, l.id`;
@@ -234,6 +236,33 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
     } catch (err) {
       const [t, d] = explain(err);
       toast(t + '. ' + (err && err.code === 'server_unavailable' ? 'It may or may not have saved, so refresh before trying again.' : d));
+    }
+    busy = false;
+    await load();
+  }
+
+  // Build it now: queue the mockup, then start the Tue/Thu builder task right away for just this lead.
+  const building = (() => { try { return JSON.parse(localStorage.getItem(BUILD_KEY) || '{}'); } catch (e) { return {}; } })();
+  const buildingSince = (id) => {
+    const l = leads.find((x) => x.id === id);
+    return (building[id] && Date.now() - building[id] < 60 * 60 * 1000 && (!l || l.mockup_requested)) ? new Date(building[id]) : null;
+  };
+  async function buildNow(lead) {
+    if (busy || !/^L\d{1,5}$/.test(lead.id) || buildingSince(lead.id)) return;
+    busy = true; render();
+    let queued = !!lead.mockup_requested;
+    try {
+      if (!queued) { await sql(`select ops.lead_action('${lead.id}', 'mockup', null) as done`); queued = true; }
+      await mcp.callTool('Claude Code Remote', 'fire_trigger', { trigger_id: BUILD_TRIGGER, text: `On-demand mockup for lead ${lead.id}. Build only this lead's mockup now, following section 3 of the playbook.` }, { cache: false });
+      building[lead.id] = Date.now();
+      try { localStorage.setItem(BUILD_KEY, JSON.stringify(building)); } catch (e) { /* per-viewer only */ }
+      toast('Builder started for ' + lead.business + '. The mockup link shows up here in about 15 to 30 minutes; press Refresh to check.');
+    } catch (err) {
+      const code = err && err.code;
+      const why = ['not_in_manifest', 'not_granted', 'consent_required'].includes(code) ? 'Allow Claude Code Remote in this page\u2019s Permissions menu to start it now.'
+        : code === 'server_not_connected' || code === 'needs_reauth' ? 'Claude Code Remote is not connected for you right now.'
+        : 'The builder did not start (' + String((err && (err.code || err.message)) || 'unknown').slice(0, 80) + ').';
+      toast(why + (queued ? ' The mockup is still queued for the next Tue or Thu run.' : ''));
     }
     busy = false;
     await load();
@@ -485,8 +514,13 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
       reach.append(actionBtn('I emailed them', 'primary', () => act(l, 'emailed')), actionBtn('I called them', 'primary', () => act(l, 'called')), actionBtn('I messaged on Facebook', 'primary', () => act(l, 'messaged')));
       const next = el('div', 'act-group'); next.append(el('span', 'lbl', 'Move it along'));
       const nPh = (photos[l.id] || []).length;
-      if (!l.mockup_requested) next.append(actionBtn((l.mockup_url ? 'Make a new mockup' : 'Make a mockup') + (nPh ? ` with ${nPh} photo${nPh === 1 ? '' : 's'}` : ''), 'primary', () => act(l, 'mockup')));
-      else next.append(el('span', 'chip', 'Mockup requested for the next Tue or Thu run'));
+      const since = buildingSince(l.id);
+      if (since) next.append(el('span', 'chip', 'Builder running since ' + since.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })));
+      else {
+        if (!l.mockup_requested) next.append(actionBtn((l.mockup_url ? 'Make a new mockup' : 'Make a mockup') + (nPh ? ` with ${nPh} photo${nPh === 1 ? '' : 's'}` : ''), 'primary', () => act(l, 'mockup')));
+        else next.append(el('span', 'chip', 'Mockup requested for the next Tue or Thu run'));
+        next.append(actionBtn('Build it now', l.mockup_requested ? 'primary' : '', () => buildNow(l)));
+      }
       if (!['Replied', 'Proposal sent', 'Won'].includes(l.stage)) next.append(actionBtn('They replied', '', () => act(l, 'replied')));
       next.append(actionBtn('We won it', '', () => { confirmFor = { id: l.id, action: 'won' }; render(); }));
       next.append(actionBtn('Not interested', 'danger', () => { confirmFor = { id: l.id, action: 'lost' }; render(); }), actionBtn('Opted out', 'danger', () => { confirmFor = { id: l.id, action: 'optout' }; render(); }));
@@ -551,12 +585,13 @@ h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size
     // Just marked interested and we still need their email.
     const hot = cmInterested && leads.find((x) => x.id === cmInterested);
     if (hot && !hot.email) {
-      const c = el('div', 'cm-card'); c.append(el('div', 'nm', hot.business), el('p', 'sub', 'Nice. Ask for the best email to send the mockup to. The mockup is queued for the next Tuesday or Thursday run.'));
+      const c = el('div', 'cm-card'); c.append(el('div', 'nm', hot.business), el('p', 'sub', 'Nice. Ask for the best email to send the mockup to. The mockup is queued for the next Tuesday or Thursday run, or press Build it now to have it in about half an hour.'));
       const n = el('div', 'notes'); const row = el('div', 'row');
       const inp = el('input'); inp.type = 'email'; inp.placeholder = 'Their email'; inp.value = emailDrafts[hot.id] || '';
       inp.addEventListener('input', () => { emailDrafts[hot.id] = inp.value; });
       inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); saveEmail(hot).then(() => { cmInterested = null; render(); }); } });
       row.append(inp, actionBtn('Save email', 'primary', () => saveEmail(hot).then(() => { cmInterested = null; render(); })), actionBtn('Skip for now', '', () => { cmInterested = null; render(); }));
+      if (!buildingSince(hot.id)) row.append(actionBtn('Build it now', '', () => buildNow(hot)));
       n.append(row); c.append(n); box.append(c); return;
     }
     if (problem) { const n = el('div', 'notice bad'); n.append(el('b', '', problem[0]), el('span', '', problem[1])); box.append(n); return; }

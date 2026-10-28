@@ -1,0 +1,21 @@
+{
+  "business": "Bayou Shine Pressure Washing",
+  "slug": "bayou-shine-sample",
+  "niche": "pressure washing",
+  "package": "mockup",
+  "phone": "(225) 555-0142",
+  "town": "Gonzales",
+  "service_area": ["Gonzales", "Prairieville", "Sorrento", "St. Amant"],
+  "headline": "Clean driveways and houses in Gonzales, without the hassle",
+  "subhead": "House washing, driveways and roofs for homes around Ascension Parish. Call or text for a free quote, usually same day.",
+  "services": [
+    {"name": "House soft wash", "desc": "Low pressure wash that takes mildew off siding without hurting paint or plants."},
+    {"name": "Driveways and sidewalks", "desc": "Surface cleaner on concrete so it comes out even, no stripes."},
+    {"name": "Roof cleaning", "desc": "Soft wash for black streaks on shingles."},
+    {"name": "Decks and fences", "desc": "Gentle wash that gets wood ready for stain."}
+  ],
+  "trust": ["Free quotes", "Licensed and insured"],
+  "about": "This sample shows how your real story would read, in your own words.",
+  "facts": [["Based in", "Gonzales, LA"], ["Quotes", "Free, usually same day"]],
+  "year": 2026
+}
