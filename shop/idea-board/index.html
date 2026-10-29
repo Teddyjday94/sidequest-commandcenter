@@ -24,6 +24,9 @@ h1{font:400 clamp(2rem,5vw,3rem)/1 var(--display);letter-spacing:.01em;margin:0;
 .swatch{background:var(--swatch);color:var(--swatch-ink);display:grid;place-items:center;padding:28px 22px;min-height:220px;position:relative}
 .swatch img{width:100%;max-width:280px;height:auto;display:block;border-radius:6px}
 .swatch.art{padding:18px}
+.post{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:18px 20px;display:grid;gap:10px}
+.post.done{opacity:.7}
+.post h3{margin:0;font:600 1.15rem/1.35 var(--body)}
 .files{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .swatch .print{font:400 clamp(1.5rem,3.4vw,2.1rem)/1.05 var(--display);text-transform:uppercase;text-align:center;letter-spacing:.01em;text-wrap:balance;overflow-wrap:anywhere}
 .swatch .score{position:absolute;top:12px;left:12px;font:500 .72rem var(--mono);background:rgba(255,255,255,.12);color:var(--swatch-ink);padding:4px 8px;border-radius:6px}
@@ -81,11 +84,12 @@ input.note{flex:1 1 220px;min-width:0;font:inherit;padding:9px 12px;border-radiu
 (() => {
   const SERVER = 'Supabase', PROJECT = 'taskvfzqgpqxpdifmxru';
   const DESIGN_TRIGGER = 'trig_016MNJyLE4CHjA4kcU3UvH7d'; // Sunday task: Content Agent, Trend Scout and Shop Designer
-  const TABS = [['new', 'New'], ['liked', 'Liked'], ['made', 'Made'], ['passed', 'Passed']];
+  const TABS = [['new', 'New'], ['liked', 'Liked'], ['made', 'Made'], ['passed', 'Passed'], ['posts', 'Posts']];
+  const POSTS_SQL = `select id, to_char(day, 'Dy Mon FMDD') as day_label, day, platform, product, format, hook, script, caption, hashtags, status from ops.shop_posts where day >= current_date - 21 order by day, id`;
   const SQL = `select id, to_char(week, 'Mon FMDD') as week, slogan, concept, theme, why_now, sources, risk, garment, colors, design_brief,
-    listing_title, listing_description, tags, price, score, status, thomas_note, product_handle, design_requested, design_url, design_preview_url, design_model, design_feedback, print_note from ops.shop_ideas
+    listing_title, listing_description, tags, price, score, status, thomas_note, product_handle, design_requested, design_url, design_preview_url, design_model, design_feedback, print_note, concept_url from ops.shop_ideas
     order by case status when 'new' then 0 when 'liked' then 1 when 'made' then 2 else 3 end, week desc, score desc limit 200`;
-  let mcp = null, downloads = null, ideas = [], tab = 'new', busy = false, problem = null, loadedAt = null;
+  let mcp = null, downloads = null, ideas = [], posts = [], tab = 'new', busy = false, problem = null, loadedAt = null;
   const notes = {};
   try { tab = localStorage.getItem('ideaboard-tab') || 'new'; } catch (e) { /* per-viewer only */ }
   const $ = (id) => document.getElementById(id);
@@ -121,7 +125,7 @@ input.note{flex:1 1 220px;min-width:0;font:inherit;padding:9px 12px;border-radiu
   async function load() {
     if (!mcp) return;
     $('updated').textContent = 'Loading';
-    try { ideas = await sql(SQL); problem = null; loadedAt = new Date(); }
+    try { ideas = await sql(SQL); posts = await sql(POSTS_SQL); problem = null; loadedAt = new Date(); }
     catch (err) { problem = explain(err); }
     render();
   }
@@ -226,6 +230,7 @@ input.note{flex:1 1 220px;min-width:0;font:inherit;padding:9px 12px;border-radiu
     }
     if (file && i.print_note) row('Placement', i.print_note);
     if (file && i.design_model) row('Made with', i.design_model);
+    if (/^https:\/\/www\.canva\.com\//.test(i.concept_url || '')) { const a = el('a', '', 'Open concept art in Canva'); a.href = i.concept_url; a.target = '_blank'; a.rel = 'noopener'; row('Concept', a); }
     if (i.thomas_note) row('Your note', i.thomas_note);
     if (i.product_handle) row('In the store', i.product_handle);
     b.append(dl);
@@ -259,11 +264,42 @@ input.note{flex:1 1 220px;min-width:0;font:inherit;padding:9px 12px;border-radiu
     return c;
   }
 
+  async function markPost(p, status) {
+    if (busy || !Number.isInteger(Number(p.id))) return;
+    busy = true; render();
+    try { await sql(`select ops.shop_post_mark(${Number(p.id)}, ${lit(status)}) as done`); toast(status === 'posted' ? 'Marked posted' : status === 'skipped' ? 'Skipped' : 'Back to planned'); }
+    catch (err) { const [t, d] = explain(err); toast(t + '. ' + d); }
+    busy = false;
+    await load();
+  }
+
+  function postCard(p) {
+    const c = el('article', 'post' + (p.status !== 'planned' ? ' done' : ''));
+    const top = el('div', 'top');
+    top.append(el('span', 'mono', p.day_label), el('span', 'chip', p.platform));
+    if (p.status !== 'planned') top.append(el('span', 'chip st-' + (p.status === 'posted' ? 'made' : 'passed'), p.status === 'posted' ? 'Posted' : 'Skipped'));
+    c.append(top, el('h3', '', p.hook));
+    const meta = [p.product, p.format].filter(Boolean).join(' · ');
+    if (meta) c.append(el('p', 'mono', meta));
+    const det = el('details');
+    det.append(el('summary', '', 'Script, caption and hashtags'));
+    const lst = el('div', 'listing');
+    const part = (label, text) => { if (!text) return; const r = el('div', 'row'); r.append(el('span', 'mono', label), btn('Copy', 'sm', () => copy(text, label))); lst.append(r, el('div', 'box', text)); };
+    part('Script', p.script); part('Caption', p.caption); part('Hashtags', p.hashtags);
+    det.append(lst); c.append(det);
+    const act = el('div', 'row');
+    if (p.status !== 'posted') act.append(btn('Posted it', 'made', () => markPost(p, 'posted')));
+    if (p.status === 'planned') act.append(btn('Skip', 'pass', () => markPost(p, 'skipped')));
+    if (p.status !== 'planned') act.append(btn('Back to planned', '', () => markPost(p, 'planned')));
+    c.append(act);
+    return c;
+  }
+
   function render() {
     const tabs = $('tabs'); tabs.replaceChildren();
     TABS.forEach(([id, label]) => {
       const b = el('button'); b.type = 'button'; b.setAttribute('aria-pressed', String(tab === id));
-      b.append(document.createTextNode(label), el('span', 'n', String(ideas.filter((x) => x.status === id).length)));
+      b.append(document.createTextNode(label), el('span', 'n', String(id === 'posts' ? posts.filter((x) => x.status === 'planned').length : ideas.filter((x) => x.status === id).length)));
       b.addEventListener('click', () => { tab = id; try { localStorage.setItem('ideaboard-tab', id); } catch (e) { /* ignore */ } render(); });
       tabs.append(b);
     });
@@ -272,9 +308,14 @@ input.note{flex:1 1 220px;min-width:0;font:inherit;padding:9px 12px;border-radiu
     if (!mcp) { const n = el('div', 'notice'); n.append(el('b', '', 'Open this page in claude.ai'), el('span', '', 'It reads your ideas through your Supabase connector.')); list.append(n); return; }
     if (problem) { const n = el('div', 'notice'); n.append(el('b', '', problem[0]), el('span', '', problem[1])); list.append(n); return; }
     if (!loadedAt) { list.append(el('div', 'skeleton')); return; }
+    if (tab === 'posts') {
+      if (!posts.length) { list.append(el('div', 'empty', 'No posts planned yet.')); return; }
+      posts.forEach((p) => list.append(postCard(p)));
+      return;
+    }
     const shown = ideas.filter((x) => x.status === tab);
     if (!shown.length) {
-      list.append(el('div', 'empty', { new: 'No new ideas right now. The Trend Scout adds up to 5 every Monday morning.', liked: 'Nothing liked yet. Like the ideas worth making.', made: 'Nothing marked made yet.', passed: 'Nothing passed yet.' }[tab]));
+      list.append(el('div', 'empty', { new: 'No new ideas right now. The Trend Scout adds up to 5 every Sunday evening.', liked: 'Nothing liked yet. Like the ideas worth making.', made: 'Nothing marked made yet.', passed: 'Nothing passed yet.' }[tab]));
       return;
     }
     shown.forEach((i) => list.append(card(i)));
