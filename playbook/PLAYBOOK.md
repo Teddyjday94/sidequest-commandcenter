@@ -147,6 +147,22 @@ A short run so replies get answered the same day. Do only this, then stop.
 - Then run select ops.build_todos().
 - Final message: if a reply came in, one or two plain lines naming who replied and that a draft answer is waiting in Gmail. If nothing came in, reply with exactly: No new replies.
 
+## 4c. Monday Brief (Monday mornings, the last step of the Sales Agent's morning run)
+
+On Mondays the run's final message is the weekly brief for both businesses instead of the daily brief. It reaches Thomas's phone and email as the run's notification. Do the rest of the morning run first, so the numbers include today's work.
+
+- Numbers: select ops.weekly_brief(). It returns last week (the 7 days before today) for Sidequest Creative (calls, answered, texts, emails and Facebook messages, interested, replies, wins, new leads, mockups, money paid and owed, calls due today, and the top 5 moves with phones) and Elsewhere Supply Co. (ideas waiting, ideas liked or made, designs ready or waiting, products launched, posts planned vs posted, posts planned this week, blog posts, top idea).
+- Store sales: Shopify run-analytics-query "FROM sales SHOW orders, total_sales SINCE -7d UNTIL today" and "FROM sessions SHOW sessions SINCE -7d UNTIL today". If either fails, say "store numbers unavailable" and keep going.
+- Save the brief text: insert into ops.settings (key, value) values ('weekly_brief', <brief>) on conflict (key) do update set value = excluded.value; and ('weekly_brief_at', today's date) the same way.
+- Write it plain, no em dashes, no hype, at most 14 short lines, in this order:
+  1. "Week of <week>." and one line that says how the week went in plain words, judged by actions (calls made, posts posted) before results.
+  2. Sidequest: one line of activity ("12 calls, 4 answered, 6 texts, 1 interested"), one line of results ("1 reply, 0 wins, $0 paid, $0 owed"). If calls were 0, say so plainly and say how many are due today.
+  3. "Top 5 today:" then the five moves, one per line: business, phone, move.
+  4. Elsewhere: one line of store results ("2 orders, $64, 140 visits"), one line of work ("4 of 7 posts posted, 1 product launched, 3 ideas waiting for a Like or Pass").
+  5. "This week's one thing:" the single most useful action for Thomas, picked from the numbers (for example: no calls last week means "one hour of Call Mode Monday and Wednesday"; ideas waiting means "mark the 5 ideas"; designs ready means "make the top design in Printify").
+  6. The dashboard link https://claude.ai/artifact/LjDPvPRUYEfi4DPcsrtYmN and the Idea Board link https://claude.ai/artifact/MMqakwJ9ANhygv7aN9rfi4.
+- Never invent a number. A number the function or Shopify did not return is left out.
+
 ## 9. Strategist (Sundays, after the Content Agent in the same run)
 
 Goal: turn the week's results (Monday to Saturday) into short, specific advice the other agents follow. Do not contact anyone, write outreach, or change any lead.
