@@ -298,3 +298,38 @@ Makes finished, print-ready artwork for Elsewhere Supply Co. ideas Thomas asked 
 - Preview: python3 -c to paste print.png (scaled to 900 px wide) centered on a 1000 x 1100 rectangle in the first garment color from colors; save preview.png. Look at it with Read: no leftover background halo, nothing cut off.
 - Upload both to the Idea Board's asset store: Artifact action "publish", url "https://claude.ai/artifact/MMqakwJ9ANhygv7aN9rfi4", asset true, file_paths [print.png, preview.png]. Use the urls it returns exactly.
 - Save: update ops.shop_ideas set design_url = <print url>, design_preview_url = <preview url>, design_prompt = <prompt>, design_model = <model display name>, print_note = '<placement and width, which garment colors it works on>', design_requested = false where id = <id>. Add an ops.activity row with agent 'Shop Designer' naming the slogan. Update ops.agents id 'trends' last_result to mention the designs.
+
+## 12c. Product Launcher (weekday mornings, first thing in the Sales Agent's morning run)
+
+Finishes every new Elsewhere Supply Co. listing so Thomas only has to publish from Printify. Listing edits go live (Thomas approved this); prices, discounts, product status and anything touching money stay with Thomas.
+
+- Find new products: Shopify graphql_query "products(first: 50, sortKey: CREATED_AT, reverse: true)" with id, title, handle, status, productType, tags, descriptionHtml, seo { title description }, options { name values }, media(first: 30) { nodes { id ... on MediaImage { image { url } alt } } }, variants(first: 100) { nodes { selectedOptions { name value } media(first: 1) { nodes { id } } } }, collections(first: 10) { nodes { id title } }. Skip any id already in ops.shop_launches. No new products: update ops.agents id 'launcher' (last_result 'No new products') and stop.
+- For each new product (up to 5 a run):
+  - Copy: keep Printify's fabric and fit facts; fix em and en dashes (comma, period or "to"), AI-sounding phrases and anything off-brand (ops.settings 'shop_brand'). If it came from an Idea Board idea (match the slogan to ops.shop_ideas), use that idea's listing copy as the base. Keep the store's description shape: a short punchy first line, one or two short paragraphs, a bullet list of print and fabric facts, an italic one-line kicker. Never invent fabric facts.
+  - SEO: seo.title under 60 characters ("<Product> | Elsewhere Supply Co." or "<Product> Funny <Type> | Elsewhere Supply Co."), seo.description 120 to 155 characters with what it is, who it is for, and "printed to order".
+  - Tags: 8 to 12 lowercase shopper words (the joke, the audience, the garment, gift words).
+  - Alt text with fileUpdate: images linked to a variant get "<Title> in <Color> with <short design description>"; the rest "<Title> with <short design description>, alternate view <n>".
+  - Collections with productUpdate collectionsToJoin: the type collection (T-Shirts, Hoodies & Sweatshirts, Hats) and Home page (frontpage). Look up collection ids first.
+  - Never change price, compare-at price, status, variants, handle, inventory or images.
+  - If it matches an idea, select ops.shop_idea_mark(<idea id>, 'made', null, '<handle>').
+  - insert into ops.shop_launches (product_id, handle, title, notes) with a short list of what you changed and anything Thomas should check (for example "description claims 100% cotton but the blank is a blend: check in Printify").
+- Update ops.agents id 'launcher' (last_run, status 'Live', last_result like "Launched 2: Fell Back Hoodie, Micro-Retired Tee", next_run 'next weekday 9:17 AM') and add an ops.activity row with agent 'Product Launcher'. Mention launches in the morning brief.
+
+## 12d. Social Planner (Sundays, after the Shop Designer)
+
+Plans next Monday to Sunday of posts for Elsewhere Supply Co. into ops.shop_posts, which the Idea Board shows under Posts. Thomas posts everything himself; never post.
+
+- Read: select day, platform, product, hook, status from ops.shop_posts where day >= current_date - 28 order by day. Posted ones show what Thomas actually does; skipped ones show what to stop. Read the catalog (search_products), last 30 days of sales by product and sessions by referrer (run-analytics-query), this week's Trend Scout ideas, and the lessons in ops.settings 'shop_lessons'.
+- Write 5 to 7 posts, one per day, insert into ops.shop_posts (day, platform, product, format, hook, script, caption, hashtags). Mix: 3 to 4 TikTok or Instagram Reels, 1 Instagram carousel or story, 1 to 2 Pinterest pins (gift and holiday searches). Feature newly launched products (ops.shop_launches in the last 14 days) first and best sellers second; tie posts to that week's moments (holidays, the time change, travel season, tax day).
+- Every post works with the product photos already on the store and no face on camera; give a "No face?" line when a format suggests one. script: numbered shots with the exact on-screen text. hook under 12 words. caption 1 to 3 short sentences ending with "Link in bio." (Pinterest: a keyword-rich description instead). hashtags 4 to 6, mixing broad and niche. No em dashes, no AI-sounding phrasing, no trademarked sounds or characters.
+- Load social-media-skills:hook-writer and social-media-skills:caption-writer if listed. Never repeat a hook from the last 8 weeks.
+- Update ops.agents id 'socialplan' and add an ops.activity row with agent 'Social Planner'.
+
+## 12e. Blog Writer (Sundays, after the Social Planner)
+
+Publishes one blog post a week to the store's blog ("News", gid://shopify/Blog/99374465185) that people find on Google and Pinterest and that links to Elsewhere products. Blog posts are content, so they go live.
+
+- Topic: read select title, topic, keywords from ops.shop_articles. Pick the most useful unused topic for the next 4 to 6 weeks of searches: from November to mid December, gift guides ("gifts for introverts", "funny gifts for coworkers", "gifts for people who hate the holidays", "stocking stuffers for tired adults", "gifts for frequent flyers"); otherwise evergreen ("funny shirts for remote workers", "introvert gift ideas under $30", "what to wear to a party you want to leave"). Check the phrase with WebSearch to see what people search and what ranks.
+- Write 700 to 1,100 words in the brand voice (ops.settings 'shop_brand'): a short funny intro, 5 to 8 picks with an h2 or h3 each, and a plain wrap-up. Feature 3 to 6 Elsewhere products with links (/products/<handle>) and say honestly what each is. Other picks may be general gift ideas (no brand names, no affiliate links, no made-up products or reviews). No em dashes, no "elevate", "must-have", "perfect for any occasion" or "look no further".
+- Publish with graphql_mutation articleCreate: blogId gid://shopify/Blog/99374465185, title, body (HTML), summary (1 to 2 sentences), handle, tags, author name "Elsewhere Supply Co.", isPublished true, and the product image of the first featured product as the article image when the schema allows it. Check the schema with graphql_schema first; never guess fields.
+- insert into ops.shop_articles (article_id, handle, title, topic, keywords, products). Update ops.agents id 'blogger' and add an ops.activity row with agent 'Blog Writer'. Tell the Social Planner's next run: one Pinterest pin a week can point to the newest article (/blogs/news/<handle>).
