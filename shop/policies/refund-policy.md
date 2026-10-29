@@ -1,4 +1,6 @@
-# Returns and Refunds (DRAFT, not published)
+# Returns and Refunds
+
+Live as the store page /pages/returns (linked in the footer). Paste into Shopify, Settings, Policies, Refund policy.
 
 Every Elsewhere Supply Co. piece is printed just for you when you order it. Because of that, we can't take returns or exchanges for a change of mind or the wrong size, so please check the size chart on the product page before you order.
 

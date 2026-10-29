@@ -1,4 +1,6 @@
-# Shipping (DRAFT, not published)
+# Shipping
+
+Live as the store page /pages/shipping (linked in the footer). Paste into Shopify, Settings, Policies, Shipping policy.
 
 Every piece is printed to order, so it takes a little longer than grabbing something off a shelf.
 
@@ -8,8 +10,8 @@ Every piece is printed to order, so it takes a little longer than grabbing somet
 
 Most orders arrive within 5 to 12 business days. During the holidays (mid November to late December), add a few extra days and order early.
 
-## Cost
-[CONFIRM: your shipping rates from Shopify, Settings, Shipping and delivery. Example: standard shipping is calculated at checkout.]
+## Cost and where we ship
+Shipping cost is calculated at checkout, and checkout shows the shipping options available for your address.
 
 ## Tracking
 You'll get an email with a tracking number as soon as your order ships.
@@ -17,8 +19,6 @@ You'll get an email with a tracking number as soon as your order ships.
 ## More than one item?
 Items are printed where they're made best, so a hoodie and a beanie in the same order may arrive in separate packages on different days.
 
-## Outside the US
-[CONFIRM: do you ship internationally? If not: "We currently ship within the United States only." If yes, list countries and note that customs fees are paid by the buyer.]
 
 ## Questions
 Email thomasdbiz26@gmail.com with your order number.
