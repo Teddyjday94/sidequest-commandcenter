@@ -10,8 +10,11 @@ Every piece is printed to order, so it takes a little longer than grabbing somet
 
 Most orders arrive within 5 to 12 business days. During the holidays (mid November to late December), add a few extra days and order early.
 
-## Cost and where we ship
-Shipping cost is calculated at checkout, and checkout shows the shipping options available for your address.
+## Where we ship
+We currently ship within the United States only.
+
+## Cost
+Shipping cost is calculated at checkout based on your address and the shipping method you choose.
 
 ## Tracking
 You'll get an email with a tracking number as soon as your order ships.
