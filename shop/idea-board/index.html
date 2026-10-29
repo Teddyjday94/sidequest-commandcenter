@@ -1,0 +1,227 @@
+<title>Elsewhere Idea Board</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: a print shop proof wall. Each idea is a proof card: the slogan printed big on a garment-colored swatch, the brief beside it, and three stamps (Like, Pass, Made). */
+:root{--bg:#efece6;--paper:#fbfaf7;--ink:#1d1c1a;--muted:#6b6760;--line:#dcd7cd;--accent:#c4542b;--good:#2f6b4f;--chip:#e7e2d8;--swatch:#2b2a28;--swatch-ink:#f3efe6;
+  --display:"Anton","Impact","Arial Narrow",sans-serif;--body:"Instrument Sans",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171614;--paper:#211f1c;--ink:#efebe3;--muted:#a39d92;--line:#36322c;--accent:#e2774d;--good:#6cc097;--chip:#2c2925;--swatch:#0f0e0d;--swatch-ink:#f3efe6;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#171614;--paper:#211f1c;--ink:#efebe3;--muted:#a39d92;--line:#36322c;--accent:#e2774d;--good:#6cc097;--chip:#2c2925;--swatch:#0f0e0d;--swatch-ink:#f3efe6;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--body)}
+.wrap{max-width:1100px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 64px;display:grid;gap:22px}
+header{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px 24px}
+h1{font:400 clamp(2rem,5vw,3rem)/1 var(--display);letter-spacing:.01em;margin:0;text-transform:uppercase}
+.sub{color:var(--muted);margin:6px 0 0;max-width:60ch}
+.mono{font:500 .75rem/1.3 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tabs button{font:600 .9rem var(--body);border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:7px 14px;cursor:pointer;display:inline-flex;gap:8px;align-items:center}
+.tabs button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tabs .n{font:500 .75rem var(--mono);opacity:.75}
+.grid{display:grid;gap:16px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);overflow:hidden}
+@media(max-width:760px){.card{grid-template-columns:1fr}}
+.swatch{background:var(--swatch);color:var(--swatch-ink);display:grid;place-items:center;padding:28px 22px;min-height:220px;position:relative}
+.swatch .print{font:400 clamp(1.5rem,3.4vw,2.1rem)/1.05 var(--display);text-transform:uppercase;text-align:center;letter-spacing:.01em;text-wrap:balance;overflow-wrap:anywhere}
+.swatch .score{position:absolute;top:12px;left:12px;font:500 .72rem var(--mono);background:rgba(255,255,255,.12);color:var(--swatch-ink);padding:4px 8px;border-radius:6px}
+.swatch .gar{position:absolute;bottom:12px;left:12px;right:12px;font:500 .72rem var(--mono);text-transform:uppercase;letter-spacing:.06em;opacity:.7}
+.body{padding:18px 20px;display:grid;gap:12px;min-width:0}
+.top{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{background:var(--chip);border-radius:999px;padding:3px 10px;font-size:.82rem;font-weight:600}
+.chip.st-liked{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+.chip.st-made{background:var(--ink);color:var(--bg)}
+.chip.st-passed{color:var(--muted)}
+.concept{font-size:1.02rem;font-weight:500}
+dl{margin:0;display:grid;gap:10px}
+dl div{display:grid;grid-template-columns:7.5rem minmax(0,1fr);gap:10px}
+@media(max-width:520px){dl div{grid-template-columns:1fr;gap:2px}}
+dt{font:500 .72rem/1.6 var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+dd{margin:0;overflow-wrap:anywhere}
+dd a{color:var(--accent)}
+details{border-top:1px dashed var(--line);padding-top:10px}
+summary{cursor:pointer;font-weight:600}
+.listing{display:grid;gap:10px;margin-top:10px}
+.listing .box{background:var(--bg);border-radius:10px;padding:10px 12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button.b{font:600 .92rem var(--body);border-radius:10px;padding:9px 14px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer}
+button.b:hover{border-color:var(--ink)}
+button.b.like{background:var(--good);border-color:var(--good);color:#fff}
+button.b.made{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+button.b.pass{color:var(--accent)}
+button.b.sm{padding:5px 10px;font-size:.82rem}
+button:disabled{opacity:.5;cursor:default}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+input.note{flex:1 1 220px;min-width:0;font:inherit;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.notice{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:14px 16px;display:grid;gap:4px}
+.empty{background:var(--paper);border:1px dashed var(--line);border-radius:14px;padding:28px;text-align:center;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;max-width:calc(100% - 32px);z-index:5}
+.skeleton{height:240px;border-radius:14px;background:linear-gradient(90deg,var(--paper),var(--chip),var(--paper));background-size:200% 100%;animation:sh 1.4s infinite}
+@keyframes sh{to{background-position:-200% 0}}
+@media(prefers-reduced-motion:reduce){.skeleton{animation:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <span class="mono">Elsewhere Supply Co. · Trend Scout</span>
+      <h1>Idea Board</h1>
+      <p class="sub">New shirt ideas from the Trend Scout every Monday. Like the ones worth making, pass on the rest, and mark Made once it is in the store. The scout learns from every mark.</p>
+    </div>
+    <div class="row"><span class="mono" id="updated"></span><button class="b sm" id="refresh" type="button">Refresh</button></div>
+  </header>
+  <nav class="tabs" id="tabs" aria-label="Filter ideas"></nav>
+  <div id="list" class="grid"><div class="skeleton"></div></div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+  const SERVER = 'Supabase', PROJECT = 'taskvfzqgpqxpdifmxru';
+  const TABS = [['new', 'New'], ['liked', 'Liked'], ['made', 'Made'], ['passed', 'Passed']];
+  const SQL = `select id, to_char(week, 'Mon FMDD') as week, slogan, concept, theme, why_now, sources, risk, garment, colors, design_brief,
+    listing_title, listing_description, tags, price, score, status, thomas_note, product_handle from ops.shop_ideas
+    order by case status when 'new' then 0 when 'liked' then 1 when 'made' then 2 else 3 end, week desc, score desc limit 200`;
+  let mcp = null, ideas = [], tab = 'new', busy = false, problem = null, loadedAt = null;
+  const notes = {};
+  try { tab = localStorage.getItem('ideaboard-tab') || 'new'; } catch (e) { /* per-viewer only */ }
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const btn = (label, cls, fn) => { const b = el('button', 'b ' + (cls || ''), label); b.type = 'button'; b.disabled = busy; b.addEventListener('click', fn); return b; };
+
+  const rowsFrom = (payload) => {
+    let txt = payload;
+    if (txt && typeof txt === 'object') txt = typeof txt.result === 'string' ? txt.result : JSON.stringify(txt);
+    if (typeof txt !== 'string') throw { code: 'tool_error', message: 'Supabase sent back something unexpected.' };
+    const m = txt.match(/<(untrusted-data-[\w-]+)>\s*(\[[\s\S]*\])\s*<\/\1>/);
+    if (!m) throw { code: 'tool_error', message: txt.slice(0, 240) };
+    return JSON.parse(m[2]);
+  };
+  const explain = (err) => {
+    const code = err && err.code;
+    if (['server_not_connected', 'selection_required', 'server_not_found'].includes(code)) return ['Supabase isn’t connected for you', 'Add the Supabase connector in claude.ai Settings, Connectors, then refresh.'];
+    if (code === 'needs_reauth') return ['Supabase needs you to sign in again', 'Reconnect Supabase in claude.ai Settings, Connectors, then refresh.'];
+    if (['not_in_manifest', 'not_granted', 'consent_required'].includes(code)) return ['Supabase is turned off for this page', 'Allow Supabase from this page’s Permissions menu, then refresh.'];
+    if (code === 'server_unavailable' || code === 'rate_limited') return ['Supabase didn’t answer', 'Wait a few seconds and press Refresh.'];
+    return ['Something went wrong talking to Supabase', String((err && err.message) || '').slice(0, 240) || 'Press Refresh to try again.'];
+  };
+  const sql = (query) => mcp.callTool(SERVER, 'execute_sql', { project_id: PROJECT, query }, { cache: false }).then((r) => rowsFrom(r.payload));
+  const lit = (s) => "'" + String(s).replace(/\u0000/g, '').replace(/'/g, "''") + "'";
+
+  let toastTimer;
+  const toast = (t) => { const e = $('toast'); e.textContent = t; e.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { e.hidden = true; }, 3500); };
+  const copy = (text, what) => {
+    const done = () => toast(what + ' copied');
+    try { navigator.clipboard.writeText(text).then(done, () => toast('Copy did not work here. Select the text and copy it.')); } catch (e) { toast('Copy did not work here. Select the text and copy it.'); }
+  };
+
+  async function load() {
+    if (!mcp) return;
+    $('updated').textContent = 'Loading';
+    try { ideas = await sql(SQL); problem = null; loadedAt = new Date(); }
+    catch (err) { problem = explain(err); }
+    render();
+  }
+
+  async function mark(idea, status) {
+    if (busy || !Number.isInteger(Number(idea.id))) return;
+    let handle = null;
+    const note = (notes[idea.id] || '').trim().slice(0, 1000);
+    if (status === 'made') handle = (notes['h' + idea.id] || '').trim().replace(/^https?:\/\/[^/]+\/products\//, '').replace(/[^a-z0-9-]/gi, '').slice(0, 200) || null;
+    busy = true; render();
+    try {
+      await sql(`select ops.shop_idea_mark(${Number(idea.id)}, ${lit(status)}, ${note ? lit(note) : 'null'}, ${handle ? lit(handle) : 'null'}) as done`);
+      delete notes[idea.id];
+      toast({ liked: 'Liked', passed: 'Passed', made: 'Marked made', new: 'Moved back to New' }[status] + ': ' + idea.slogan);
+    } catch (err) { const [t, d] = explain(err); toast(t + '. ' + d); }
+    busy = false;
+    await load();
+  }
+
+  function card(i) {
+    const c = el('article', 'card');
+    const sw = el('div', 'swatch');
+    sw.append(el('span', 'score', 'Score ' + i.score), el('div', 'print', String(i.slogan).split(' / ').join('\n')), el('span', 'gar', [i.garment, i.price ? '$' + Number(i.price).toFixed(0) : ''].filter(Boolean).join(' · ')));
+    sw.querySelector('.print').style.whiteSpace = 'pre-line';
+    const b = el('div', 'body');
+    const top = el('div', 'top');
+    top.append(el('span', 'chip st-' + i.status, { new: 'New', liked: 'Liked', made: 'Made', passed: 'Passed' }[i.status]));
+    if (i.theme) top.append(el('span', 'chip', i.theme));
+    top.append(el('span', 'mono', 'Week of ' + i.week));
+    b.append(top);
+    if (i.concept) b.append(el('p', 'concept', i.concept));
+    const dl = el('dl');
+    const row = (k, v) => { if (!v) return; const d = el('div'); d.append(el('dt', '', k)); const dd = el('dd'); if (v instanceof Node) dd.append(v); else dd.textContent = v; d.append(dd); dl.append(d); };
+    row('Why now', i.why_now);
+    row('Risk check', i.risk);
+    row('Design', i.design_brief);
+    row('Colors', i.colors);
+    if ((i.sources || []).length) {
+      const s = el('span');
+      i.sources.slice(0, 4).forEach((u, n) => {
+        if (!/^https:\/\//.test(u)) return;
+        const a = el('a', '', (() => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return 'source'; } })());
+        a.href = u; a.target = '_blank'; a.rel = 'noopener';
+        if (n) s.append(document.createTextNode(' · '));
+        s.append(a);
+      });
+      row('Sources', s);
+    }
+    if (i.thomas_note) row('Your note', i.thomas_note);
+    if (i.product_handle) row('In the store', i.product_handle);
+    b.append(dl);
+
+    const det = el('details');
+    det.append(el('summary', '', 'Listing copy, ready to paste'));
+    const lst = el('div', 'listing');
+    const part = (label, text) => { if (!text) return; const r = el('div', 'row'); r.append(el('span', 'mono', label), btn('Copy', 'sm', () => copy(text, label))); lst.append(r, el('div', 'box', text)); };
+    part('Title', i.listing_title);
+    part('Description', i.listing_description);
+    part('Tags', (i.tags || []).join(', '));
+    det.append(lst);
+    b.append(det);
+
+    const act = el('div', 'row');
+    const inp = el('input', 'note'); inp.type = 'text'; inp.id = 'note-' + i.id; inp.placeholder = i.status === 'new' ? 'Why? (optional, the scout reads this)' : 'Add a note (optional)';
+    inp.value = notes[i.id] || ''; inp.addEventListener('input', () => { notes[i.id] = inp.value; });
+    act.append(inp);
+    if (i.status !== 'liked') act.append(btn('Like', 'like', () => mark(i, 'liked')));
+    if (i.status !== 'made') act.append(btn('Made it', 'made', () => mark(i, 'made')));
+    if (i.status !== 'passed') act.append(btn('Pass', 'pass', () => mark(i, 'passed')));
+    if (i.status !== 'new') act.append(btn('Back to New', '', () => mark(i, 'new')));
+    b.append(act);
+    if (i.status !== 'made') {
+      const h = el('div', 'row');
+      const hi = el('input', 'note'); hi.type = 'text'; hi.id = 'handle-' + i.id; hi.placeholder = 'Made it? Paste the product link first (optional)';
+      hi.value = notes['h' + i.id] || ''; hi.addEventListener('input', () => { notes['h' + i.id] = hi.value; });
+      h.append(hi); b.append(h);
+    }
+    c.append(sw, b);
+    return c;
+  }
+
+  function render() {
+    const tabs = $('tabs'); tabs.replaceChildren();
+    TABS.forEach(([id, label]) => {
+      const b = el('button'); b.type = 'button'; b.setAttribute('aria-pressed', String(tab === id));
+      b.append(document.createTextNode(label), el('span', 'n', String(ideas.filter((x) => x.status === id).length)));
+      b.addEventListener('click', () => { tab = id; try { localStorage.setItem('ideaboard-tab', id); } catch (e) { /* ignore */ } render(); });
+      tabs.append(b);
+    });
+    $('updated').textContent = loadedAt ? 'Updated ' + loadedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+    const list = $('list'); list.replaceChildren();
+    if (!mcp) { const n = el('div', 'notice'); n.append(el('b', '', 'Open this page in claude.ai'), el('span', '', 'It reads your ideas through your Supabase connector.')); list.append(n); return; }
+    if (problem) { const n = el('div', 'notice'); n.append(el('b', '', problem[0]), el('span', '', problem[1])); list.append(n); return; }
+    if (!loadedAt) { list.append(el('div', 'skeleton')); return; }
+    const shown = ideas.filter((x) => x.status === tab);
+    if (!shown.length) {
+      list.append(el('div', 'empty', { new: 'No new ideas right now. The Trend Scout adds up to 5 every Monday morning.', liked: 'Nothing liked yet. Like the ideas worth making.', made: 'Nothing marked made yet.', passed: 'Nothing passed yet.' }[tab]));
+      return;
+    }
+    shown.forEach((i) => list.append(card(i)));
+  }
+
+  $('refresh').addEventListener('click', () => load());
+  render();
+  if (window.claude && window.claude.use) window.claude.use('mcp').then((m) => { mcp = m; render(); if (mcp) load(); }, () => { mcp = null; render(); });
+})();
+</script>
