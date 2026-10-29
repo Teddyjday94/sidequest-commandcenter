@@ -1,0 +1,39 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=IBM+Plex+Mono:wght@700&display=block">
+<style>
+/* Tee front, about 12 inches wide. A vintage resort badge: arched name, a sun setting into the water, a return-date stamp. One ink color. */
+:root{--ink:#1b1a18}
+html,body{margin:0;background:transparent}
+#art{width:1200px;height:1000px;position:relative;color:var(--ink)}
+svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.stamp{position:absolute;left:50%;bottom:30px;transform:translateX(-50%) rotate(-4deg);border:12px solid var(--ink);border-radius:14px;padding:22px 46px 18px;font:700 82px/1 "IBM Plex Mono",monospace;letter-spacing:.1em;white-space:nowrap}
+.stamp small{display:block;font-size:30px;letter-spacing:.3em;margin-bottom:10px}
+</style></head><body>
+<div id="art">
+  <svg viewBox="0 0 1200 1000" aria-hidden="true">
+    <defs><path id="arc" d="M60 430 A780 780 0 0 1 1140 430"/></defs>
+    <text font-family="Alfa Slab One" font-size="108" letter-spacing="2" fill="var(--ink)"><textPath href="#arc" startOffset="50%" text-anchor="middle">MICRO-RETIRED</textPath></text>
+    <!-- sun with rays, cut by the horizon -->
+    <g transform="translate(600 590)">
+      <clipPath id="above"><rect x="-400" y="-400" width="800" height="400"/></clipPath>
+      <g clip-path="url(#above)">
+        <circle r="150" fill="var(--ink)"/>
+        <g stroke="var(--ink)" stroke-width="16" stroke-linecap="round">
+          <line x1="-190" y1="0" x2="-250" y2="0"/><line x1="190" y1="0" x2="250" y2="0"/>
+          <line x1="-164" y1="-95" x2="-216" y2="-125"/><line x1="164" y1="-95" x2="216" y2="-125"/>
+          <line x1="-95" y1="-164" x2="-125" y2="-216"/><line x1="95" y1="-164" x2="125" y2="-216"/>
+          <line x1="0" y1="-190" x2="0" y2="-250"/>
+        </g>
+      </g>
+      <!-- water lines under the horizon -->
+      <g stroke="var(--ink)" stroke-width="16" stroke-linecap="round">
+        <line x1="-300" y1="0" x2="300" y2="0"/>
+        <line x1="-210" y1="44" x2="210" y2="44"/>
+        <line x1="-130" y1="86" x2="130" y2="86"/>
+        <line x1="-60" y1="126" x2="60" y2="126"/>
+      </g>
+    </g>
+  </svg>
+  <div class="stamp"><small>Return date</small>BACK: NEVER</div>
+</div>
+</body></html>
